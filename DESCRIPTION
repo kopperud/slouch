@@ -14,3 +14,5 @@ Imports:
   parallel
 Suggests:
   R (>= 3.2.5)
+URL: http://github.com/bjornkopperud/slouchbtk
+BugReports: http://github.com/bjornkopperud/slouchbtk/issues
