@@ -13,6 +13,9 @@ RoxygenNote: 5.0.1
 Imports:
   parallel
 Suggests:
-  R (>= 3.2.5)
+  R (>= 3.2.5),
+    knitr,
+    rmarkdown
 URL: http://github.com/bjornkopperud/slouchbtk
 BugReports: http://github.com/bjornkopperud/slouchbtk/issues
+VignetteBuilder: knitr
