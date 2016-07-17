@@ -9,7 +9,7 @@ model.fit(topology, times, half_life_values, vy_values, response,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, intercept = "root",
   ultrametric = TRUE, support = NULL, convergence = NULL,
-  plot.angle = 30)
+  plot.angle = 30, parallel.compute = FALSE)
 }
 \arguments{
 \item{plot.angle}{}

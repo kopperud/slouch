@@ -1,4 +1,4 @@
-sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime.specs, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed) {
+sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed) {
 
 
   hl <- hl_vy[1]; vy <- hl_vy[2]
@@ -273,8 +273,8 @@ sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime.
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
 
   }  # END OF CONDITION FOR HALF-LIFE = 0 #
-  return(sup1)
   print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta1)), 4))) # Will increasing the number of digits avoid problems when plotting grid?
+  return(sup1)
 }
 
 

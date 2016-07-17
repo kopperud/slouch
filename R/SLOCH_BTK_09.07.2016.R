@@ -24,7 +24,7 @@
 #' @export
 #'
 
-model.fit<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30)
+model.fit<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30, parallel.compute = FALSE)
 {
 
   # SET DEFAULTS IF NOT SPECIFIED
@@ -1196,22 +1196,28 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
 
       message(" ");
 
-      abc <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      grid <- lapply(seq_len(nrow(abc)), function(i) abc[i,])
+      grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+      # grid2 <- expand.grid(half_life_values, vy_values); grid2 <- grid2[order(-grid2[,1], grid[,2])]
 
-#       cl <- makeCluster(getOption("cl.cores",2))
-#       clusterExport(cl, "pseudoinverse")
-#       sup2 <- parSapply(cl, grid, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, regime.specs = NULL, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
-#       stopCluster(cl)
+      if (parallel.compute){
+        cl.cores.tmp <- detectCores()
+        if (!is.na(cl.cores.tmp)) cl.cores <- cl.cores.tmp else cl.cores <- 1
+        cl <- makeCluster(getOption("cl.cores",cl.cores))
+        # clusterExport(cl, envir = environment(), varlist=c("N", "me.response", "ta", "tij", "T", "topology", "times", "model.type", "ultrametric", "Y", "fixed.cov", "pred", "xx", "beta1", "error_condition", "s.X", "n.pred", "num.prob", "tia", "tja", "cm2", "me.pred", "me.cov", "convergence", "n.fixed"))
+        sup2 <- parApply(cl, grid,1, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
+        stopCluster(cl)
+      } else {
+        sup2 <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
+      }
 
-      sup2 <- sapply(grid, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, regime.specs = regime.specs, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
-      gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
+      gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
 
 
 
       x<-rev(half_life_values)
       y<-vy_values
       z<-gof;
+
       ml<-max(z);
       for(i in 1:length(half_life_values))
       {
@@ -1286,9 +1292,6 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
         r.squared<-(sst-sse)/sst
 
         ###### Start of Bias correction ######
-
-
-
         adj<-matrix(data=0, ncol= 1+ n.pred, nrow=N)
 
 
@@ -1317,9 +1320,7 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
 
         corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% glsyx.beta1
 
-
         ###### End of Bias correction ######
-
       }
 
       else
