@@ -1,280 +1,143 @@
-sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed) {
-
-
+### Function to return support values for each hl and vy for rReg
+sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
   hl <- hl_vy[1]; vy <- hl_vy[2]
+  x.ols<-cbind(1, pred)
+  beta1 <- make.beta1.rReg(hl, x.ols, Y, ultrametric)
+
   if(hl==0)
   {
-    x.ols<-cbind(1, pred)
-    beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+    a <- Inf
+    X <- cbind(1,pred)
   }
   else
   {
     a <- log(2)/hl
-    x.ols<-cbind(1, pred)
-    if(ultrametric==TRUE)
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+    cm2 <- make.cm2(a,tia,tja,ta,N,T)
+    if (ultrametric == TRUE)
+      X <- cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
     else
-      beta1<-rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
-
-    obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-    for (e in seq(from=1, to=ncol(x.ols), by=1)){
-      for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-        tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-        obs_var_con <-obs_var_con + tmp
-      }
-
-    }
-
+      X <- cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
   }
 
   ### CODE FOR ESTIMATING BETA USING ITERATED GLS ###
   con.count<-0;  # Counter for loop break if Beta's dont converge #
   repeat
   {
-    if(hl==0)
-    {
-      a<-Inf
-      s1<-as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
-      X<-cbind(1, pred)
-
-      V<-diag(rep(vy, times=N))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-
-    }
-    else
-    {
-      if(ultrametric==TRUE)
-        s1<-as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
-      else
-        s1<-as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
-
-      obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-      for (e in seq(from=1, to=ncol(x.ols), by=1)){
-        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-          tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(beta1[e]*(1-(1-exp(-a*T))/(a*T)))*(beta1[j]*(1-(1-exp(-a*T))/(a*T)))
-          obs_var_con <-obs_var_con + tmp
-        }
-
-      }
-
-      for(p in 1:N)
-      {
-        for(q in 1:N)
-        {
-          if(ta[q,p]==0)num.prob[q,p]=1 else num.prob[q,p]=(1-exp(-a*ta[q,p]))/(a*ta[q,p])
-        }
-      }
-      cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
-      for(p in 1:N)
-      {
-        for(q in 1:N)
-        {
-          cm2[p,q]<-(((1-exp(-a*T[p]))/(a*T[p]))*((1-exp(-a*T[q]))/(a*T[q]))-(exp(-a*tia[p, q])*(1-exp(-a*T[p]))/(a*T[q])+ exp(-a*tja[p, q])*(1-exp(-a*T[p]))/(a*T[p]))*(num.prob[p,q]))
-        }
-      }
-      if(ultrametric==TRUE)
-      {
-        X<-cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
-        mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[2:(n.pred+1), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))
-        mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
-
-        V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con -mcov
-
-      }
-      else
-      {
-        nu.X<-cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
-        mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[4:(n.pred+3), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))
-
-        mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
-
-        #V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+mv-mcov
-        V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-
-      }
-    } # END OF ELSE CONDITION FOR HALF-LIFE = 0
+    V <- estimate.V.rReg(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2)
 
     # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
     V.inverse<-solve(V)
+    beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+    beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
 
-    if(hl==0)
-    {
-      beta.i<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%(t(X)%*%V.inverse%*%Y)
-      test<-matrix(nrow=(n.pred+1))
-      for(f in 1:(n.pred+1))
-      {
-        if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[f]=0 else test[f]=1
-      }
-      if(sum(test)==0) break
-      con.count=con.count+1
-      if(con.count >= 50)
-      {
-        message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-        break
-      }
-
-      beta1<-beta.i
-
-
+    con.count <- con.count + 1
+    if (test.conv(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric)) {
+      break
     }
-    else
-    {
-      if(ultrametric==TRUE)
-      {
-        beta.i<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%(t(X)%*%V.inverse%*%Y)
-        # print(beta.i)
-        test<-matrix(nrow=(n.pred+1))
-        for(f in 1:(n.pred+1))
-        {
-          if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[f]=0 else test[f]=1
-        }
-        if(sum(test)==0) break
-        con.count=con.count+1
-        if(con.count >= 50)
-        {
-          message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-          break
-        }
+    beta1<-beta.i
+  }
 
-        beta1<-beta.i;
+  eY <- X%*%beta1
+  resid<-Y-eY
+  log.det.V <- mk.log.det.V(V = V, N = N)
 
-      }
-      else
-      {
-        beta.i<-pseudoinverse(t(nu.X)%*%V.inverse%*%nu.X)%*%(t(nu.X)%*%V.inverse%*%Y)
-        ### PROBLEM: beta.i blir en vektor med NaN. Problemet oppstår ved Ultrametric = False når treet faktisk er ultrametrisk.
-        test<-matrix(nrow=(n.pred))
-        for(f in 4:(n.pred+3))
-        {
-          if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[(f-3)]=0 else test[(f-3)]=1
-        }
-        if(sum(test)==0) break
-        con.count=con.count+1
-        if(con.count >= 50)
-        {
-          message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-          break
-        }
+  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
+  print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta1)), 4))) # Will increasing the number of digits avoid problems when plotting grid?
+  # return(sup1)
+  list(support = sup1,
+       V = V,
+       beta1 = beta1,
+       X = X,
+       beta1.var = beta.i.var)
+}
 
-        beta1<-beta.i
-      }
-    }                          # END OF HALF-LIFE = 0 CONDITION #
-  }                            # END OF ITERATED GLS REPEAT LOOP #
-  beta1<-beta.i
+#' @export
+make.cm2 <- function(a,tia,tja,ta,N,T){
+    T.row <- replicate(N,T)
+    T.col <- t(T.row)
+    num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
+    return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col))-(exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*(num.prob))
+}
 
+test.conv <- function(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric){
+  if (ultrametric == TRUE) {
+    fstart <- 0
+    y <- 1
+  }
+  else {
+    fstart <- 3
+    y <- 3
+  }
+  test<-matrix(nrow=(n.pred+1))
+  for(f in (1+fstart):(n.pred+y))
+  {
+    if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[(f-fstart)]=0 else test[(f-fstart)]=1
+  }
+  if(sum(test)==0) return (TRUE)
+  if(con.count >= 50)
+  {
+    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+    return(TRUE)
+  }
+  return(FALSE)
+}
 
-  ### END OF ITERATED GLS ESTIMATION FOR BETA #  #### NEw obs_var_con?
+mk.log.det.V <- function(V, N){
+  det.V<-det(V)
+  if(det.V==0){
+    print(paste("Warning: Determinant of V = 0"))
+    #Minimum value of diagonal scaling factor
+    inv.min.diag.V<-1/min(diag(V))
+    V<-V*inv.min.diag.V
+    #Rescale and log determinant
+    log(det(V))+log(min(diag(V)))*N
+  }
+  else {
+    log(det.V)
+  }
+}
+
+mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
+  if (hl == 0) y <- 1 else y <- ((1-(1-exp(-a*T))/(a*T))*(1-(1-exp(-a*T))/(a*T)))
+  obs_var_con <- matrix(0, nrow=N, ncol=N)
+  for (e in seq(from=1, to=ncol(x.ols), by=1)){
+    for (j in seq(from=1, to=ncol(x.ols), by=1)) {
+      tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
+      obs_var_con <- obs_var_con + tmp
+    }
+  }
+  obs_var_con
+}
+
+make.beta1.rReg <- function(hl, x.ols, Y, ultrametric){
+  if (hl != 0 & ultrametric == FALSE){
+    rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
+  } else{
+    solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+  }
+}
+
+estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2){
+  obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition)
+
+  if (ultrametric == TRUE)
+    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+  else{
+    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+  }
+
+  if(ultrametric==TRUE | hl == 0)
+    s1 <- as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
+  else
+    s1 <- as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
 
   if(hl==0)
   {
-    s1<-as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
-    X<-cbind(1, pred)
-
-    #V<-diag(rep(vy, times=N))+na.exclude(me.response)+diag(as.numeric(me.pred%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),])))-diag(as.numeric(me.cov%*%(2*beta1[2:(n.pred+1),])))
-    #V<-diag(rep(vy, times=N))+na.exclude(me.response)+((Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu))*(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))-diag(as.numeric(me.cov%*%(2*beta1[2:(n.pred+1),])))
-    V<-diag(rep(vy, times=N))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-    V.inverse<-solve(V)
-
-    eY<-X%*%beta1
-    resid<-Y-eY;
-
-    det.V<-det(V)
-    if(det.V==0){
-      print(paste("Warning: Determinant of V = 0"))
-      #Minimum value of diagonal scaling factor
-      inv.min.diag.V<-1/min(diag(V))
-      V<-V*inv.min.diag.V
-      #Rescale and log determinant
-      log.det.V<-log(det(V))+log(min(diag(V)))*N
-    }
-    else {log.det.V<-log(det.V)}
-
-    #gof[i, k] <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid);
-    sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
+    diag(rep(vy, times=N))+ na.exclude(me.response) + obs_var_con - diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
   }
   else
   {
-
-    if(ultrametric==TRUE)
-      s1<-as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
-    else
-      s1<-as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
-
-
-    obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-    for (e in seq(from=1, to=ncol(x.ols), by=1)){
-      for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-        tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(beta1[e]*(1-(1-exp(-a*T))/(a*T)))*(beta1[j]*(1-(1-exp(-a*T))/(a*T)))
-        obs_var_con <-obs_var_con + tmp
-      }
-
-    }
-
-    for(p in 1:N)
-    {
-      for(q in 1:N)
-      {
-        if(ta[q,p]==0)num.prob[q,p]=1 else num.prob[q,p]=(1-exp(-a*ta[q,p]))/(a*ta[q,p]);
-      }
-    }
-    cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij);
-    for(p in 1:N)
-    {
-      for(q in 1:N)
-      {
-        cm2[p,q]<-(((1-exp(-a*T[p]))/(a*T[p]))*((1-exp(-a*T[q]))/(a*T[q]))-(exp(-a*tia[p, q])*(1-exp(-a*T[p]))/(a*T[q])+ exp(-a*tja[p, q])*(1-exp(-a*T[p]))/(a*T[p]))*(num.prob[p,q]));
-      }
-    }
-    if(ultrametric==TRUE)
-    {
-
-
-      X<-cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
-      mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[2:(n.pred+1), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))
-      mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
-
-      #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov;
-      V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-    }
-    else
-    {
-      nu.X<-cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
-      mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[4:(n.pred+3), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))
-      mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
-
-      #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov
-      V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-    }
-    V.inverse<-solve(V)
-    if(ultrametric==TRUE)
-      eY<-X%*%beta1
-    else
-      eY<-nu.X%*%beta1
-    resid<-Y-eY;
-
-    det.V<-det(V)
-    if(det.V==0){
-      print(paste("Warning: Determinant of V = 0"))
-      #Minimum value of diagonal scaling factor
-      inv.min.diag.V<-1/min(diag(V))
-      V<-V*inv.min.diag.V
-      #Rescale and log determinant
-      log.det.V<-log(det(V))+log(min(diag(V)))*N
-    }
-    else {log.det.V<-log(det.V)}
-    # gof[i, k] <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid);
-    sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
-
-  }  # END OF CONDITION FOR HALF-LIFE = 0 #
-  print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta1)), 4))) # Will increasing the number of digits avoid problems when plotting grid?
-  return(sup1)
+    cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
+    return(cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov)
+  } # END OF ELSE CONDITION FOR HALF-LIFE = 0
 }
-
-

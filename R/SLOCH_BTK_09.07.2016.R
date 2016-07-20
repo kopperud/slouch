@@ -139,6 +139,7 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   ln2<-log(2)
   half_life_values<-rev(half_life_values)
+  # make.cm2 <- make.cm2.inner(tia = tia, tja = tja, ta = ta, N = N, T = T)
 
 
   # EVALUATE IF IT IS A FIXED FACTOR PREDICTOR OR INTERCEPT ONLY MODEL THEN SET UP APPROPRIATE DESIGN AND VARIANCE MATRICES AND ESTIMATE PARAMETERS WITHOUT ITERATED GLS
@@ -377,12 +378,8 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
           }
           else
           {
-
             a <- ln2/half_life_values[i];
-
-
             obs_var_con <-matrix(0, nrow=N, ncol=N)
-
             for (e in seq(from=1, to=ncol(x.ols), by=1)){
               for (j in seq(from=1, to=ncol(x.ols), by=1)) {
                 tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
@@ -390,8 +387,6 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
               }
 
             }
-
-
             #V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
 
 
@@ -498,29 +493,18 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
       if(alpha.est==Inf)
       {
         a<-1000000000000000000000
-
-        #V<-diag(rep(vy, times=N)) + me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
         V<-diag(rep(vy.est, times=N)) + na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
 
       }
       else
       {
-
-        #V<-((vy)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij))+me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
-
-
         obs_var_con <-matrix(0, nrow=N, ncol=N)
-
         for (e in seq(from=1, to=ncol(x.ols), by=1)){
           for (j in seq(from=1, to=ncol(x.ols), by=1)) {
             tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
             obs_var_con <-obs_var_con + tmp
           }
-
         }
-
         V<-((vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij))+  na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
 
 
@@ -662,7 +646,6 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
           tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
           obs_var_con <-obs_var_con + tmp
         }
-
       }
 
 
@@ -1062,7 +1045,6 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
               tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]* (gls.beta1[e]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))*(gls.beta1[j]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))
               obs_var_con <-obs_var_con + tmp
             }
-
           }
 
 
@@ -1163,12 +1145,7 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
 
 
       m<-length(gls.beta1);
-
-
-
       K<-solve(diag(1,m,m)-bias_corr)
-
-
       corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% gls.beta1
 
 
@@ -1183,14 +1160,10 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
 
     if(model.type=="rReg")
     {
-
       if(ultrametric==TRUE)
       {
-
         cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", "K     ", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), sep="   ");
-
       }
-
       else
         cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", "Ya    ", "Xa    " ,"Bo    ",  if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), sep="   ");
 
@@ -1204,14 +1177,20 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
         if (!is.na(cl.cores.tmp)) cl.cores <- cl.cores.tmp else cl.cores <- 1
         cl <- makeCluster(getOption("cl.cores",cl.cores))
         # clusterExport(cl, envir = environment(), varlist=c("N", "me.response", "ta", "tij", "T", "topology", "times", "model.type", "ultrametric", "Y", "fixed.cov", "pred", "xx", "beta1", "error_condition", "s.X", "n.pred", "num.prob", "tia", "tja", "cm2", "me.pred", "me.cov", "convergence", "n.fixed"))
-        sup2 <- parApply(cl, grid,1, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
+        estimates <- parApply(cl, grid,1, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, make.cm2=make.cm2)
         stopCluster(cl)
       } else {
-        sup2 <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed)
+        estimates <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed,make.cm2=make.cm2)
       }
-
+      sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
 
+
+      best.estimate <- estimates[sup2 == max(sup2)][[1]]
+      V.est <- best.estimate$V
+      beta.est <- best.estimate$beta1
+      X <- best.estimate$X
+      beta.var.est <- best.estimate$beta1.var
 
 
       x<-rev(half_life_values)
@@ -1236,385 +1215,60 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
       gof=gof-ml
 
 
+      beta.i.var <- beta.var.est
+      beta.i <- gls.beta1 <- beta.est
+      V <- V.est
+      V.inverse<-solve(V)
 
+      X1<-cbind(1, pred)
+      ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
+      ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
 
-
-      # FINAL OPTIMAL REGRESSION USING BEST ALPHA AND VY ESTIMATES #
-
+      # # FINAL OPTIMAL REGRESSION USING BEST ALPHA AND VY ESTIMATES #
       if(alpha.est==Inf)
       {
-        gls.beta1<-glsyx.beta1<- solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-        con.count<-0 # counter to break loop in the event of non-convergence
-
-
-
-        repeat
-        {
-          s1<-as.numeric(s.X%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),]))
-          X<-cbind(1, pred)
-          #V<-diag(rep(vy, times=N))+me.response+diag(as.numeric(me.pred%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),])))-diag(as.numeric(me.cov%*%(2*gls.beta1[2:length(gls.beta1),])))
-
-          #V<-diag(rep(vy, times=N))+na.exclude(me.response)+((Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu))*(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),]))-diag(as.numeric(me.cov%*%(2*gls.beta1[2:length(gls.beta1),])))
-
-
-
-          V<-diag(rep(vy.est, times=N))+ na.exclude(me.response) + obs_var_con -diag(as.vector(na.exclude(me.cov%*%(2*gls.beta1[2:length(gls.beta1),]))));
-
-          V.inverse<-solve(V)
-          beta.i.var<-ev.beta.i.var<-pseudoinverse(t(X)%*%V.inverse%*%X)
-          beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-          test<-matrix(nrow=(n.pred+1))
-          for(f in 1:(n.pred+1))
-          {
-            if(abs(as.numeric(beta.i[f]-gls.beta1[f]))<=convergence) test[f]=0 else test[f]=1
-          }
-          if(sum(test)==0) break
-          con.count=con.count+1
-          if(con.count >= 50)
-          {
-            message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-            break
-          }
-          gls.beta1<-glsyx.beta1<-beta.i
-        }
-        gls.beta1<-glsyx.beta1<-beta.i
-        X<-cbind(1, pred)
-        #V<-diag(rep(vy, times=N))+me.response+diag(as.numeric(me.pred%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),])))-diag(as.numeric(me.cov%*%(2*gls.beta1[2:length(gls.beta1),])))
-
-
-
-        V<-diag(rep(vy.est, times=N))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*gls.beta1[2:length(gls.beta1),]))));
-
-        pred.mean<-X%*%gls.beta1
-        g.mean<-(t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V));
-        sst<-t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
-        sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
-        r.squared<-(sst-sse)/sst
-
-        ###### Start of Bias correction ######
-        adj<-matrix(data=0, ncol= 1+ n.pred, nrow=N)
-
-
-        #if(ultrametric==TRUE)
-
-        for(i in 1:n.pred)
-        {
-          adj[,(1+i)] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[1]);
-        }
-
-
-        if(ultrametric==TRUE) Vu<-Vu else Vu<-Vu[(length(Vu[1,])-(N*2)+1):length(Vu[1,]),(length(Vu[1,])-(N*2)+1):length(Vu[1,])]
-        if(ultrametric==TRUE) Vd<-Vd else Vd<-Vd[(length(Vd[1,])-(N*2)+1):length(Vd[1,]),(length(Vd[1,])-(N*2)+1):length(Vd[1,])]
-
-
-
-        correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
-
-
-
-        bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
-
-        m<-length(glsyx.beta1)
-
-
-
-        corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% glsyx.beta1
-
-        ###### End of Bias correction ######
+        glsyx.beta1<-gls.beta1
       }
-
       else
       {
-        if(ultrametric==TRUE)
-          gls.beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-        else
-          gls.beta1<-rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y));
-        con.count<-0;
-
-
-        repeat
+        if(ultrametric==FALSE)
         {
-          if(ultrametric==TRUE)
-            s1<-as.numeric(s.X%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),]))
-          else
-            s1<-as.numeric(s.X%*%(gls.beta1[4:(n.pred+3),]*gls.beta1[4:(n.pred+3),]))
-
-          obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-          for (e in seq(from=1, to=ncol(x.ols), by=1)){
-            for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-              tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(gls.beta1[e]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))*(gls.beta1[j]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))
-              obs_var_con <-obs_var_con + tmp
-            }
-
-          }
-
-          for(p in 1:N)
-          {
-            for(q in 1:N)
-            {
-              if(ta[q,p]==0)num.prob[q,p]=1 else num.prob[q,p]=(1-exp(-alpha.est*ta[q,p]))/(alpha.est*ta[q,p])
-            }
-          }
-          cm1<-(s1/(2*alpha.est)+vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij)
-          for(p in 1:N)
-          {
-            for(q in 1:N)
-            {
-              cm2[p,q]<-(((1-exp(-alpha.est*T[p]))/(alpha.est*T[p]))*((1-exp(-alpha.est*T[q]))/(alpha.est*T[q]))-(exp(-alpha.est*tia[p, q])*(1-exp(-alpha.est*T[p]))/(alpha.est*T[q])+ exp(-alpha.est*tja[p, q])*(1-exp(-alpha.est*T[p]))/(alpha.est*T[p]))*(num.prob[p,q]))
-            }
-          }
-          if(ultrametric==TRUE)
-          {
-            X<-cbind(1, (1-(1-exp(-alpha.est*T))/(alpha.est*T))*pred)
-            mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(gls.beta1[2:(n.pred+1), ], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))^2), ncol=n.pred)))
-            mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*gls.beta1[2:length(gls.beta1),], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))), ncol=n.pred)))
-
-            #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov;
-            V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-          }
-          else
-          {
-            nu.X<-cbind(1-exp(-alpha.est*T), 1-exp(-alpha.est*T)-(1-(1-exp(-alpha.est*T))/(alpha.est*T)), exp(-alpha.est*T), (1-(1-exp(-alpha.est*T))/(alpha.est*T))*pred)
-            mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(gls.beta1[4:(n.pred+3), ], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))^2), ncol=n.pred)))
-
-            mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*gls.beta1[4:length(gls.beta1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)));
-            #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov
-            V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-          }
-
-          V.inverse<-solve(V)
-
-
-          if(ultrametric==TRUE)
-          {
-            beta.i.var<-pseudoinverse(t(X)%*%V.inverse%*%X)
-            beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-            test<-matrix(nrow=(n.pred+1))
-            for(f in 1:(n.pred+1))
-            {
-              if(abs(as.numeric(beta.i[f]-gls.beta1[f]))<=convergence) test[f]=0 else test[f]=1
-            }
-            if(sum(test)==0) break
-            con.count=con.count+1
-            if(con.count >= 50)
-            {
-              message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-              break
-            }
-
-
-            gls.beta1<-beta.i
-          }
-          else
-
-          {
-
-            beta.i.var<-pseudoinverse(t(nu.X)%*%V.inverse%*%nu.X)
-            beta.i<-beta.i.var%*%(t(nu.X)%*%V.inverse%*%Y)
-            test<-matrix(nrow=(n.pred))
-            for(f in 4:(n.pred+3))
-            {
-              if(abs(as.numeric(beta.i[f]-gls.beta1[f]))<=convergence) test[(f-3)]=0 else test[(f-3)]=1
-            }
-            if(sum(test)==0) break
-            con.count=con.count+1
-            if(con.count >= 50)
-            {
-              message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-              break
-            }
-
-            gls.beta1<-beta.i
-          }
-        }
-
-
-        # END OF ITERATED GLS LOOP #
-
-
-        # CODE FOR SST, SSE AND R-SQUARED #
-
-        if(ultrametric==TRUE)
-          gls.beta1<-beta.i
-        else
-        {
-          gls.beta1<-beta.i
           ind.par<-matrix(data=0, nrow=N, ncol=4, dimnames=list(NULL, c("Bo", "Bi.Xia", "Yo", "Sum")))
-          ind.par[,1]<-beta.i[1]*nu.X[,1]
-          ind.par[,2]<-(beta.i[2]*nu.X[,2])
-          ind.par[,3]<-beta.i[3]*nu.X[,3]
+          ind.par[,1]<-beta.i[1]*X[,1]
+          ind.par[,2]<-beta.i[2]*X[,2]
+          ind.par[,3]<-beta.i[3]*X[,3]
           ind.par[,4]<-ind.par[,1]+ind.par[,2]+ind.par[,3]
           mean.Bo=mean(ind.par[,4])
         }
-
-        if(ultrametric==TRUE)
-        {
-          X<-cbind(1, (1-(1-exp(-alpha.est*T))/(alpha.est*T))*pred)
-
-          obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-          for (e in seq(from=1, to=ncol(x.ols), by=1)){
-            for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-              tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(gls.beta1[e]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))*(gls.beta1[j]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))
-              obs_var_con <-obs_var_con + tmp
-            }
-
-          }
-
-
-          mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(gls.beta1[2:(n.pred+1), ], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))^2), ncol=n.pred)))
-          mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*gls.beta1[2:length(gls.beta1),], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))), ncol=n.pred)))
-          #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov;
-          V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-          pred.mean<-X%*%gls.beta1
-
-        }
-        else
-        {
-          nu.X<-cbind(1-exp(-alpha.est*T), 1-exp(-alpha.est*T)-(1-(1-exp(-alpha.est*T))/(alpha.est*T)), exp(-alpha.est*T), (1-(1-exp(-alpha.est*T))/(alpha.est*T))*pred)
-
-          obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-          for (e in seq(from=1, to=ncol(x.ols), by=1)){
-            for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-              tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(gls.beta1[e]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))*(gls.beta1[j]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))
-              obs_var_con <-obs_var_con + tmp
-            }
-
-          }
-
-
-          mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(gls.beta1[4:(n.pred+3), ], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))^2), ncol=n.pred)))
-          mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*gls.beta1[4:length(gls.beta1),], (1-(1-exp(-alpha.est*T))/(alpha.est*T)))), ncol=n.pred)))
-          #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov
-          V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov
-
-
-          pred.mean<-nu.X%*%gls.beta1
-        }
-
-        g.mean<-(t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V));
-        sst<-t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
-        sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
-        r.squared<-(sst-sse)/sst
-
-
-        # FINAL EVOLUTIONARY REGRESSION USING BEST ALPHA AND VY ESTIMATES AND KNOWN VARIANCE MATRIX #
-
-
-        if(ultrametric==TRUE)  s1<-as.numeric(s.X%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),]))
-        else s1<-as.numeric(s.X%*%(gls.beta1[4:(n.pred+3),]*gls.beta1[4:(n.pred+3),]));
-
-        obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-        for (e in seq(from=1, to=ncol(x.ols), by=1)){
-          for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-            tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*(gls.beta1[e]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))*(gls.beta1[j]*(1-(1-exp(-alpha.est*T))/(alpha.est*T)))
-            obs_var_con <-obs_var_con + tmp
-          }
-
-        }
-
-
-        for(p in 1:N)
-        {
-          for(q in 1:N)
-          {
-            if(ta[q,p]==0)num.prob[q,p]=1 else num.prob[q,p]=(1-exp(-alpha.est*ta[q,p]))/(alpha.est*ta[q,p])
-          }
-        }
-        cm1<-(s1/(2*alpha.est)+vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij)
-        for(p in 1:N)
-        {
-          for(q in 1:N)
-          {
-            cm2[p,q]<-(((1-exp(-alpha.est*T[p]))/(alpha.est*T[p]))*((1-exp(-alpha.est*T[q]))/(alpha.est*T[q]))-(exp(-alpha.est*tia[p, q])*(1-exp(-alpha.est*T[p]))/(alpha.est*T[q])+ exp(-alpha.est*tja[p, q])*(1-exp(-alpha.est*T[p]))/(alpha.est*T[p]))*(num.prob[p,q]))
-          }
-        }
-
-        if(ultrametric==TRUE)
-
-        {
-          #V<-cm1+(s1*ta*cm2)+me.response+diag(as.numeric(me.pred%*%(gls.beta1[2:(n.pred+1),]*gls.beta1[2:(n.pred+1),])))-diag(as.numeric(me.cov%*%(2*gls.beta1[2:length(gls.beta1),])))
-
-
-          V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-diag(as.numeric(me.cov%*%(2*gls.beta1[2:length(gls.beta1),])))
-        }
-
-
-        else
-          # V<-cm1+(s1*ta*cm2)+me.response+diag(as.numeric(me.pred%*%(gls.beta1[4:(n.pred+3),]*gls.beta1[4:(n.pred+3),])))-diag(as.numeric(me.cov%*%(2*gls.beta1[4:length(gls.beta1),])));
-
-        {
-
-
-          V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-diag(as.numeric(me.cov%*%(2*gls.beta1[4:length(gls.beta1),])))
-        }
-
-
-        X1<-cbind(1, pred)
-        V.inverse<-solve(V)
-        ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
-        ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
         glsyx.beta1<-ev.beta.i
-
-
-        ###### Start of Bias correction ######
-
-
-
-        adj<-matrix(data=0, ncol= 1+ n.pred, nrow=N)
-
-
-        #if(ultrametric==TRUE)
-
-        for(i in 1:n.pred)
-        {
-          adj[,(1+i)] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[1]);
-        }
-
-        if(ultrametric==TRUE) Vu<-Vu else Vu<-Vu[(length(Vu[1,])-(N*2)+1):length(Vu[1,]),(length(Vu[1,])-(N*2)+1):length(Vu[1,])]
-        if(ultrametric==TRUE) Vd<-Vd else Vd<-Vd[(length(Vd[1,])-(N*2)+1):length(Vd[1,]),(length(Vd[1,])-(N*2)+1):length(Vd[1,])]
-
-
-
-
-        correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X1)-c(adj)),  ncol=ncol(X1), nrow=nrow(X1), byrow=F)
-
-
-
-        bias_corr<-pseudoinverse(t(X1)%*%V.inverse%*%X1)%*%t(X1)%*%V.inverse%*%correction
-
-        m<-length(glsyx.beta1)
-
-
-
-        corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% glsyx.beta1
-
-
-        ###### End of Bias correction ######
-
-
-
-
-
-
-
-
       }
       # END OF HALFLIFE 0 CONDITION #
 
+      pred.mean<-X%*%gls.beta1
+      g.mean<-(t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V))
+      sst<-t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
+      sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
+      r.squared<-(sst-sse)/sst
 
+      ###### Start of Bias correction ######
+      adj<-matrix(data=0, ncol= 1+ n.pred, nrow=N)
+      for(i in 1:n.pred)
+      {
+        adj[,(1+i)] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[1])
+      }
+
+      if(ultrametric==FALSE) {
+        Vd<-Vd[(length(Vd[1,])-(N*2)+1):length(Vd[1,]),(length(Vd[1,])-(N*2)+1):length(Vd[1,])]
+        Vu<-Vu[(length(Vu[1,])-(N*2)+1):length(Vu[1,]),(length(Vu[1,])-(N*2)+1):length(Vu[1,])]
+      }
+
+      correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X1)-c(adj)),  ncol=ncol(X1), nrow=nrow(X1), byrow=F)
+      bias_corr<-pseudoinverse(t(X1)%*%V.inverse%*%X1)%*%t(X1)%*%V.inverse%*%correction
+      m<-length(glsyx.beta1)
+      corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% glsyx.beta1
 
     } # END OF RANDOM COVARIATE REGRESSION ESTIMATION
-
   }# END OF FIXED COVARIATE, MIXED OR RANDOM MODELS PARAMETER ESTIMATION
-
-
 
   # EVALUATE IF IT IS A FIXED AND RANDOM COVARIATE ANCOVA OR REGRESSION MODEL ESTIMATE PARAMETERS WITH ITERATED GLS TO A) TAKE MEASUREMENT VARIANCE INTO ACCOUNT OR B) RANDOM EFFECTS INTO ACCOUNT IN THE CASE OF THE MIXED MODEL AND REGRESSION
 
@@ -2791,9 +2445,9 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
     z<-h.lives
     op <- par(bg = "white")
 
-    plot.slouch.x <<- x
-    plot.slouch.y <<- y
-    plot.slouch.loglik <<- z
+    # plot.slouch.x <<- x
+    # plot.slouch.y <<- y
+    # plot.slouch.loglik <<- z
 
     persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
     persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
@@ -3758,6 +3412,13 @@ n.ambig<-function(pars.states)
     return(tmp)
   }
 
+#' Parse tree function
+#'
+#' @param topology
+#' @param times
+#'
+#' @return
+#' @export
 `parse.tree` <-
   function(topology, times){
     term<-terminal.twigs(topology);
@@ -3909,6 +3570,12 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
 }
 
 
+#' Title
+#'
+#' @param topology
+#'
+#' @return
+#' @export
 `terminal.twigs` <-
   function(topology){
     n<-length(topology);
@@ -3921,6 +3588,13 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
     return(arrange.tree(root,topology));
   }
 
+#' Title
+#'
+#' @param topology
+#' @param times
+#'
+#' @return
+#' @export
 `tsia` <-
   function (topology, times) {
     term <- terminal.twigs(topology);
@@ -3941,6 +3615,13 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
     return(t.ia);
   }
 
+#' Title
+#'
+#' @param topology
+#' @param times
+#'
+#' @return
+#' @export
 `tsja` <-
   function (topology, times) {
     term <- terminal.twigs(topology);
@@ -3999,22 +3680,21 @@ rmNullObs <- function(x)
 }
 
 ###############################################################
-
-sapply_pb <- function(X, FUN, ...)
-{
-  env <- environment()
-  pb_Total <- length(X)
-  counter <- 0
-  pb <- txtProgressBar(min = 0, max = pb_Total, style = 3)
-
-  wrapper <- function(...){
-    curVal <- get("counter", envir = env)
-    assign("counter", curVal +1 ,envir=env)
-    setTxtProgressBar(get("pb", envir=env), curVal +1)
-    FUN(...)
-  }
-  res <- sapply(X, wrapper, ...)
-  close(pb)
-  res
-}
+# sapply_pb <- function(X, FUN, ...)
+# {
+#   env <- environment()
+#   pb_Total <- length(X)
+#   counter <- 0
+#   pb <- txtProgressBar(min = 0, max = pb_Total, style = 3)
+#
+#   wrapper <- function(...){
+#     curVal <- get("counter", envir = env)
+#     assign("counter", curVal +1 ,envir=env)
+#     setTxtProgressBar(get("pb", envir=env), curVal +1)
+#     FUN(...)
+#   }
+#   res <- sapply(X, wrapper, ...)
+#   close(pb)
+#   res
+# }
 
