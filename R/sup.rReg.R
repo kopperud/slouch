@@ -4,6 +4,7 @@ sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.t
   x.ols<-cbind(1, pred)
   beta1 <- make.beta1.rReg(hl, x.ols, Y, ultrametric)
 
+  ## Set up design matrix X
   if(hl==0)
   {
     a <- Inf
@@ -120,24 +121,22 @@ make.beta1.rReg <- function(hl, x.ols, Y, ultrametric){
 estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2){
   obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition)
 
-  if (ultrametric == TRUE)
+  if (ultrametric == TRUE){
     mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+    s1 <- as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
+  }
   else{
     mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
-  }
-
-  if(ultrametric==TRUE | hl == 0)
-    s1 <- as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
-  else
     s1 <- as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
+  }
 
   if(hl==0)
   {
-    diag(rep(vy, times=N))+ na.exclude(me.response) + obs_var_con - diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
+    diag(rep(vy, times=N)) + na.exclude(me.response) + obs_var_con - diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
   }
   else
   {
     cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
-    return(cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov)
+    return(cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con - mcov)
   } # END OF ELSE CONDITION FOR HALF-LIFE = 0
 }

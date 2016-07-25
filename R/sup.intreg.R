@@ -2,7 +2,7 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
   hl <- hl_vy[1]; vy <- hl_vy[2]
   if(hl==0)
   {
-    a<-1000000000000000000000; 
+    a<-1000000000000000000000;
     V<-diag(rep(vy, times=N)) + me.response;
   }
   else
@@ -13,8 +13,8 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
   if(model.type=="IntcptReg")
   {
     if(hl==0 ||a>=1000000000000000000000) X<-matrix(data=1, nrow=N, ncol=1)
-    else   	
-      if(ultrametric==TRUE) X<-matrix(data=1, nrow=N, ncol=1) 
+    else
+      if(ultrametric==TRUE) X<-matrix(data=1, nrow=N, ncol=1)
       else
       {
         X<-matrix(data=0, nrow=N, ncol=2);
@@ -22,16 +22,17 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
         X[,2]<-exp(-a*T)
       }
   }
-  else       
+  else
     X<-weight.matrix(a, topology,times, N, regime.specs, fixed.cov, intercept)
   # GLS estimation of parameters for fixed model
   V.inverse<-solve(V)
+
   tmp<-pseudoinverse(t(X)%*%V.inverse%*%X) #### Ask Thomas about this one
-  if(Inf %in% tmp) {print("Pseudoinverse of (XT VâX)â1 contained values = Inf, which were set to 10^300")};  
+  if(Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = Inf, which were set to 10^300")};
   tmp <-replace(tmp, tmp ==Inf, 10^300);
-  if(-Inf %in% tmp) {print("Pseudoinverse of (XT VâX)â1 contained values = -Inf, which were set to -10^300")} ;  
+  if(-Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = -Inf, which were set to -10^300")} ;
   tmp <-replace(tmp, tmp ==-Inf, -10^300)
-  
+
   beta.i<-tmp%*%(t(X)%*%V.inverse%*%Y)
   beta0<-beta.i
   eY<-X%*%beta0
@@ -40,8 +41,8 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
   if(det.V==0){
     print(paste("Warning: Determinant of V = 0"))
     #Minimum value of diagonal scaling factor
-    inv.min.diag.V<-1/min(diag(V))		
-    V<-V*inv.min.diag.V		
+    inv.min.diag.V<-1/min(diag(V))
+    V<-V*inv.min.diag.V
     #Rescale and log determinant
     log.det.V<-log(det(V))+log(min(diag(V)))*N
   }
