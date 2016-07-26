@@ -15,7 +15,9 @@ Imports:
 Suggests:
   R (>= 3.2.5),
     knitr,
-    rmarkdown
+    rmarkdown,
+    ape,
+    ouch
 URL: http://github.com/bjornkopperud/slouchbtk
 BugReports: http://github.com/bjornkopperud/slouchbtk/issues
 VignetteBuilder: knitr
