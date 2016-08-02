@@ -674,6 +674,18 @@ pseudoinverse <-
     return(list(as.numeric(theta), as.numeric(sigma)));
   }
 
+#' Title
+#'
+#' @param topology
+#' @param times
+#' @param names
+#' @param regimes
+#' @param cex
+#' @param lwd
+#' @param reg.col
+#'
+#' @return
+#' @export
 slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex = NULL, lwd=NULL, reg.col=NULL) {
   if(is.null(cex)) cex<-1;
   if(is.null(lwd)) lwd<-1;
