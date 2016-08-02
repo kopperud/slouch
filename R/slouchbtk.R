@@ -3,3 +3,4 @@
 #'
 #'
 #'Forked by bjørn
+"_PACKAGE"
