@@ -3,6 +3,7 @@
 S3method(summary,slouch)
 export(make.cm2)
 export(model.fit)
+export(ouch2slouch)
 export(parse.tree)
 export(slouchtree.plot)
 export(terminal.twigs)

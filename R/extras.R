@@ -533,6 +533,12 @@ n.ambig<-function(pars.states)
     return(sim.dat)
   }
 
+#' Title
+#'
+#' @param tree
+#'
+#' @return
+#' @export
 `ouch2slouch` <-
   function(tree)
   {
