@@ -53,6 +53,12 @@ sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.t
        beta1.var = beta.i.var)
 }
 
+
+
+
+
+
+
 #' @export
 make.cm2 <- function(a,tia,tja,ta,N,T){
     T.row <- replicate(N,T)

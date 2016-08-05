@@ -139,6 +139,36 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   ln2<-log(2)
   half_life_values<-rev(half_life_values)
+  
+  ## Cluster all parameters concerning phylogenetic tree
+  treepar <- list(T = T,
+               tia = tia,
+               tja = tja,
+               term = term,
+               pt = pt,
+               ta = ta,
+               tij = tij,
+               ultrametric = ultrametric)
+  
+  ## Cluster parameters concerning the type of model being run
+  modelpar <- list(model.type = model.type,
+                   response = response,
+                   me.response = me.response,
+                   fixed.fact = fixed.fact,
+                   fixed.cov = fixed.cov,
+                   me.fixed.cov = me.fixed.cov,
+                   random.cov = random.cov,
+                   me.random.cov = me.random.cov,
+                   Y = Y,
+                   N = N,
+                   num.prob = num.prob,
+                   cm2 = cm2,
+                   gof = gof,
+                   h.lives = h.lives,
+                   half_life_values = half_life_values,
+                   support = support,
+                   convergence = convergence,
+                   intercept = intercept)
 
   # ## Default output vars to null
   # model.type = model.type
@@ -173,20 +203,26 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
   if(model.type =="IntcptReg" || model.type == "ffANOVA")
   {
-    if(model.type=="IntcptReg") regime.specs<-rep(1, times=length(topology)) else regime.specs<-fixed.fact;
+    if(model.type=="IntcptReg"){
+      regime.specs<-rep(1, times=length(topology))
+    }
+    else{
+      regime.specs<-fixed.fact
+    } 
+    
+    treepar$regime.specs = regime.specs
 
     cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head), sep="   ");
     message(" ");
 
-
+    ## Two vectors in a "vectorgrid", expanded to include all combinations of HL + VY
     abc <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
     grid <- lapply(seq_len(nrow(abc)), function(i) abc[i,])
-    sup2 <- sapply(grid, hl.intreg, N=N, me.response = me.response, ta = ta, tij = tij, T = T, topology = topology, times = times, regime.specs = regime.specs, model.type = "IntcptReg", ultrametric = TRUE, Y = Y)
+    #sup2 <- sapply(grid, hl.intreg, N=N, me.response = me.response, ta = ta, tij = tij, T = T, topology = topology, times = times, regime.specs = regime.specs, model.type = "IntcptReg", ultrametric = TRUE, Y = Y)
+    sup2 <- sapply(grid, hl.intreg, treepar, modelpar)
     gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
 
-    # print(cbind(abc, sup2))
 
-    # print(grid)
 
     # Search GOF matrix for best estimates of alpha and vy #
 

@@ -1,4 +1,7 @@
-hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime.specs, model.type, ultrametric, Y, fixed.cov){
+hl.intreg <- function(hl_vy, treepar,modelpar){
+  list2env(treepar, envir = environment())
+  list2env(modelpar, envir = environment())
+  
   hl <- hl_vy[1]; vy <- hl_vy[2]
   if(hl==0)
   {
@@ -48,7 +51,7 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
   }
   else {log.det.V<-log(det.V)}
   sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
-  #print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta0)), 4)))
+  print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta0)), 4)))
   if(sup1 == "NaN") sup1 <- -10^100
   return(sup1)
 }
