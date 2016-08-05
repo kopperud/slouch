@@ -1,5 +1,10 @@
 ### Function to return support values for each hl and vy for rReg
-sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
+# sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
+sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {  
+  list2env(modelpar, envir = environment())
+  list2env(treepar, envir = environment())
+  list2env(seed, envir = environment())
+  
   hl <- hl_vy[1]; vy <- hl_vy[2]
   x.ols<-cbind(1, pred)
   beta1 <- make.beta1.rReg(hl, x.ols, Y, ultrametric)
@@ -76,7 +81,7 @@ test.conv <- function(beta.i = beta.i, beta1 = beta1, convergence = convergence,
     fstart <- 3
     y <- 3
   }
-  test<-matrix(nrow=(n.pred+1))
+  test<-matrix(nrow=(n.pred))
   for(f in (1+fstart):(n.pred+y))
   {
     if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[(f-fstart)]=0 else test[(f-fstart)]=1
@@ -156,3 +161,69 @@ estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition
     return(cm1 + (s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov)
   } # END OF ELSE CONDITION FOR HALF-LIFE = 0
 }
+
+
+## Seed function for OLS
+
+seed.rReg <- function(treepar, modelpar){
+  list2env(treepar, envir = environment())
+  list2env(modelpar, envir = environment())
+  
+  x.ols<-cbind(1, pred)
+  beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+  if(ultrametric == FALSE) {
+    beta1<-rbind(0, 0, beta1); # 2 additional parameter seeds for Ya and Xa
+  }
+  n.fixed<-1
+  
+  ## Setting up the Vu and Vd matrices ##
+  Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
+  xx<-seq(from=1, to	=length(Vd[,1]), by=N)
+  yy<-seq(from=N, to	=length(Vd[,1]), by=N)
+  
+  if(ultrametric == TRUE){
+    xx<-xx[-1]
+    yy<-yy[-1]
+  }else{
+    xx<-xx[-(1:3)]
+    yy<-yy[-(1:3)]
+  }
+  
+  for (i in seq(from=1, to=nrow(s.X), by=1)){
+    Vd[xx[i]:yy[i], xx[i]:yy[i]]<-pt$bt*s.X[,i]
+    
+  }
+  
+  if(ultrametric == TRUE) {
+    Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
+  } else{
+    Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
+  } 
+  
+  error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
+  
+  
+  xx<-seq(from=1, to=length(Vu[,1]), by=N)
+  
+  obs_var_con <-matrix(0, nrow=N, ncol=N)
+  for (e in seq(from=1, to=ncol(x.ols), by=1)){
+    for (j in seq(from=1, to=ncol(x.ols), by=1)) {
+      tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
+      obs_var_con <-obs_var_con + tmp
+    }
+  }
+  
+  seed <- list(x.ols = x.ols,
+               beta1 = beta1,
+               xx = xx,
+               yy = yy,
+               Vd = Vd,
+               Vu = Vu,
+               error_condition = error_condition,
+               obs_var_con = obs_var_con,
+               n.fixed = n.fixed)
+  
+  return(seed)
+}
+
+

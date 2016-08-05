@@ -26,7 +26,7 @@
 
 model.fit.dev<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30, parallel.compute = FALSE)
 {
-
+  ancestor <- topology
   # SET DEFAULTS IF NOT SPECIFIED
 
   if(is.null(support)) support=2;
@@ -633,11 +633,21 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   {
     # SET UP INITIAL MATRICES FOR MULTIPLE REGRESSION AND CALCULATE THETA AND SIGMA FOR RANDOM PREDICTOR / S
 
-    pred<-data.frame(random.cov);
-    n.pred<-length(pred[1,]);
-    pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred);
-    if(is.null(me.random.cov)) me.pred<-matrix(data=0, nrow=N, ncol=n.pred) else me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred);
-    if(is.null(mecov.random.cov)) me.cov<-matrix(data=0, nrow=N, ncol=n.pred) else me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=n.pred);
+    pred<-data.frame(random.cov)
+    n.pred<-length(pred[1,])
+    pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred)
+    modelpar$pred <- pred
+    
+    if(is.null(me.random.cov)){
+      me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
+    }  else{
+      me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred)
+    } 
+    if(is.null(mecov.random.cov)) {
+      me.cov<-matrix(data=0, nrow=N, ncol=n.pred)
+    }else{
+      me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=n.pred)
+    }
 
     s.X<-matrix(data=0, ncol=n.pred)  # PREDICTOR SIGMA
     for(i in 1:n.pred)
@@ -645,12 +655,19 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[2]);
     }
 
+    
+    
     theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
     for(i in 1:n.pred)
     {
       theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[1]);
     }
-
+    
+    modelpar$me.pred <- me.pred
+    modelpar$s.X <- s.X
+    modelpar$theta.X <- theta.X
+    modelpar$me.cov <- me.cov
+    modelpar$n.pred <- n.pred
 
 
     # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
@@ -660,44 +677,9 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
     if(model.type=="rReg")
     {
-      x.ols<-cbind(1, pred);
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-      if(ultrametric == FALSE) beta1<-rbind(0, 0, beta1); # 2 additional parameter seeds for Ya and Xa
-      n.fixed<-1
-
-      ## Setting up the Vu and Vd matrices ##
-
-
-      Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
-
-      xx<-seq(from=1, to	=length(Vd[,1]), by=N)
-
-      if(ultrametric == TRUE) xx<-xx[-1] else xx<-xx[-(1:3)]
-
-      yy<-seq(from=N, to	=length(Vd[,1]), by=N)
-
-      if(ultrametric == TRUE) yy<-yy[-1] else yy<-yy[-(1:3)]
-
-
-      for (i in seq(from=1, to=nrow(s.X), by=1)){
-        Vd[xx[i]:yy[i],xx[i]:yy[i]]<-pt$bt*s.X[,i]
-
-      }
-      if(ultrametric == TRUE) Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred))))) else Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
-
-      error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
-
-
-      xx<-seq(from=1, to=length(Vu[,1]), by=N)
-
-      obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-      for (e in seq(from=1, to=ncol(x.ols), by=1)){
-        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-          tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-          obs_var_con <-obs_var_con + tmp
-        }
-      }
+      
+      seed <- seed.rReg(treepar, modelpar)
+      list2env(seed, envir = environment()) ## NOT GOOD. Check for Vu, Vd throughout next 200 lines
     }
 
 
@@ -745,6 +727,8 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       estimates <- apply(grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept)
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+      
+      
 
       best.estimate <- estimates[sup2 == max(sup2)][[1]]
       V <- V.est <- best.estimate$V
@@ -784,6 +768,11 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
         adj[,(n.fixed+i)] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[1]);
       }
       V.inverse<-solve(V)
+      
+      ## TEMP bugfix bjorn
+      Vu <- seed$Vu
+      ##
+      
       correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
       bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
       m<-length(gls.beta1);
@@ -808,16 +797,10 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
       # grid2 <- expand.grid(half_life_values, vy_values); grid2 <- grid2[order(-grid2[,1], grid[,2])]
 
-      if (parallel.compute){
-        cl.cores.tmp <- detectCores()
-        if (!is.na(cl.cores.tmp)) cl.cores <- cl.cores.tmp else cl.cores <- 1
-        cl <- makeCluster(getOption("cl.cores",cl.cores))
-        # clusterExport(cl, envir = environment(), varlist=c("N", "me.response", "ta", "tij", "T", "topology", "times", "model.type", "ultrametric", "Y", "fixed.cov", "pred", "xx", "beta1", "error_condition", "s.X", "n.pred", "num.prob", "tia", "tja", "cm2", "me.pred", "me.cov", "convergence", "n.fixed"))
-        estimates <- parApply(cl, grid,1, sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, make.cm2=make.cm2)
-        stopCluster(cl)
-      } else {
-        estimates <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed,make.cm2=make.cm2)
-      }
+
+      #estimates <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed,make.cm2=make.cm2)
+      estimates <- apply(grid, 1,sup.rReg, modelpar, treepar, seed, make.cm2=make.cm2)
+      
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
 
@@ -853,7 +836,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
       ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
 
-      # # FINAL OPTIMAL REGRESSION USING BEST ALPHA AND VY ESTIMATES #
+
       if(alpha.est==Inf)
       {
         glsyx.beta1<- gls.beta1
@@ -2229,6 +2212,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     optima[,1] = gls.beta0;
     optima[,2] = std;
 
+
     corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames=list(c("Bo", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), c("Bias-corr. regression parameters")))
 
 
@@ -2301,6 +2285,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
     opreg[,1] =round(gls.beta1, 5)
     opreg[,2]= round(sqrt(diag(beta.i.var)),5)
+    
 
     corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames=list(c("K", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Bias-corr. regression parameters")))
 
@@ -2390,6 +2375,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   print(modfit); message("");
   message("==================================================");
 
+  print("debug: model.fit.dev")
 
 
 } # END OF MODEL FITTING FUNCTION

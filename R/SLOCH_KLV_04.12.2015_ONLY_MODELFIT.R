@@ -3,6 +3,8 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
   
   # SET DEFAULTS IF NOT SPECIFIED	
   
+  print("TEST OF OLD, UNMODIFIED SLOUCH, DECEMBER 04.2015")
+  
   if(is.null(support)) support=2;
   if(is.null(convergence)) convergence=0.000001;
   if(is.null(me.response)) me.response<-diag(rep(0, times=length(response[!is.na(response)])))  else me.response<-diag(me.response[!is.na(me.response)]);

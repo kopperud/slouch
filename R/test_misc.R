@@ -3,9 +3,14 @@
 
 #' @export
 testsetup <- function(){
-  pars <- list(myfunc = model.fit.dev, 
+  pars <- list(myfunc = model.fit, 
                dummydata = read.table("dummy_data_slouch.txt"), 
-               model.id.btk = "IntcptReg")
+               model.id.btk = "rReg")
   return(pars)
 }
 
+
+
+## MOdel types
+## rReg
+## IntcptReg
