@@ -1,14 +1,14 @@
-Package: slouchbtk
+Package: slouch
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
 Version: 0.1
 Date: 2016-07-09
-Author: Who wrote it
+Author: Jason Pienaar
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
 LazyData: TRUE
-ByteCompile: TRUE
+ByteCompile: FALSE
 RoxygenNote: 5.0.1
 Imports:
   parallel
@@ -17,7 +17,8 @@ Suggests:
     knitr,
     rmarkdown,
     ape,
-    ouch
-URL: http://github.com/bjornkopperud/slouchbtk
-BugReports: http://github.com/bjornkopperud/slouchbtk/issues
+    ouch,
+    testthat
+URL: http://github.com/bjornkopperud/slouch
+BugReports: http://github.com/bjornkopperud/slouch/issues
 VignetteBuilder: knitr

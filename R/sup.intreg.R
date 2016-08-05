@@ -47,7 +47,8 @@ hl.intreg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, regime
     log.det.V<-log(det(V))+log(min(diag(V)))*N
   }
   else {log.det.V<-log(det.V)}
-  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid);
+  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
+  #print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta0)), 4)))
   if(sup1 == "NaN") sup1 <- -10^100
   return(sup1)
 }

@@ -24,7 +24,7 @@
 #' @export
 #'
 
-model.fit<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30, parallel.compute = FALSE)
+model.fit.dev<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30, parallel.compute = FALSE)
 {
 
   # SET DEFAULTS IF NOT SPECIFIED
@@ -2043,7 +2043,7 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
     # plot.slouch.y <<- y
     # plot.slouch.loglik <<- z
 
-    persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
+    #persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
     persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
           ltheta = 120, shade = 0.75, ticktype = "detailed",
           xlab = "half-life", ylab = "vy", zlab = "log-likelihood") -> res
