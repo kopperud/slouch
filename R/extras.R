@@ -967,3 +967,5 @@ np.regression<-function(response, me.response, predictor, me.predictor, converge
 }
 
 
+
+

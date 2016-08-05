@@ -226,4 +226,7 @@ seed.rReg <- function(treepar, modelpar){
   return(seed)
 }
 
+make.vector.grid <- function(modelpar){
+  cbind(sort(rep(modelpar$half_life_values, length(modelpar$vy_values)), decreasing = TRUE), rep(modelpar$vy_values, length(modelpar$half_life_values)))
+}
 

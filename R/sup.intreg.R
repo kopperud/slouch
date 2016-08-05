@@ -1,4 +1,4 @@
-hl.intreg <- function(hl_vy, treepar,modelpar){
+IntcptReg <- function(hl_vy, treepar,modelpar){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
   
@@ -15,22 +15,29 @@ hl.intreg <- function(hl_vy, treepar,modelpar){
   }
   if(model.type=="IntcptReg")
   {
-    if(hl==0 ||a>=1000000000000000000000) X<-matrix(data=1, nrow=N, ncol=1)
+    if(hl==0 || a>=1000000000000000000000) {
+      X<-matrix(data=1, nrow=N, ncol=1)
+    }
     else
-      if(ultrametric==TRUE) X<-matrix(data=1, nrow=N, ncol=1)
+      if(ultrametric==TRUE) {
+        X<-matrix(data=1, nrow=N, ncol=1)
+      } 
       else
       {
-        X<-matrix(data=0, nrow=N, ncol=2);
-        X[,1]<-1-exp(-a*T);
+        X<-matrix(data=0, nrow=N, ncol=2)
+        X[,1]<-1-exp(-a*T)
         X[,2]<-exp(-a*T)
       }
   }
-  else
+  else{
     X<-weight.matrix(a, topology,times, N, regime.specs, fixed.cov, intercept)
+  }
+  # NOT NEEDED ? BJORN
+
   # GLS estimation of parameters for fixed model
   V.inverse<-solve(V)
 
-  tmp<-pseudoinverse(t(X)%*%V.inverse%*%X) #### Ask Thomas about this one
+  tmp<-pseudoinverse(t(X)%*%V.inverse%*%X) #### Ask Thomas about this one. Bjorn: "tmp" means variance of beta.i ? "beta.i.var
   if(Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = Inf, which were set to 10^300")};
   tmp <-replace(tmp, tmp ==Inf, 10^300);
   if(-Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = -Inf, which were set to -10^300")} ;
@@ -40,18 +47,19 @@ hl.intreg <- function(hl_vy, treepar,modelpar){
   beta0<-beta.i
   eY<-X%*%beta0
   resid<-Y-eY
-  det.V<-det(V)
-  if(det.V==0){
-    print(paste("Warning: Determinant of V = 0"))
-    #Minimum value of diagonal scaling factor
-    inv.min.diag.V<-1/min(diag(V))
-    V<-V*inv.min.diag.V
-    #Rescale and log determinant
-    log.det.V<-log(det(V))+log(min(diag(V)))*N
-  }
-  else {log.det.V<-log(det.V)}
+  log.det.V <- mk.log.det.V(V = V, N = N)
+  
   sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
   print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta0)), 4)))
   if(sup1 == "NaN") sup1 <- -10^100
-  return(sup1)
+  #return(sup1)
+  
+  ## Return list of variables
+  list(support = sup1,
+       V = V,
+       beta0 = beta0,
+       X = X,
+       beta.i.var = tmp,
+       alpha.est = a,
+       vy.est = vy)
 }

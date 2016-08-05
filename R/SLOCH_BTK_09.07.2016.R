@@ -124,15 +124,18 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
 
-  Y <- response[!is.na(response)];
-  N <- length(Y);
-  T <- times[terminal.twigs(topology)];
-  tia<-tsia(ancestor, time);
-  tja<-tsja(ancestor, time);
-  term<-terminal.twigs(topology);
-  pt<-parse.tree(topology, times);
-  ta<-pt$bt;
-  tij<-pt$dm;
+  Y <- response[!is.na(response)]
+  N <- length(Y)
+  T <- times[terminal.twigs(topology)]
+  tia<-tsia(ancestor, time)
+  tja<-tsja(ancestor, time)
+  term<-terminal.twigs(topology)
+  pt<-parse.tree(topology, times)
+  ta<-pt$bt
+  tij<-pt$dm
+  
+  
+  
   num.prob<-matrix(data=0, nrow=N, ncol=N) #this matrix is included for cases where species split at the root;
   cm2<-matrix(data=0, nrow=N, ncol=N);
   gof<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values), dimnames=list(half_life_values, vy_values));
@@ -148,7 +151,11 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
                pt = pt,
                ta = ta,
                tij = tij,
-               ultrametric = ultrametric)
+               ultrametric = ultrametric,
+               topology = topology,
+               ancestor = ancestor,
+               times = times,
+               species = species)
   
   ## Cluster parameters concerning the type of model being run
   modelpar <- list(model.type = model.type,
@@ -166,6 +173,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
                    gof = gof,
                    h.lives = h.lives,
                    half_life_values = half_life_values,
+                   vy_values = vy_values,
                    support = support,
                    convergence = convergence,
                    intercept = intercept)
@@ -204,85 +212,46 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   if(model.type =="IntcptReg" || model.type == "ffANOVA")
   {
     if(model.type=="IntcptReg"){
-      regime.specs<-rep(1, times=length(topology))
+      #regime.specs<-rep(1, times=length(topology)) Bjorn: Not used ?
     }
     else{
       regime.specs<-fixed.fact
-    } 
+      treepar$regime.specs = regime.specs
+    }
     
-    treepar$regime.specs = regime.specs
-
     cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head), sep="   ");
     message(" ");
 
-    ## Two vectors in a "vectorgrid", expanded to include all combinations of HL + VY
-    abc <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-    grid <- lapply(seq_len(nrow(abc)), function(i) abc[i,])
-    #sup2 <- sapply(grid, hl.intreg, N=N, me.response = me.response, ta = ta, tij = tij, T = T, topology = topology, times = times, regime.specs = regime.specs, model.type = "IntcptReg", ultrametric = TRUE, Y = Y)
-    sup2 <- sapply(grid, hl.intreg, treepar, modelpar)
-    gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
+    ## "vectorgrid", expanded to include all combinations of HL + VY
+    vector.grid <- make.vector.grid(modelpar)
+    estimates <- apply(vector.grid, 1, IntcptReg, treepar, modelpar)
 
+    sup2 <- sapply(estimates, function(e) e$support)
+    gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
 
 
     # Search GOF matrix for best estimates of alpha and vy #
-
-    x<-rev(half_life_values)
-    # x <- half_life_values
-    y<-vy_values
-    z<-gof;
-    ml<-max(z);
-    for(i in 1:length(half_life_values))
-    {
-      for(j in 1:length(vy_values))
-      {
-        if(gof[i,j]==ml){alpha.est=log(2)/half_life_values[i]; vy.est=vy_values[j]}
-      }
-    }
-    for(i in 1:length(half_life_values))
-    {
-      for(j in 1:length(vy_values))
-      {
-        if(gof[i,j]<=ml-support) gof[i, j]=ml-support;
-      }
-    }
-
+    ml<-max(gof)
+    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     gof=gof-ml
-
-    # final GLS estimations for corrected optima using best alpha and vy estimates #
-
-    if(alpha.est==Inf) alpha.est<-1000000000000000000000
-
-    if(model.type=="IntcptReg")
-    {
-      if(alpha.est==Inf || alpha.est>=1000000000000000000000 ) X<-matrix(data=1, nrow=N, ncol=1)
-      else
-        if(ultrametric==TRUE) X<-matrix(data=1, nrow=N, ncol=1)
-        else
-        {
-          X<-matrix(data=0, nrow=N, ncol=2);
-          X[,1]<-1-exp(-alpha.est*T);
-          X[,2]<-exp(-alpha.est*T)
-        }
-    }
-    else
-      X<-weight.matrix(alpha.est, topology,times, N, regime.specs, fixed.cov, intercept)
-
-    V<-((vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij)) + me.response;
-    V.inverse<-solve(V);
-    beta.i.var<-pseudoinverse(t(X)%*%V.inverse%*%X);
-    beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y);
-    gls.beta0<-beta.i;
-
-    # code for calculating SSE, SST and r squared
-
+    
+    ## Extract best estimates
+    best.estimate <- estimates[sup2 == max(sup2)][[1]]
+    alpha.est <- best.estimate$alpha.est
+    vy.est <- best.estimate$vy.est
+    beta.i <- best.estimate$beta0
+    beta.i.var <- best.estimate$beta.i.var
+    
+    gls.beta0 <- beta.i
+    X <- best.estimate$X
+    V <- best.estimate$V
+    
+    ## Calculate model fit stats
     pred.mean <- X%*%gls.beta0
     g.mean <- (t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V));
     sst <- t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
     sse <-t (Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
     r.squared <- (sst-sse)/sst
-
-
-
 
   } # END OF FIXED PREDICTOR OR INTERCEPT ONLY PARAMETER ESTIMATION
 
@@ -331,7 +300,11 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
     ## Setting up the Vu and Vd matrices ##
 
-    if(model.type=="fReg") Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred))))) else Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
+    if(model.type=="fReg"){
+      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
+    }else{
+      Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
+    }  
 
     true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N);
     for (i in 1:n.fixed.pred){
@@ -361,7 +334,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
         tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
         obs_var_con <-obs_var_con + tmp
       }
-
     }
 
     for(i in 1:length(half_life_values))
@@ -677,7 +649,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
     if(model.type=="rReg")
     {
-      
       seed <- seed.rReg(treepar, modelpar)
       list2env(seed, envir = environment()) ## NOT GOOD. Check for Vu, Vd throughout next 200 lines
     }
@@ -723,8 +694,8 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head, if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), sep="   ");
       message(" ");
 
-      grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      estimates <- apply(grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept)
+      vector.grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+      estimates <- apply(vector.grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept)
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
       
@@ -760,7 +731,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
       r.squared<-(sst-sse)/sst
 
-      # END OF ITERATED GLS LOOP #
       ###### Start of Bias correction ######
       adj<-matrix(data=0, ncol= ncol(X), nrow=N)
       for(i in 1:n.pred)
@@ -2056,6 +2026,8 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       h.lives[,i]=rev(z1[,i])
     }
     z<-h.lives
+    x<-rev(half_life_values)
+    y<-vy_values
     op <- par(bg = "white")
 
     # plot.slouch.x <<- x
