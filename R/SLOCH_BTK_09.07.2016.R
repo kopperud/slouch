@@ -59,12 +59,12 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     if(ultrametric==FALSE)
     {
       GS_head<-c("Ya", "Theta_Global")
-      n.par<-2
+      #n.par<-2 # Bjorn: unused?
     }
     else
     {
       GS_head<-("Theta_Global")
-      n.par<-1
+      #n.par<-1 # Bjorn: unused?
     }
   }
   else
@@ -370,8 +370,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     }
 
 
-
-
     if(model.type=="mmANCOVA")
     {
       regime.specs<-fixed.fact;
@@ -484,36 +482,25 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       message(" ");
 
       grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      # grid2 <- expand.grid(half_life_values, vy_values); grid2 <- grid2[order(-grid2[,1], grid[,2])]
-
-
-      #estimates <- apply(grid, 1,sup.rReg, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed,make.cm2=make.cm2)
       estimates <- apply(grid, 1,sup.rReg, modelpar, treepar, seed, make.cm2=make.cm2)
       
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+      ml<-max(gof)
+      gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
 
-
+      
       best.estimate <- estimates[sup2 == max(sup2)][[1]]
       V.est <- best.estimate$V
       beta.est <- best.estimate$beta1
       X <- best.estimate$X
       beta.var.est <- best.estimate$beta1.var
+      alpha.est <- best.estimate$alpha.est
+      vy.est <- best.estimate$vy.est
 
 
-      x<-rev(half_life_values)
-      y<-vy_values
-      z<-gof;
 
-      ml<-max(z);
-      for(i in 1:length(half_life_values))
-      {
-        for(j in 1:length(vy_values))
-        {
-          if(gof[i,j]==ml){alpha.est=log(2)/half_life_values[i]; vy.est=vy_values[j]}
-        }
-      }
-      gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+
 
 
       beta.i.var <- beta.var.est
@@ -573,6 +560,15 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     } # END OF RANDOM COVARIATE REGRESSION ESTIMATION
   }# END OF FIXED COVARIATE, MIXED OR RANDOM MODELS PARAMETER ESTIMATION
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
   # EVALUATE IF IT IS A FIXED AND RANDOM COVARIATE ANCOVA OR REGRESSION MODEL ESTIMATE PARAMETERS WITH ITERATED GLS TO A) TAKE MEASUREMENT VARIANCE INTO ACCOUNT OR B) RANDOM EFFECTS INTO ACCOUNT IN THE CASE OF THE MIXED MODEL AND REGRESSION
 
   if(model.type == "mmfANCOVA" || model.type=="mfReg")

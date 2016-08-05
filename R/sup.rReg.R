@@ -59,7 +59,9 @@ sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {
        V = V,
        beta1 = beta1,
        X = X,
-       beta1.var = beta.i.var)
+       beta1.var = beta.i.var,
+       alpha.est = a,
+       vy.est = vy)
 }
 
 
