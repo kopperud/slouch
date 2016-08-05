@@ -75,7 +75,11 @@ mk.log.det.V <- function(V, N){
 }
 
 mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
-  if (hl == 0) y <- 1 else y <- ((1-(1-exp(-a*T))/(a*T))*(1-(1-exp(-a*T))/(a*T)))
+  if (hl == 0){
+    y <- 1
+  }   else {
+    y <- ((1-(1-exp(-a*T))/(a*T))*(1-(1-exp(-a*T))/(a*T)))
+  }
   obs_var_con <- matrix(0, nrow=N, ncol=N)
   for (e in seq(from=1, to=ncol(x.ols), by=1)){
     for (j in seq(from=1, to=ncol(x.ols), by=1)) {
@@ -85,6 +89,8 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
   }
   obs_var_con
 }
+
+
 
 # Deprecated.
 # make.beta1.rReg <- function(hl, x.ols, Y, ultrametric){

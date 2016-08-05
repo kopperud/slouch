@@ -183,7 +183,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   if(model.type =="IntcptReg" || model.type == "ffANOVA")
   {
     if(model.type=="IntcptReg"){
-      #regime.specs<-rep(1, times=length(topology)) Bjorn: Not used ?
+      #regime.specs<-rep(1, times=length(topology)) Bjorn: Not used ? Prove me wrong.
     }
     else{
       regime.specs<-fixed.fact
@@ -232,9 +232,10 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   if(model.type =="ffANCOVA" || model.type == "fReg")
   {
     #n.pred<-length(pred[1,])
-    fixed.pred<-data.frame(fixed.cov);
-    n.fixed.pred<-length(fixed.pred[1,]);
-    fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred);
+    fixed.pred<-data.frame(fixed.cov)
+    n.fixed.pred<-length(fixed.pred[1,])
+    fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred)
+    
     if(is.null(me.fixed.cov)) {
       me.fixed.pred<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
     }else{
@@ -253,89 +254,22 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     
     if(model.type=="fReg")
     {
-      x.ols<-cbind(1, fixed.pred)
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-      n.fixed<-1
-
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", "Bo", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), sep="   ");
       message("");
     }
 
     if(model.type=="ffANCOVA")
     {
-      regime.specs<-fixed.fact;
-      n.fixed<-length(levels(as.factor(regime.specs)))
-      regime.specs<-as.factor(regime.specs)
-      
-      treepar$regime.specs <- regime.specs
-      #print(regime.specs)
-      x.ols<-weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept);
-
-
-      for (i in length(x.ols[1,]):1){
-        if(sum(x.ols[,i]) == 0) {
-          x.ols<-x.ols[,-i]; n.fixed<-n.fixed-1
-          }  #removes internal regimes that have only zero entries
-      }
-      
-      #print("kjetil3")
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-      #print("kjetil4")
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head, if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), sep="   ");
       message("");
     }
 
-    ## Setting up the Vu and Vd matrices ##
-
-    if(model.type=="fReg"){
-      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
-    }else{
-      Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
-    }  
-
-    true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N)
-    for (i in 1:n.fixed.pred){
-      true_var[,i]<-var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i]))
-    }
-    true_var<-c(true_var)
-
-
-    if(model.type=="fReg") {
-      Vd<-diag(c(rep(0,N),true_var))
-    }  else {
-      Vd<-diag(c(rep(0,n.fixed*N), true_var))
-    }
-
-    error_condition <- Vu - (Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
-
-    ## Multiplies with betas ##
-    xx<-seq(from=1, to=length(Vu[,1]), by=N)
 
     
-    if(length(xx) > length(beta1)) {
-      beta1<-as.matrix(c(0, beta1))
-    }
+    seed.fReg <- make.seed.fReg.ffANCOVA(treepar, modelpar)
+    list2env(seed.fReg, envir = environment()) ## VERY BAD PRACTICE
     
-    
-    obs_var_con <-matrix(0, nrow=N, ncol=N)
-    for (e in seq(from=1, to=ncol(x.ols), by=1)){
-      for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-        tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-        obs_var_con <-obs_var_con + tmp
-      }
-    }
-
-    seed.fReg <- list(x.ols = x.ols,
-                 beta1 = beta1,
-                 xx = xx,
-                 Vd = Vd,
-                 Vu = Vu,
-                 error_condition = error_condition,
-                 obs_var_con = obs_var_con,
-                 n.fixed = n.fixed)
-    
-    
-    
+    #print(names(seed.fReg))
     
     vector.grid <- make.vector.grid(modelpar)
     estimates <- apply(vector.grid, 1, fReg, treepar, modelpar, seed.fReg)
@@ -359,8 +293,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     
     V.inverse <- solve(V)
     
-    
-    
     # code for calculating SSE, SST and r squared
 
     pred.mean <- X%*%gls.beta0
@@ -369,19 +301,13 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     sse <- t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
     r.squared <- (sst-sse)/sst
 
-    ###### Bias correction ######
-    # if(model.type=="fReg") {
-    #   X <- cbind(1, fixed.pred)
-    # }  else  {
-    #   X <- weight.matrix(alpha.est, topology, times, N, regime.specs, fixed.pred, intercept)
-    # }
-    
 
     adj <- matrix(data=0, ncol=ncol(X), nrow=N)  #PREDICTOR THETA
     for(i in 1:length(adj[1,]))
     {
       adj[,i] <- mean(X[,i]);
     }
+    
     correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
     bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
     m<-length(gls.beta0);
@@ -390,8 +316,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
 
   }  # END OF fReg AND ffANVOCA ESTIMATION ROUTINES must still add iterated GLS for me
-
-
 
   # EVALUATE IF IT IS A FIXED MODEL ANCOVA, MIXED MODEL ANCOVA OR RANDOM PREDICTOR REGRESSION, ESTIMATE PARAMETERS WITH ITERATED GLS TO A) TAKE MEASUREMENT VARIANCE INTO ACCOUNT OR B) RANDOM EFFECTS INTO ACCOUNT IN THE CASE OF THE MIXED MODEL AND REGRESSION
 
@@ -437,14 +361,12 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
 
     # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
-
-
     ## INITIAL OLS ESTIMATES TO SEED ITERATED GLS
 
     if(model.type=="rReg")
     {
       seed <- seed.rReg(treepar, modelpar)
-      list2env(seed, envir = environment()) ## NOT GOOD. Check for Vu, Vd throughout next 200 lines
+      list2env(seed, envir = environment()) ## Quick, dirty bugfix: NOT A GOOD ONE. VERY BAD. Check for Vu, Vd throughout next 200 lines
     }
 
 
