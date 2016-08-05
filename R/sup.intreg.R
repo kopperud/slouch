@@ -32,15 +32,14 @@ IntcptReg <- function(hl_vy, treepar,modelpar){
   else{
     X<-weight.matrix(a, topology,times, N, regime.specs, fixed.cov, intercept)
   }
-  # NOT NEEDED ? BJORN
 
   # GLS estimation of parameters for fixed model
   V.inverse<-solve(V)
 
-  tmp<-pseudoinverse(t(X)%*%V.inverse%*%X) #### Ask Thomas about this one. Bjorn: "tmp" means variance of beta.i ? "beta.i.var
-  if(Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = Inf, which were set to 10^300")};
-  tmp <-replace(tmp, tmp ==Inf, 10^300);
-  if(-Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = -Inf, which were set to -10^300")} ;
+  tmp<-pseudoinverse(t(X)%*%V.inverse%*%X) #### Ask Thomas about this one. Bjorn: "tmp" means variance of beta.i ? "beta.i.var ????
+  if(Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = Inf, which were set to 10^300")}
+  tmp <-replace(tmp, tmp ==Inf, 10^300)
+  if(-Inf %in% tmp) {print("Pseudoinverse of (XT V?X)?1 contained values = -Inf, which were set to -10^300")}
   tmp <-replace(tmp, tmp ==-Inf, -10^300)
 
   beta.i<-tmp%*%(t(X)%*%V.inverse%*%Y)

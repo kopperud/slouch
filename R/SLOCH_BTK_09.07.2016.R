@@ -29,9 +29,13 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   ancestor <- topology
   # SET DEFAULTS IF NOT SPECIFIED
 
-  if(is.null(support)) support=2;
-  if(is.null(convergence)) convergence=0.000001;
-  if(is.null(me.response)) me.response<-diag(rep(0, times=length(response[!is.na(response)])))  else me.response<-diag(me.response[!is.na(me.response)]);
+  if(is.null(support)) support <- 2
+  if(is.null(convergence)) convergence <- 0.000001
+  if(is.null(me.response)){
+    me.response<-diag(rep(0, times=length(response[!is.na(response)])))
+  }else{
+    me.response<-diag(me.response[!is.na(me.response)])
+  }
 
 
   # DETERMINE MODEL STRUCTURE FROM INPUT AND WRITE A SUMMARY TO THE R CONSOLE
@@ -45,10 +49,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   if(is.null(fixed.fact) && !is.null(fixed.cov) && is.null(random.cov)) model.type <- "fReg";
   if(is.null(fixed.fact) && !is.null(fixed.cov) && !is.null(random.cov)) model.type <- "mfReg";
 
-  print(model.type)
-
   # Write type of model to screen
-
   message("")
   message("MODEL SUMMARY")
   message("")
@@ -57,13 +58,13 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     message("You have specified an OU model for a response variable regressed on a grand mean, i.e. one global optima");
     if(ultrametric==FALSE)
     {
-      GS_head<-c("Ya", "Theta_Global");
-      n.par<-2;
+      GS_head<-c("Ya", "Theta_Global")
+      n.par<-2
     }
     else
     {
-      GS_head<-("Theta_Global");
-      n.par<-1;
+      GS_head<-("Theta_Global")
+      n.par<-1
     }
   }
   else
@@ -134,8 +135,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   ta<-pt$bt
   tij<-pt$dm
   
-  
-  
   num.prob<-matrix(data=0, nrow=N, ncol=N) #this matrix is included for cases where species split at the root;
   cm2<-matrix(data=0, nrow=N, ncol=N);
   gof<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values), dimnames=list(half_life_values, vy_values));
@@ -178,34 +177,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
                    convergence = convergence,
                    intercept = intercept)
 
-  # ## Default output vars to null
-  # model.type = model.type
-  # alpha.est = NULL
-  # vy.est = NULL
-  # pred.mean = NULL
-  # g.mean = NULL
-  # sst = NULL
-  # sse = NULL
-  # r.squared = NULL
-  # ml = NULL
-  # n.pred = NULL
-  # ultrametric = ultrametric
-  # intercept = intercept
-  # N = N
-  # fixed.fact = fixed.fact
-  # random.cov.names = NULL
-  # # random.cov = random.cov
-  # # fixed.cov = fixed.cov
-  # # me.fixed.cov = me.fixed.cov
-  # beta.est = NULL
-  # theta.X = NULL
-  # s.X = NULL
-  # beta.var.est = NULL
-  # X = NULL
-  # x.ols = NULL
-  # corrected_betas = NULL
-  # glsyx.beta1 = NULL
-  # glsyx.beta1.var = NULL
 
   # EVALUATE IF IT IS A FIXED FACTOR PREDICTOR OR INTERCEPT ONLY MODEL THEN SET UP APPROPRIATE DESIGN AND VARIANCE MATRICES AND ESTIMATE PARAMETERS WITHOUT ITERATED GLS
 
@@ -216,7 +187,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     }
     else{
       regime.specs<-fixed.fact
-      treepar$regime.specs = regime.specs
+      treepar$regime.specs <- regime.specs
     }
     
     cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head), sep="   ");
@@ -224,11 +195,13 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
     ## "vectorgrid", expanded to include all combinations of HL + VY
     vector.grid <- make.vector.grid(modelpar)
+    
+    ## Apply regression function to all values of hl + vy in vectorgrid
     estimates <- apply(vector.grid, 1, IntcptReg, treepar, modelpar)
-
     sup2 <- sapply(estimates, function(e) e$support)
+    
+    ## Reshape vectorgrid as matrix
     gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-
 
     # Search GOF matrix for best estimates of alpha and vy #
     ml<-max(gof)
@@ -262,16 +235,26 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     fixed.pred<-data.frame(fixed.cov);
     n.fixed.pred<-length(fixed.pred[1,]);
     fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred);
-    if(is.null(me.fixed.cov)) me.fixed.pred<-matrix(data=0, nrow=N, ncol=n.fixed.pred) else me.fixed.pred<- matrix(data=me.fixed.cov[!is.na(me.fixed.cov)], ncol=n.fixed.pred);
-    if(is.null(mecov.fixed.cov)) me.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred) else me.cov<-matrix(data=me.cov.fixed.cov[!is.na(me.cov.fixed.cov)], ncol=n.fixed.pred);
+    if(is.null(me.fixed.cov)) {
+      me.fixed.pred<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    }else{
+      me.fixed.pred<- matrix(data=me.fixed.cov[!is.na(me.fixed.cov)], ncol=n.fixed.pred)
+    }
+    if(is.null(mecov.fixed.cov)){
+      me.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    }else{
+      me.cov<-matrix(data=me.cov.fixed.cov[!is.na(me.cov.fixed.cov)], ncol=n.fixed.pred)
+    } 
 
-
+    modelpar$me.cov <- me.cov
+    modelpar$me.fixed.pred <- me.fixed.pred
+    modelpar$fixed.pred <- fixed.pred
+    modelpar$n.fixed.pred <- n.fixed.pred
+    
     if(model.type=="fReg")
     {
-      x.ols<-cbind(1, fixed.pred);
-
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-
+      x.ols<-cbind(1, fixed.pred)
+      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
       n.fixed<-1
 
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", "Bo", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), sep="   ");
@@ -283,17 +266,21 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       regime.specs<-fixed.fact;
       n.fixed<-length(levels(as.factor(regime.specs)))
       regime.specs<-as.factor(regime.specs)
-
+      
+      treepar$regime.specs <- regime.specs
+      #print(regime.specs)
       x.ols<-weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept);
 
 
       for (i in length(x.ols[1,]):1){
-        if(sum(x.ols[,i]) == 0) {x.ols<-x.ols[,-i]; n.fixed<-n.fixed-1}  #removes internal regimes that have only zero entries
-
+        if(sum(x.ols[,i]) == 0) {
+          x.ols<-x.ols[,-i]; n.fixed<-n.fixed-1
+          }  #removes internal regimes that have only zero entries
       }
-      print("kjetil3")
+      
+      #print("kjetil3")
       beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-      print("kjetil4")
+      #print("kjetil4")
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head, if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), sep="   ");
       message("");
     }
@@ -306,29 +293,31 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
     }  
 
-    true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N);
+    true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N)
     for (i in 1:n.fixed.pred){
       true_var[,i]<-var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i]))
     }
     true_var<-c(true_var)
 
 
-    if(model.type=="fReg") Vd<-diag(c(rep(0,N),true_var)) else Vd<-diag(c(rep(0,n.fixed*N), true_var))
+    if(model.type=="fReg") {
+      Vd<-diag(c(rep(0,N),true_var))
+    }  else {
+      Vd<-diag(c(rep(0,n.fixed*N), true_var))
+    }
 
-    error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
+    error_condition <- Vu - (Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
 
     ## Multiplies with betas ##
-
     xx<-seq(from=1, to=length(Vu[,1]), by=N)
 
+    
+    if(length(xx) > length(beta1)) {
+      beta1<-as.matrix(c(0, beta1))
+    }
+    
+    
     obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-    ##
-    if(length(xx) > length(beta1)) {beta1<-as.matrix(c(0, beta1))}; #n.fixed<-n.fixed+1 ;}
-    #if(length(X[1,])< length(beta1)) {beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);n.fixed<-length(levels(as.factor(regime.specs))); print("The Ya parameter is dropped as its coefficient is too small");}
-
-    ##
-
     for (e in seq(from=1, to=ncol(x.ols), by=1)){
       for (j in seq(from=1, to=ncol(x.ols), by=1)) {
         tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
@@ -336,254 +325,59 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       }
     }
 
-    for(i in 1:length(half_life_values))
-    {
-      for(k in 1:length(vy_values))
-      {
-        vy <- vy_values[k];
-
-        if(half_life_values[i]==0)
-        {
-          obs_var_con<-obs_var_con;
-        }
-
-        else
-
-          # updates the V matrix by multiplying with new betas #
-
-        {
-          obs_var_con <-matrix(0, nrow=N, ncol=N)
-
-          for (e in seq(from=1, to=ncol(x.ols), by=1)){
-            for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-              tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-              obs_var_con <-obs_var_con + tmp
-            }
-
-          }
-        }
-
-
-
-
-        if(half_life_values[i]==0)
-
-        {
-          a<-1000000000000000000000
-
-          #V<-diag(rep(vy, times=N)) + na.exclude(me.response) + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
-
-          V<-diag(rep(vy, times=N)) + na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-
-
-        }
-
-        else
-
-        {
-
-          a <- ln2/half_life_values[i];
-
-          #V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
-          V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-        }
-
-        if(model.type=="fReg") X<-cbind(1, fixed.pred) else  X<-weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept);
-
-
-        ##### iterated GLS
-
-
-
-        con.count<-0;  # Counter for loop break if Beta's dont converge #
-        repeat
-        {
-
-          if(half_life_values[i]==0)
-          {
-            a<-1000000000000000000000
-            #V<-diag(rep(vy, times=N)) + me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
-            V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-          }
-          else
-          {
-            a <- ln2/half_life_values[i];
-            obs_var_con <-matrix(0, nrow=N, ncol=N)
-            for (e in seq(from=1, to=ncol(x.ols), by=1)){
-              for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-                tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-                obs_var_con <-obs_var_con + tmp
-              }
-
-            }
-            #V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+me.response + diag(as.numeric(me.fixed.pred%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),])))-diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),])));
-
-
-
-
-            V<-((vy)*(1-exp(-2*a*ta))*exp(-a*tij))+ na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-
-          } # END OF If ELSE CONDITION FOR HALF-LIFE 0 OR NOT
-
-          if(model.type=="fReg") X<-cbind(1, fixed.pred) else  X<-weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept);
-
-          # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
-
-          V.inverse<-solve(V)
-
-          beta.i<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%(t(X)%*%V.inverse%*%Y)
-
-          if(length(beta.i) > length(beta1)) {beta1<-as.matrix(c(0, beta1))}
-
-          test<-matrix(nrow=(length(beta.i)))
-          for(f in 1:(length(beta.i)))
-          {
-            if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[f]=0 else test[f]=1
-
-          }
-
-
-          if(sum(test)==0) break
-          con.count=con.count+1
-          if(con.count >= 50)
-          {
-            message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-            break
-          }
-          beta1<-beta.i
-
-
-        }
-
-
-        eY<-X%*%beta1
-        resid<-Y-eY
-
-        det.V<-det(V)
-        if(det.V==0){
-          print(paste("Warning: Determinant of V = 0"))
-          #Minimum value of diagonal scaling factor
-          inv.min.diag.V<-1/min(diag(V))
-          V<-V*inv.min.diag.V
-          #Rescale and log determinant
-          log.det.V<-log(det(V))+log(min(diag(V)))*N
-        }
-        else {log.det.V<-log(det.V)}
-
-        gof[i, k] <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid);
-        print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, gof[i,k], t(beta1)), 4)))
-
-
-
-        ### END OF ITERATED GLS
-
-      } # end of half-life loop
-    } # end of vy loop
-
+    seed.fReg <- list(x.ols = x.ols,
+                 beta1 = beta1,
+                 xx = xx,
+                 Vd = Vd,
+                 Vu = Vu,
+                 error_condition = error_condition,
+                 obs_var_con = obs_var_con,
+                 n.fixed = n.fixed)
+    
+    
+    
+    
+    vector.grid <- make.vector.grid(modelpar)
+    estimates <- apply(vector.grid, 1, fReg, treepar, modelpar, seed.fReg)
+    sup2 <- sapply(estimates, function(e) e$support)
+    gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+    
     # Search GOF matrix for best estimates of alpha and vy #
 
-    x<-rev(half_life_values)
-    y<-vy_values
-    z<-gof;
-    ml<-max(z);
-    for(i in 1:length(half_life_values))
-    {
-      for(j in 1:length(vy_values))
-      {
-        if(gof[i,j]==ml){alpha.est=log(2)/half_life_values[i]; vy.est=vy_values[j]}
-      }
-    }
-    for(i in 1:length(half_life_values))
-    {
-      for(j in 1:length(vy_values))
-      {
-        if(gof[i,j]<=ml-support) gof[i, j]=ml-support;
-      }
-    }
-
+    ml<-max(gof)
+    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     gof=gof-ml
-
-
-
-    # final GLS estimations for corrected optima using best alpha and vy estimates #
-
-
-
-    #x.ols<-cbind(1, fixed.pred);
-    #beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-
-
-
-
-    con.count<-0;  # Counter for loop break if Beta's dont converge #
-    repeat
-    {
-      if(alpha.est==Inf)
-      {
-        a<-1000000000000000000000
-        V<-diag(rep(vy.est, times=N)) + na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-      }
-      else
-      {
-        obs_var_con <-matrix(0, nrow=N, ncol=N)
-        for (e in seq(from=1, to=ncol(x.ols), by=1)){
-          for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-            tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
-            obs_var_con <-obs_var_con + tmp
-          }
-        }
-        V<-((vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij))+  na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))));
-
-
-      } # END OF If ELSE CONDITION FOR HALF-LIFE 0 OR NOT
-
-      if(model.type=="fReg") X<-cbind(1, fixed.pred) else  X<-weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept);
-
-      # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
-
-      V.inverse<-solve(V)
-
-      beta.i<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%(t(X)%*%V.inverse%*%Y)
-      test<-matrix(nrow=(length(beta.i)))
-      for(f in 1:(length(beta.i)))
-      {
-        if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[f]=0 else test[f]=1
-      }
-      if(sum(test)==0) break
-      con.count=con.count+1
-      if(con.count >= 50)
-      {
-        message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-        break
-      }
-
-      beta1<-beta.i
-    }
-    gls.beta0<-beta1;
-    beta.est <- beta1
-    beta.i.var<-pseudoinverse(t(X)%*%V.inverse%*%X);
-    beta.var.est <- beta.i.var
-
+    
+    best.estimate <- estimates[sup2 == max(sup2)][[1]]
+    
+    alpha.est <- best.estimate$alpha.est
+    vy.est <- best.estimate$vy.est
+    V <- V.est <- best.estimate$V
+    gls.beta0 <- best.estimate$beta1
+    X <- best.estimate$X
+    beta.i.var <- best.estimate$beta.i.var
+    
+    V.inverse <- solve(V)
+    
+    
+    
     # code for calculating SSE, SST and r squared
 
     pred.mean <- X%*%gls.beta0
-    g.mean <- (t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V));
+    g.mean <- (t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V))
     sst <- t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
-    sse <-t (Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
+    sse <- t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
     r.squared <- (sst-sse)/sst
 
     ###### Bias correction ######
-    if(model.type=="fReg") X<-cbind(1, fixed.pred) else  X<-weight.matrix(alpha.est, topology, times, N, regime.specs, fixed.pred, intercept);
+    # if(model.type=="fReg") {
+    #   X <- cbind(1, fixed.pred)
+    # }  else  {
+    #   X <- weight.matrix(alpha.est, topology, times, N, regime.specs, fixed.pred, intercept)
+    # }
+    
 
-    adj<-matrix(data=0, ncol=ncol(X), nrow=N)  #PREDICTOR THETA
+    adj <- matrix(data=0, ncol=ncol(X), nrow=N)  #PREDICTOR THETA
     for(i in 1:length(adj[1,]))
     {
       adj[,i] <- mean(X[,i]);
@@ -681,7 +475,10 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       }
 
       Vu<-diag(c(rep(0,N* n.fixed), c(as.numeric(na.exclude(me.pred)))))
-      error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
+      
+      tmp2 <- Vu + Vd
+      
+      error_condition<-Vu-(Vu%*%pseudoinverse(tmp2)%*%Vu)
 
       xx<-seq(from=1, to=length(Vu[,1]), by=N)
     }
@@ -891,7 +688,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
 
 
     ## INITIAL OLS ESTIMATES TO SEED ITERATED GLS
-
     if(model.type=="mfReg")
     {
       x.ols<-cbind(1, fixed.pred, pred);

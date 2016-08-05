@@ -7,7 +7,11 @@ sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {
   
   hl <- hl_vy[1]; vy <- hl_vy[2]
   x.ols<-cbind(1, pred)
-  beta1 <- make.beta1.rReg(hl, x.ols, Y, ultrametric)
+  if (hl != 0 & ultrametric == FALSE){
+    beta1 <- rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
+  } else{
+    beta1 <- solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+  }
 
   ## Set up design matrix X
   if(hl==0)
@@ -38,7 +42,7 @@ sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
 
     con.count <- con.count + 1
-    if (test.conv(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric)) {
+    if (test.conv.rReg(beta.i = beta.i, beta1 = beta1, convergence = convergence, con.count = con.count, ultrametric = ultrametric)) {
       break
     }
     beta1<-beta.i
@@ -60,75 +64,6 @@ sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {
 
 
 
-
-
-
-
-#' @export
-make.cm2 <- function(a,tia,tja,ta,N,T){
-    T.row <- replicate(N,T)
-    T.col <- t(T.row)
-    num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-    return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col))-(exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*(num.prob))
-}
-
-test.conv <- function(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric){
-  if (ultrametric == TRUE) {
-    fstart <- 0
-    y <- 1
-  }
-  else {
-    fstart <- 3
-    y <- 3
-  }
-  test<-matrix(nrow=(n.pred))
-  for(f in (1+fstart):(n.pred+y))
-  {
-    if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence) test[(f-fstart)]=0 else test[(f-fstart)]=1
-  }
-  if(sum(test)==0) return (TRUE)
-  if(con.count >= 50)
-  {
-    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-    return(TRUE)
-  }
-  return(FALSE)
-}
-
-mk.log.det.V <- function(V, N){
-  det.V<-det(V)
-  if(det.V==0){
-    print(paste("Warning: Determinant of V = 0"))
-    #Minimum value of diagonal scaling factor
-    inv.min.diag.V<-1/min(diag(V))
-    V<-V*inv.min.diag.V
-    #Rescale and log determinant
-    log(det(V))+log(min(diag(V)))*N
-  }
-  else {
-    log(det.V)
-  }
-}
-
-mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
-  if (hl == 0) y <- 1 else y <- ((1-(1-exp(-a*T))/(a*T))*(1-(1-exp(-a*T))/(a*T)))
-  obs_var_con <- matrix(0, nrow=N, ncol=N)
-  for (e in seq(from=1, to=ncol(x.ols), by=1)){
-    for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-      tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
-      obs_var_con <- obs_var_con + tmp
-    }
-  }
-  obs_var_con
-}
-
-make.beta1.rReg <- function(hl, x.ols, Y, ultrametric){
-  if (hl != 0 & ultrametric == FALSE){
-    rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
-  } else{
-    solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  }
-}
 
 
 estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half){
@@ -163,8 +98,7 @@ estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition
 }
 
 
-## Seed function for OLS
-
+## Seed function for rReg. Initial conditions to feed the proper GLS estimation
 seed.rReg <- function(treepar, modelpar){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
@@ -226,7 +160,4 @@ seed.rReg <- function(treepar, modelpar){
   return(seed)
 }
 
-make.vector.grid <- function(modelpar){
-  cbind(sort(rep(modelpar$half_life_values, length(modelpar$vy_values)), decreasing = TRUE), rep(modelpar$vy_values, length(modelpar$half_life_values)))
-}
 
