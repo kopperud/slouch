@@ -6,9 +6,6 @@
 \alias{slouch-package}
 \title{SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses}
 \description{
-More about what it does (maybe more than one line)
-}
-\details{
-Forked by bjørn
+SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses
 }
 

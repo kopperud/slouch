@@ -901,6 +901,18 @@ weight.matrix<-function(alpha, topology, times, N, regime.specs, fixed.cov, inte
   return(W)
 }
 
+
+
+#' Title
+#'
+#' @param response 
+#' @param me.response 
+#' @param predictor 
+#' @param me.predictor 
+#' @param convergence 
+#'
+#' @return
+#' @export
 np.regression<-function(response, me.response, predictor, me.predictor, convergence=NULL){
   if(is.null(convergence)) convergence=0.000001
   Y <- response[!is.na(response)];
