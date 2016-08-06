@@ -422,28 +422,27 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
       
+      ml<-max(gof)
+      gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
       
       
-      best.estimate <- estimates[sup2 == max(sup2)][[1]]
+      #best.estimate <- estimates[sup2 == max(na.exclude(sup2))][[1]]
+      best.estimate <- estimates[which(sup2 == max(na.exclude(sup2)))][[1]]
+      
       V <- V.est <- best.estimate$V
       gls.beta1 <- beta.est <- best.estimate$beta1
       X <- best.estimate$X
       beta.i.var <- beta.var.est <- best.estimate$beta1.var
+      alpha.est <- best.estimate$alpha.est
+      vy.est <- best.estimate$vy.est
+      
+      print(best.estimate)
+      
       
       # END OF GRID SETUP,START OF GRID SEARCH FOR BEST ALPHA AND VY ESTIMATES #
-      
-      x<-rev(half_life_values)
-      y<-vy_values
-      z<-gof;
-      ml<-max(z);
-      for(i in 1:length(half_life_values))
-      {
-        for(j in 1:length(vy_values))
-        {
-          if(gof[i,j]==ml){alpha.est=log(2)/half_life_values[i]; vy.est=vy_values[j]}
-        }
-      }
-      gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+
+
+
       
       
       n.fixed<-length(levels(as.factor(regime.specs)))   ### reset before final regression
@@ -463,7 +462,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       V.inverse<-solve(V)
       
       ## TEMP bugfix bjorn
-      Vu <- seed$Vu
+      if (model.type == "rReg") Vu <- seed$Vu
       ##
       
       correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
@@ -1753,7 +1752,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     #persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
     persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
           ltheta = 120, shade = 0.75, ticktype = "detailed",
-          xlab = "half-life", ylab = "vy", zlab = "log-likelihood") -> res
+          xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
   }
   #plot.coord <- cbind(rep(x, length(y)), rep(rev(y), length(x)))
   

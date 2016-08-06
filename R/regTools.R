@@ -12,7 +12,7 @@ make.cm2 <- function(a,tia,tja,ta,N,T){
   return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col))-(exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*(num.prob))
 }
 
-test.conv.rReg <- function(beta.i, beta1, convergence, con.count, ultrametric){
+test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultrametric){
   if (ultrametric == TRUE) {
     fstart <- 0
     y <- 1
@@ -22,8 +22,8 @@ test.conv.rReg <- function(beta.i, beta1, convergence, con.count, ultrametric){
     y <- 3
   }
   #print(beta.i);
-  test<-matrix(nrow=(length(beta.i) - y))
-  for(f in 1:(length(beta.i)))
+  test<-matrix(nrow=(n.pred +1))
+  for(f in (1 + fstart):(n.pred + y))
   {
     if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence){
       test[(f - fstart)]=0

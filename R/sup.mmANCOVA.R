@@ -48,7 +48,7 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
 
     con.count <- con.count + 1
-    if (test.conv(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric)) {
+    if (test.conv.rReg(beta.i = beta.i, beta1 = beta1, n.pred = n.pred, convergence = convergence, con.count = con.count, ultrametric = ultrametric)) {
       break
     }
     beta1<-beta.i
@@ -66,5 +66,7 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
        V = V,
        beta1 = beta1,
        X = X,
-       beta1.var = beta.i.var)
+       beta1.var = beta.i.var,
+       alpha.est = a,
+       vy.est = vy)
 }
