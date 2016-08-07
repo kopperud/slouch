@@ -487,7 +487,18 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       message(" ");
       
       grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      estimates <- apply(grid, 1,sup.rReg, modelpar, treepar, seed, make.cm2=make.cm2)
+      
+      ## Old reg func
+      #estimates <- apply(grid, 1,sup.rReg, modelpar, treepar, seed)
+      
+      ## Try the closure instead
+      sup.rReg <- make.sup.rReg(modelpar, treepar, seed)
+      
+      ## Print the closure for given treepar, modelpar, seed to file. Requires library(pryr)
+      #dput(unenclose(sup.rReg), "~/slouch/files/sup.rReg.unenclosed.txt")
+      
+      estimates <- apply(grid, 1, sup.rReg)
+      
       
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))

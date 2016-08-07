@@ -1,67 +1,73 @@
 ### Function to return support values for each hl and vy for rReg
 # sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
-sup.rReg <- function(hl_vy, modelpar, treepar, seed,make.cm2) {  
+make.sup.rReg <- function(modelpar,treepar,seed){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
   list2env(seed, envir = environment())
   
-  hl <- hl_vy[1]; vy <- hl_vy[2]
-  x.ols<-cbind(1, pred)
-  if (hl != 0 & ultrametric == FALSE){
-    beta1 <- rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
-  } else{
-    beta1 <- solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  }
-
-  ## Set up design matrix X
-  if(hl==0)
-  {
-    a <- Inf
-    X <- cbind(1,pred)
-  }
-  else
-  {
-    a <- log(2)/hl
-    cm2 <- make.cm2(a,tia,tja,ta,N,T)
-    cm1.half <- (1-exp(-2*a*ta))*exp(-a*tij)
-    if (ultrametric == TRUE)
-      X <- cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
-    else
-      X <- cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
-  }
-
-  ### CODE FOR ESTIMATING BETA USING ITERATED GLS ###
-  con.count<-0;  # Counter for loop break if Beta's dont converge #
-  repeat
-  {
-    V <- estimate.V.rReg(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half)
-
-    # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
-    V.inverse<-solve(V)
-    beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
-    beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-
-    con.count <- con.count + 1
-    if (test.conv.rReg(beta.i = beta.i, beta1 = beta1, convergence = convergence, con.count = con.count, ultrametric = ultrametric)) {
-      break
+  function(hl_vy) {  
+    
+    
+    hl <- hl_vy[1]; vy <- hl_vy[2]
+    x.ols<-cbind(1, pred)
+    
+    ## Find starting beta with OLS estimation to seed the iterative GLS
+    if (hl != 0 & ultrametric == FALSE){
+      beta1 <- rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
+    } else{
+      beta1 <- solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
     }
-    beta1<-beta.i
+    
+    ## Set up design matrix X
+    if(hl == 0)
+    {
+      a <- Inf
+      X <- cbind(1,pred)
+    }
+    else
+    {
+      a <- log(2)/hl
+      cm2 <- make.cm2(a,tia,tja,ta,N,T)
+      cm1.half <- (1-exp(-2*a*ta))*exp(-a*tij)
+      if (ultrametric == TRUE)
+        X <- cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
+      else
+        X <- cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
+    }
+    
+    ### CODE FOR ESTIMATING BETA USING ITERATED GLS ###
+    con.count<-0;  # Counter for loop break if Beta's dont converge #
+    repeat
+    {
+      V <- estimate.V.rReg(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half)
+      
+      # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
+      V.inverse<-solve(V)
+      beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+      beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      
+      con.count <- con.count + 1
+      if (test.conv.rReg(beta.i = beta.i, beta1 = beta1, convergence = convergence, n.pred = n.pred, con.count = con.count, ultrametric = ultrametric)) {
+        break
+      }
+      beta1<-beta.i
+    }
+    
+    resid <- Y - (X%*%beta1)
+    log.det.V <- mk.log.det.V(V = V, N = N)
+    
+    sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
+    print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4))) # Will increasing the number of digits avoid problems when plotting grid?
+    # return(sup1)
+    
+    list(support = sup1,
+         V = V,
+         beta1 = beta1,
+         X = X,
+         beta1.var = beta.i.var,
+         alpha.est = a,
+         vy.est = vy)
   }
-
-  eY <- X%*%beta1
-  resid<-Y-eY
-  log.det.V <- mk.log.det.V(V = V, N = N)
-
-  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
-  print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta1)), 4))) # Will increasing the number of digits avoid problems when plotting grid?
-  # return(sup1)
-  list(support = sup1,
-       V = V,
-       beta1 = beta1,
-       X = X,
-       beta1.var = beta.i.var,
-       alpha.est = a,
-       vy.est = vy)
 }
 
 
@@ -80,7 +86,7 @@ estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition
     s1 <- as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
   }
 
-  if(hl==0)
+  if(hl == 0)
   {
     diag(rep(vy, times=N)) + na.exclude(me.response) + obs_var_con - diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
   }
