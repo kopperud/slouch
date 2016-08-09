@@ -1,4 +1,4 @@
-sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed, x.ols, regime.specs, intercept){
+sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed, x.ols, regime.specs, intercept, term, weight.m.regimes){
   hl <- hl_vy[1]; vy <- hl_vy[2]
 
   if(hl==0)
@@ -11,10 +11,18 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
     a <- log(2)/hl
     pred.coef <- (1-(1-exp(-a*T))/(a*T))
   }
-  X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov=NULL, intercept), pred.coef*pred)
+  X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov=NULL, intercept, term = term, weight.m.regimes = weight.m.regimes), pred.coef*pred)
 
-  if(length(X[1,]) > length(beta1)) {beta1<-as.matrix(c(0, beta1)); n.fixed<-n.fixed+1 ;}
-  if(length(X[1,]) < length(beta1)) {beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);n.fixed<-length(levels(as.factor(regime.specs))); print("The Ya parameter is dropped as its coefficient is too small");}
+  #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov=NULL, intercept, term = term, weight.m.regimes = weight.m.regimes)))
+  
+  if(length(X[1,]) > length(beta1)) {
+    beta1<-as.matrix(c(0, beta1)); n.fixed<-n.fixed+1
+    }
+  if(length(X[1,]) < length(beta1)) {
+    beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+    n.fixed<-length(levels(as.factor(regime.specs)))
+    print("The Ya parameter is dropped as its coefficient is too small")
+    }
 
   # CODE FOR ESTIMATING BETA USING ITERATED GLS
   con.count<-0;  # Counter for loop break if Beta's dont converge #
@@ -30,8 +38,10 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
       # obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition)
       s1 <- as.numeric(s.X%*%(beta1[(n.fixed+1):length(beta1),]*beta1[(n.fixed+1):length(beta1),]));
       cm1 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
+      #print(microbenchmark((s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)))
       cm2 <- make.cm2(a,tia,tja,ta,N,T)
-      mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(n.fixed+1):length(beta1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)));
+      mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(n.fixed+1):length(beta1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+      
       V<-cm1 + (s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov
     } # END OF If ELSE CONDITION FOR HALF-LIFE 0 OR NOT
     # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
@@ -44,6 +54,7 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
         if(sum(X[,z]) == 0) {X<-X[,-z]; n.fixed-z}  #removes internal regimes that have only zero entries
       }
     }
+    
     beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
 

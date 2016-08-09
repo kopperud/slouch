@@ -348,13 +348,13 @@ n.ambig<-function(pars.states)
 
 `epochs` <-
   function (topology, times, term) {
-    N <- length(term);
-    e <- vector(length=N,mode="list");
+    N <- length(term)
+    e <- vector(length=N,mode="list")
     for (k in 1:N) {
-      p <- pedigree(topology,term[k]);
-      e[[k]] <- times[p];
+      p <- pedigree(topology,term[k])
+      e[[k]] <- times[p]
     }
-    return(e);
+    return(e)
   }
 
 
@@ -642,6 +642,7 @@ pseudoinverse <-
     for (i in 1:N) {
       for (k in 1:R) {
         p <- pedigree(topology, term[i]);
+
         n <- length(p);
         beta[[i + N*(k-1)]] <- as.integer(regime.specs[p[1:(n-1)]] == reg[k]);
       }
@@ -850,24 +851,46 @@ rmNullObs <- function(x)
 
 
 ####### WEIGHT MATRIX FOR FACTORS, BORROWED AND MODIFIED FROM OUCH #########
-weight.matrix<-function(alpha, topology, times, N, regime.specs, fixed.cov, intercept)
+weight.matrix<-function(alpha, 
+                        topology, 
+                        times, 
+                        N, 
+                        regime.specs, 
+                        fixed.cov, 
+                        intercept, 
+                        term = terminal.twigs(topology), 
+                        weight.m.regimes = regimes(topology, times, regime.specs, term))
 {
   if (alpha == Inf) alpha<-10000000000000000000
   N <- N
   reg <- set.of.regimes(topology, regime.specs)
   R <- length(reg)
-  T <- times[terminal.twigs(topology)]
-  ep <- epochs(topology, times, terminal.twigs(topology))
-  beta <- regimes(topology, times, regime.specs, terminal.twigs(topology))
-  W <- matrix(data = 0, nrow = N, ncol = R + 1, dimnames = list(c(),
-                                                                c("Ya", as.character(set.of.regimes(topology, regime.specs)))))
+  #term <- terminal.twigs(topology)
+  T <- times[term]
+  ep <- epochs(topology, times, term)
+  #weight.m.regimes <- regimes(topology, times, regime.specs, term)
+  W <- matrix(data = 0, nrow = N, ncol = R + 1, dimnames = list(c(), c("Ya", as.character(reg))))
   W[, 1] <- exp(-alpha * T)
   for (i in 1:N) {
     delta <- diff(exp(alpha * (ep[[i]] - T[i])))
     for (k in 1:R) {
-      W[i, k + 1] <- -sum(delta * beta[[i + N * (k - 1)]])
+      W[i, k + 1] <- -sum(delta * weight.m.regimes[[i + N * (k - 1)]])
     }
   }
+  
+  # Bottleneck detection
+  #
+  # print(microbenchmark("1" = set.of.regimes(topology, regime.specs),
+  #                      "2" = epochs(topology, times, term),
+  #                      "3" = W[, 1] <- exp(-alpha * T),
+  #                      "4" = for (i in 1:N) {
+  #                        delta <- diff(exp(alpha * (ep[[i]] - T[i])))
+  #                        for (k in 1:R) {
+  #                          W[i, k + 1] <- -sum(delta * weight.m.regimes[[i + N * (k - 1)]])
+  #                        }
+  #                      }))
+
+  
   if (is.null(intercept))
     W <- W
   else {
@@ -882,7 +905,6 @@ weight.matrix<-function(alpha, topology, times, N, regime.specs, fixed.cov, inte
         W2 <- cbind(int, W[, nonroot.reg])
         W <- W2
         if(max(abs(W[,1]-W[,2]))<= 0.01) W<-W[,(2:length(W[1,]))] #sjekk denne for treghet
-
         #W <- W2[, 2:length(W2[1,])]
       }
     }

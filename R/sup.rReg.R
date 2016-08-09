@@ -1,5 +1,5 @@
 ### Function to return support values for each hl and vy for rReg
-# sup.rReg <- function(hl_vy, N, me.response, ta, tij, T, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
+# sup.rReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, model.type, ultrametric, Y, fixed.cov, pred, xx, beta1, error_condition, s.X, n.pred, num.prob, tia, tja, cm2, me.pred, me.cov, convergence, n.fixed,make.cm2) {
 make.sup.rReg <- function(modelpar,treepar,seed){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
@@ -27,19 +27,19 @@ make.sup.rReg <- function(modelpar,treepar,seed){
     else
     {
       a <- log(2)/hl
-      cm2 <- make.cm2(a,tia,tja,ta,N,T)
+      cm2 <- make.cm2(a,tia,tja,ta,N,T.term)
       cm1.half <- (1-exp(-2*a*ta))*exp(-a*tij)
       if (ultrametric == TRUE)
-        X <- cbind(1, (1-(1-exp(-a*T))/(a*T))*pred)
+        X <- cbind(1, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
       else
-        X <- cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), (1-(1-exp(-a*T))/(a*T))*pred)
+        X <- cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
     }
     
     ### CODE FOR ESTIMATING BETA USING ITERATED GLS ###
     con.count<-0;  # Counter for loop break if Beta's dont converge #
     repeat
     {
-      V <- estimate.V.rReg(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half)
+      V <- estimate.V.rReg(hl, vy, a, ta, tij, T.term, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half)
       
       # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
       V.inverse<-solve(V)
@@ -74,15 +74,15 @@ make.sup.rReg <- function(modelpar,treepar,seed){
 
 
 
-estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half){
-  obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition)
+estimate.V.rReg <- function(hl, vy, a, ta, tij, T.term, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half){
+  obs_var_con <- mk.obs_var_con(a, hl, beta1, T.term, N, xx, x.ols, error_condition)
 
   if (ultrametric == TRUE){
-    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
     s1 <- as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
   }
   else{
-    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred)))
+    mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[4:(n.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
     s1 <- as.numeric(s.X%*%(beta1[4:(n.pred+3),]*beta1[4:(n.pred+3),]))
   }
 
@@ -95,9 +95,9 @@ estimate.V.rReg <- function(hl, vy, a, ta, tij, T, N, xx, x.ols, error_condition
     cm1<-(s1/(2*a)+vy)*cm1.half
     # cm1 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
 
-    # print(microbenchmark(mcov = diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred))),
+    # print(microbenchmark(mcov = diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred))),
     #                      s1 = as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),])),
-    #                      obsvc = mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition),
+    #                      obsvc = mk.obs_var_con(a, hl, beta1, T.term, N, xx, x.ols, error_condition),
     #                      cm1 = (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij),
     #                      return1 = cm1 + (s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov))
 

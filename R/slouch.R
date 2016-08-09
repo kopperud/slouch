@@ -4,6 +4,7 @@
 "_PACKAGE"
 
 
+
 #' Title
 #'
 #' @param topology
@@ -134,6 +135,8 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   Y <- response[!is.na(response)]
   N <- length(Y)
   T <- times[terminal.twigs(topology)]
+  T.term <- times[terminal.twigs(topology)]
+  
   tia<-tsia(ancestor, time)
   tja<-tsja(ancestor, time)
   term<-terminal.twigs(topology)
@@ -150,6 +153,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T = T,
+                  T.term = T.term,
                   tia = tia,
                   tja = tja,
                   term = term,
@@ -378,14 +382,19 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     
     if(model.type=="mmANCOVA")
     {
+      
+      
       regime.specs<-fixed.fact;
       n.fixed<-length(levels(as.factor(regime.specs)))
       regime.specs<-as.factor(regime.specs)
+      
+      ## Precompute "regimes" for the weight.matrix() in the regression
+      weight.m.regimes <- regimes(topology, times, regime.specs, term)
+      
       x.ols<-cbind(weight.matrix(1000000000000000000000, topology, times, N, regime.specs, fixed.cov=NULL, intercept), pred);
       
       for (i in length(x.ols[1,]):1){
         if(sum(x.ols[,i]) == 0) {x.ols<-x.ols[,-i]; n.fixed<-n.fixed-i}  #removes internal regimes that have only zero entries
-        
       }
       beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
       
@@ -418,7 +427,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       message(" ");
       
       vector.grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      estimates <- apply(vector.grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept)
+      estimates <- apply(vector.grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept, term = term, weight.m.regimes = weight.m.regimes)
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
       
@@ -497,6 +506,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       ## Print the closure for given treepar, modelpar, seed to file. Requires library(pryr)
       #dput(unenclose(sup.rReg), "~/slouch/files/sup.rReg.unenclosed.txt")
       
+      ## Apply the regression function to all values of hl & vy in grid
       estimates <- apply(grid, 1, sup.rReg)
       
       
@@ -506,6 +516,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
       
       
+      ## Find the regression for which the support value is maximized
       best.estimate <- estimates[sup2 == max(sup2)][[1]]
       V.est <- best.estimate$V
       beta.est <- best.estimate$beta1

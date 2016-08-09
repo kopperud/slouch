@@ -3,13 +3,16 @@
 ####
 ####
 
+# Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
+# account for non-ultrametric trees. Confirm?
 
-#' @export
-make.cm2 <- function(a,tia,tja,ta,N,T){
-  T.row <- replicate(N,T)
+make.cm2 <- function(a,tia,tja,ta,N,T.term){
+  T.row <- replicate(N,T.term)
   T.col <- t(T.row)
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col))-(exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*(num.prob))
+  common_term <- 1-exp(-a*T.row)
+  
+  return(((common_term)/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(common_term)/(a*T.col) + exp(-a*tja)*(common_term)/(a*T.row))*num.prob)
 }
 
 test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultrametric){
@@ -21,7 +24,6 @@ test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultram
     fstart <- 3
     y <- 3
   }
-  #print(beta.i);
   test<-matrix(nrow=(n.pred +1))
   for(f in (1 + fstart):(n.pred + y))
   {
