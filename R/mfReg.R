@@ -29,6 +29,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     if(hl==0)
     {
       #s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]*beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]))
+      
       X<-cbind(1, fixed.pred, pred)
       V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con - diag(as.numeric(me.cov%*%(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))) -diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
     }
@@ -37,6 +38,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
       if(ultrametric==TRUE){
         s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
         X<-cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+        
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
         
         ## Help me name this?
@@ -52,6 +54,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
       }
       cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
       V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov - last_term
+      
     } # END OF ELSE CONDITION FOR HALF-LIFE = 0
     
     # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
@@ -59,8 +62,11 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
     
+
+    
     ## Check for convergence
     if (test.conv(beta.i, beta1, convergence, con.count)) break
+    con.count <- con.count + 1
     
     beta1<-beta.i
   }                            # END OF ITERATED GLS REPEAT LOOP #

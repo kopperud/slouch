@@ -535,7 +535,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       beta.i <- gls.beta1 <- beta.est
       V <- V.est
       ##
-      print(best.estimate)
+      #print(best.estimate)
       ##
       V.inverse<-solve(V)
       
@@ -1079,7 +1079,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
               tmp <- list(error_condition[xx[i]:(i*N),xx[j]:(j*N)]* gls.beta1[i]* gls.beta1[j])
               mybiglist[xx[i]+j] <- tmp
             }
-            
           }
           
           
@@ -1162,7 +1161,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       
       ml<-max(na.exclude(gof))
       gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
-      #gof <- ifelse(is.na(gof), 0, gof)
       
       
       which2 <- which(sup2 == max(na.exclude(sup2)))
@@ -1175,6 +1173,21 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       #beta.var.est <- best.estimate$beta1.var
       alpha.est <- best.estimate$alpha.est
       vy.est <- best.estimate$vy.est
+      
+      
+      ##
+      V.inverse <- solve(V.est)
+      
+      # Final estimation of evolutionary regression
+      X1<-cbind(1, fixed.pred, pred)
+      ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
+      ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
+      
+      
+      
+      
+      
+      
       
       
       # FINAL OPTIMAL REGRESSION USING BEST ALPHA AND VY ESTIMATES #
@@ -1399,9 +1412,13 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
         
         # FINAL EVOLUTIONARY REGRESSION USING BEST ALPHA AND VY ESTIMATES AND KNOWN VARIANCE MATRIX #
         
+        if(ultrametric==TRUE){
+          s1<-as.numeric(s.X%*%(gls.beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]*gls.beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]))
+        } 
+        else{
+          s1<-as.numeric(s.X%*%(gls.beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred),]*gls.beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred),]))
+        } 
         
-        if(ultrametric==TRUE)  s1<-as.numeric(s.X%*%(gls.beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]*gls.beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]))
-        else s1<-as.numeric(s.X%*%(gls.beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred),]*gls.beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred),]));
         for(p in 1:N)
         {
           for(q in 1:N)
@@ -1409,6 +1426,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
             if(ta[q,p]==0)num.prob[q,p]=1 else num.prob[q,p]=(1-exp(-alpha.est*ta[q,p]))/(alpha.est*ta[q,p])
           }
         }
+        
         cm1<-(s1/(2*alpha.est)+vy.est)*(1-exp(-2*alpha.est*ta))*exp(-alpha.est*tij)
         for(p in 1:N)
         {
@@ -1450,7 +1468,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
           Vu<-Vu[(length(Vu[1,])-(N*2)+1):length(Vu[1,]),(length(Vu[1,])-(N*2)+1):length(Vu[1,])]
           Vd<-Vd[(length(Vd[1,])-(N*2)+1):length(Vd[1,]),(length(Vd[1,])-(N*2)+1):length(Vd[1,])]
         }
-        
         
         correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X1)-c(adj)),  ncol=ncol(X1), nrow=nrow(X1), byrow=F)
         bias_corr<-pseudoinverse(t(X1)%*%V.inverse%*%X1)%*%t(X1)%*%V.inverse%*%correction
