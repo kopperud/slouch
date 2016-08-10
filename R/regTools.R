@@ -16,24 +16,7 @@ make.cm2 <- function(a,tia,tja,ta,N,T.term){
 }
 
 test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultrametric){
-  if (ultrametric == TRUE) {
-    fstart <- 0
-    y <- 1
-  }
-  else {
-    fstart <- 3
-    y <- 3
-  }
-  test<-matrix(nrow=(n.pred + y))
-  for(f in (1 + fstart):(n.pred + y))
-  {
-    if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence){
-      test[(f - fstart)]=0
-    }else {
-      test[(f - fstart)]=1
-    }
-  }
-  print(beta1); print(beta.i); print(n.pred)
+  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
   if(sum(test)==0) return (TRUE)
   if(con.count >= 50)
   {
