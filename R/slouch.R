@@ -495,10 +495,10 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       
       message(" ");
       
-      grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+      grid_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
       
       ## Old reg func
-      #estimates <- apply(grid, 1,sup.rReg, modelpar, treepar, seed)
+      #estimates <- apply(grid_hl_vy, 1,sup.rReg, modelpar, treepar, seed)
       
       ## Try the closure instead
       sup.rReg <- make.sup.rReg(modelpar, treepar, seed)
@@ -506,18 +506,21 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       ## Print the closure for given treepar, modelpar, seed to file. Requires library(pryr)
       #dput(unenclose(sup.rReg), "~/slouch/files/sup.rReg.unenclosed.txt")
       
-      ## Apply the regression function to all values of hl & vy in grid
-      estimates <- apply(grid, 1, sup.rReg)
+      ## Apply the regression function to all values of hl & vy in grid_hl_vy
+      estimates <- apply(grid_hl_vy, 1, sup.rReg)
       
       
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-      ml<-max(gof)
+      ml<-max(na.exclude(gof))
       gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+      gof <- ifelse(is.na(gof), 0, gof)
       
+      
+      which2 <- which(sup2 == max(na.exclude(sup2)))
       
       ## Find the regression for which the support value is maximized
-      best.estimate <- estimates[sup2 == max(sup2)][[1]]
+      best.estimate <- estimates[[which.max(sup2)]]
       V.est <- best.estimate$V
       beta.est <- best.estimate$beta1
       X <- best.estimate$X
@@ -525,11 +528,15 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       alpha.est <- best.estimate$alpha.est
       vy.est <- best.estimate$vy.est
       
-      
+      #return(estimates)
+      #return(sup2)
       
       beta.i.var <- beta.var.est
       beta.i <- gls.beta1 <- beta.est
       V <- V.est
+      ##
+      print(best.estimate)
+      ##
       V.inverse<-solve(V)
       
       X1<-cbind(1, pred)
@@ -599,8 +606,8 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   {
     # SET UP INITIAL MATRICES FOR MULTIPLE REGRESSION AND CALCULATE THETA AND SIGMA FOR RANDOM PREDICTOR / S
     
-    pred<-data.frame(random.cov);
-    n.pred<-length(pred[1,]);
+    pred<-data.frame(random.cov)
+    n.pred<-length(pred[1,])
     pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred);
     if(is.null(me.random.cov)) me.pred<-matrix(data=0, nrow=N, ncol=n.pred) else me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred);
     if(is.null(mecov.random.cov)) me.cov<-matrix(data=0, nrow=N, ncol=n.pred) else me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=n.pred);
@@ -632,7 +639,7 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     if(model.type=="mfReg")
     {
       x.ols<-cbind(1, fixed.pred, pred);
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
+      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
       if(ultrametric == FALSE) beta1<-rbind(0, 0, beta1); # 2 additional parameter seeds for Ya and Xa
       
       
@@ -696,12 +703,11 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     
     if(model.type=="mmfANCOVA")
     {
-      regime.specs<-fixed.fact;
+      regime.specs<-fixed.fact
       n.fixed<-length(levels(as.factor(regime.specs)))
       regime.specs<-as.factor(regime.specs)
-      x.ols<-cbind(weight.matrix(1000000000000000000000, topology, times, N, regime.specs, fixed.pred, intercept), pred);
-      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y);
-      
+      x.ols<-cbind(weight.matrix(10000000000, topology, times, N, regime.specs, fixed.pred, intercept), pred)
+      beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
       
       
       #Defining the dimensionality of Vd ## Might need to change the dimensionality of this matrix for different versions of the model and how that impacts the number of columns in x.ols
@@ -751,14 +757,9 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
           tmp <- list(error_condition[xx[i]:(i*N),xx[j]:(j*N)]*beta1[i]*beta1[j])
           mybiglist[xx[i]+j] <- tmp
         }
-        
       }
-      
-      
       mybiglist <-rmNullObs(mybiglist)
       obs_var_con<-Reduce('+', mybiglist)
-      
-      
     }
     
     
@@ -767,7 +768,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
     
     if(model.type=="mmfANCOVA")
     {
-      
       cat(c("   ", "t1/2  ", "Vy    ", "Supp  ", GS_head, if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), sep="   ");
       
       
@@ -1758,23 +1758,27 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
   
   
   if(length(half_life_values) > 1 && length(vy_values) > 1){
-    z1<-gof
-    for(i in 1:length(vy_values)){
-      h.lives[,i]=rev(z1[,i])
+    if(length(gof[gof>0])){
+      z1<-gof
+      for(i in 1:length(vy_values)){
+        h.lives[,i]=rev(z1[,i])
+      }
+      z<-h.lives
+      x<-rev(half_life_values)
+      y<-vy_values
+      op <- par(bg = "white")
+      
+      # plot.slouch.x <<- x
+      # plot.slouch.y <<- y
+      # plot.slouch.loglik <<- z
+      
+      #persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
+      persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
+            ltheta = 120, shade = 0.75, ticktype = "detailed",
+            xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
+    }else{
+      print(sort(gof, decreasing = TRUE))
     }
-    z<-h.lives
-    x<-rev(half_life_values)
-    y<-vy_values
-    op <- par(bg = "white")
-    
-    # plot.slouch.x <<- x
-    # plot.slouch.y <<- y
-    # plot.slouch.loglik <<- z
-    
-    #persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
-    persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
-          ltheta = 120, shade = 0.75, ticktype = "detailed",
-          xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
   }
   #plot.coord <- cbind(rep(x, length(y)), rep(rev(y), length(x)))
   

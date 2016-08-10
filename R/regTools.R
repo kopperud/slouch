@@ -24,7 +24,7 @@ test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultram
     fstart <- 3
     y <- 3
   }
-  test<-matrix(nrow=(n.pred +1))
+  test<-matrix(nrow=(n.pred + y))
   for(f in (1 + fstart):(n.pred + y))
   {
     if(abs(as.numeric(beta.i[f]-beta1[f]))<=convergence){
@@ -33,6 +33,7 @@ test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultram
       test[(f - fstart)]=1
     }
   }
+  print(beta1); print(beta.i); print(n.pred)
   if(sum(test)==0) return (TRUE)
   if(con.count >= 50)
   {

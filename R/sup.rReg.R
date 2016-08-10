@@ -51,6 +51,8 @@ make.sup.rReg <- function(modelpar,treepar,seed){
         break
       }
       beta1<-beta.i
+      # print(beta1)
+      #Sys.sleep(0.3)
     }
     
     resid <- Y - (X%*%beta1)
