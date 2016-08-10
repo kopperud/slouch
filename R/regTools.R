@@ -87,3 +87,14 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
 #   }
 # }
 
+## Most general test for convergence
+test.conv <- function(beta.i, beta1, convergence, con.count){
+  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+  if(sum(test)==0) return (TRUE)
+  if(con.count >= 50)
+  {
+    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+    return(TRUE)
+  }
+  return(FALSE)
+}

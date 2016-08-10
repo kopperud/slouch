@@ -95,13 +95,6 @@ estimate.V.rReg <- function(hl, vy, a, ta, tij, T.term, N, xx, x.ols, error_cond
   else
   {
     cm1<-(s1/(2*a)+vy)*cm1.half
-    # cm1 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
-
-    # print(microbenchmark(mcov = diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred))),
-    #                      s1 = as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),])),
-    #                      obsvc = mk.obs_var_con(a, hl, beta1, T.term, N, xx, x.ols, error_condition),
-    #                      cm1 = (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij),
-    #                      return1 = cm1 + (s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov))
 
     return(cm1 + (s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov)
   } # END OF ELSE CONDITION FOR HALF-LIFE = 0
