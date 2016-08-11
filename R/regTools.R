@@ -88,8 +88,13 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
 # }
 
 ## Most general test for convergence
-test.conv <- function(beta.i, beta1, convergence, con.count){
-  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+test.conv <- function(beta.i, beta1, convergence, con.count, ultrametric){
+  if(ultrametric){
+    y <- 0
+  }else{
+    y <- 1:2 ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric.
+  }
+  test <- ifelse(abs(as.numeric(beta.i - beta1))[-y] <= convergence, 0, 1)
   if(sum(test)==0) return (TRUE)
   if(con.count >= 50)
   {

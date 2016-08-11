@@ -39,7 +39,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
         X<-cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
         
-        ## Help me name this?
+        ## fixed.cov measurement error covariances, to be subtracted in V
         last_term <- diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
       }
       else{
@@ -47,11 +47,14 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
         X<-cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
         
-        ## help me name this?
+        ## fixed.cov measurement error as covariances, to be subtracted in V
         last_term <- diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])))
       }
       cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
-      V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov - last_term
+      
+      
+      
+      V<-cm1+(s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov - last_term
     } # END OF ELSE CONDITION FOR HALF-LIFE = 0
     
     # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
@@ -60,7 +63,8 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
     
     ## Check for convergence
-    if (test.conv(beta.i, beta1, convergence, con.count)) break
+    if (test.conv(beta.i, beta1, convergence, con.count, ultrametric)) break
+    con.cont <- con.count +1 
     
     beta1<-beta.i
   }                            # END OF ITERATED GLS REPEAT LOOP #
@@ -85,10 +89,9 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
        V = V,
        beta1 = beta1,
        X = X,
-       #beta1.var = beta.i.var,
+       beta1.var = beta.i.var,
        alpha.est = a,
        vy.est = vy)
 }
-
 
    

@@ -150,6 +150,8 @@ seed.rReg <- function(treepar, modelpar){
     }
   }
   
+
+  
   seed <- list(x.ols = x.ols,
                beta1 = beta1,
                xx = xx,

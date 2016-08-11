@@ -1,3 +1,4 @@
+#' @export
 model.fit<-function(topology, times, half_life_values, vy_values, response, me.response=NULL, fixed.fact=NULL,fixed.cov=NULL, me.fixed.cov=NULL, mecov.fixed.cov=NULL, random.cov=NULL, me.random.cov=NULL, mecov.random.cov=NULL,  intercept="root", ultrametric=TRUE, support=NULL, convergence=NULL, plot.angle=30)
 {
   
@@ -2651,6 +2652,7 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
           {
             s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
             X<-cbind(1, fixed.pred,pred)
+            
             #V<-diag(rep(vy, times=N))+me.response+diag(as.numeric(me.pred%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred++1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),])))-diag(as.numeric(me.cov%*%(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))) + diag(as.numeric(me.fixed.pred%*%(beta1[2:(length(beta1)-n.pred),]*beta1[2:(length(beta1)-n.pred),])))-diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),]))) 
             
             V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con-diag(as.numeric(me.cov%*%(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))) -diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),]))) 
@@ -2684,17 +2686,23 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
             if(ultrametric==TRUE)
             {
               X<-cbind(1, fixed.pred, (1-(1-exp(-a*T))/(a*T))*pred)
+              
+              
               mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred))) 
               mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred))) 
+              
+              
               V<-cm1+(s1*ta*cm2)+me.response+mv-mcov+ diag(as.numeric(me.fixed.pred%*%(beta1[2:(length(beta1)-n.pred),]*beta1[2:(length(beta1)-n.pred),])))-diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])));
-            }
+            
+              
+              }
             else
             {
               nu.X<-cbind(1-exp(-a*T), 1-exp(-a*T)-(1-(1-exp(-a*T))/(a*T)), exp(-a*T), fixed.pred, (1-(1-exp(-a*T))/(a*T))*pred)
-              mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))  
+              #mv<-diag(rowSums(matrix(data=as.numeric(me.pred)*t(kronecker(beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred), ], (1-(1-exp(-a*T))/(a*T)))^2), ncol=n.pred)))  
               mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+3+n.fixed.pred),], (1-(1-exp(-a*T))/(a*T)))), ncol=n.pred))) 
               
-              V<-cm1+(s1*ta*cm2)+me.response+mv-mcov + diag(as.numeric(me.fixed.pred%*%(beta1[4:(length(beta1)-n.pred),]*beta1[4:(length(beta1)-n.pred),])))-diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])));  
+              #V<-cm1+(s1*ta*cm2)+me.response+mv-mcov + diag(as.numeric(me.fixed.pred%*%(beta1[4:(length(beta1)-n.pred),]*beta1[4:(length(beta1)-n.pred),])))-diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])));  
               
               V<-cm1+(s1*ta*cm2)+na.exclude(me.response)+ obs_var_con-mcov -diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])));       
               
