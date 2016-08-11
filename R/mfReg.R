@@ -29,6 +29,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     if(hl==0)
     {
       #s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]*beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]))
+      
       X<-cbind(1, fixed.pred, pred)
       V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con - diag(as.numeric(me.cov%*%(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))) -diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
     }
@@ -62,10 +63,13 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
     beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
     
+
+    con.count <- con.count +1 
+    #print(con.count)
     ## Check for convergence
     if (test.conv(beta.i, beta1, convergence, con.count, ultrametric)) break
-    con.cont <- con.count +1 
-    
+
+
     beta1<-beta.i
   }                            # END OF ITERATED GLS REPEAT LOOP #
   
