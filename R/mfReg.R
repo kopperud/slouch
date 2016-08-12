@@ -41,6 +41,7 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
         s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
         X<-cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         
+        ## random.cov measuremenr error cov
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
         
         ## fixed.cov measurement error covariances, to be subtracted in V
@@ -50,9 +51,10 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
         s1<-as.numeric(s.X%*%(beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]))
         X<-cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         
+        ## random.cov measuremenr error cov
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
         
-        ## fixed.cov measurement error as covariances, to be subtracted in V
+        ## fixed.cov measurement error covariances, to be subtracted in V
         mfcov <- diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])))
       }
       cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)

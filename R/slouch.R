@@ -1172,20 +1172,21 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       alpha.est <- best.estimate$alpha.est
       vy.est <- best.estimate$vy.est
       
-      ## Finalize beta, optimal regression
+      ## Finalize beta, optimal regression, mostly for dimnames?
       if(ultrametric == TRUE){
         gls.beta1<- beta1.est
       }else{
         gls.beta1<- beta.i <- beta1.est
+        
+        ## Following does not get printed, or used anywhere else. Bloat?
         ind.par<-matrix(data=0, nrow=N, ncol=4, dimnames=list(NULL, c("Bo", "Bi.Xia", "Yo", "Sum")))
         ind.par[,1]<-beta.i[1]*X[,1]
-        ind.par[,2]<-(beta.i[2]*X[,2])
+        ind.par[,2]<-beta.i[2]*X[,2]
         ind.par[,3]<-beta.i[3]*X[,3]
         ind.par[,4]<-ind.par[,1]+ind.par[,2]+ind.par[,3]
         mean.Bo=mean(ind.par[,4])
       }
       
-
       ## Calculate ev.beta
       V.inverse <- solve(V.est)
       X1<-cbind(1, fixed.pred, pred)
@@ -1198,17 +1199,6 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
       glsyx.beta1<-ev.beta.i
       print(ev.beta.i)
-      
-      
-      #print(beta1); print(glsyx.beta1)
-      
-      
-      
-      
-      # # FINAL OPTIMAL REGRESSION USING BEST ALPHA AND VY ESTIMATES #
-      # 
-      # ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
-      # ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
       
       ## Calculate model fit stats
       pred.mean<-X%*%gls.beta1
@@ -1227,14 +1217,17 @@ model.fit.dev<-function(topology, times, half_life_values, vy_values, response, 
       {
         adj[,(1+n.fixed.pred +i)] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[1])
       }
-      if(ultrametric==TRUE) Vu<-Vu else Vu<-Vu[-(1:(2*N)),-(1:(2*N))]
-      if(ultrametric==TRUE) Vd<-Vd else Vd<-Vd[-(1:(2*N)),-(1:(2*N))]
+      if(ultrametric==TRUE) {
+        Vu<-Vu
+        Vd<-Vd
+      }  else{
+        Vu<-Vu[-(1:(2*N)),-(1:(2*N))]
+        Vd<-Vd[-(1:(2*N)),-(1:(2*N))]
+      } 
       correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
       bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
       m<-length(glsyx.beta1)
       corrected_betas<-solve(diag(1,m,m)-bias_corr)%*% glsyx.beta1
-      
-      
       ###### End of Bias correction ######
         
       } # END OF RANDOM AND FIXED COVARIATE REGRESSION ESTIMATION
