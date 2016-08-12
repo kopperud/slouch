@@ -1,4 +1,4 @@
-Package: slouch
+Package: slouchexp
 Type: Package
 Title: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
 Version: 0.1

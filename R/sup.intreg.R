@@ -19,7 +19,7 @@ IntcptReg <- function(hl_vy, treepar,modelpar){
       X<-matrix(data=1, nrow=N, ncol=1)
     }
     else
-      if(ultrametric==TRUE) {
+      if(ultrametric==TRUE){
         X<-matrix(data=1, nrow=N, ncol=1)
       } 
       else

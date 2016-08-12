@@ -3,6 +3,7 @@
 S3method(summary,slouch)
 export(model.fit)
 export(model.fit.dev)
+export(model.fit.dev2)
 export(np.regression)
 export(ouch2slouch)
 export(parse.tree)
