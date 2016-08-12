@@ -133,6 +133,7 @@ seed.rReg <- function(treepar, modelpar){
   
   if(ultrametric == TRUE) {
     Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
+    print(sum(Vu));print(sum(Vu))
   } else{
     Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
   } 
@@ -141,7 +142,6 @@ seed.rReg <- function(treepar, modelpar){
   
   
   xx<-seq(from=1, to=length(Vu[,1]), by=N)
-  
   obs_var_con <-matrix(0, nrow=N, ncol=N)
   for (e in seq(from=1, to=ncol(x.ols), by=1)){
     for (j in seq(from=1, to=ncol(x.ols), by=1)) {

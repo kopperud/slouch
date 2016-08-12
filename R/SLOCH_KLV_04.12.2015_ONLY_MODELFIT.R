@@ -2204,8 +2204,9 @@ model.fit<-function(topology, times, half_life_values, vy_values, response, me.r
               
               beta1<-beta.i
             }
+            
           }  
-          
+          beta1 <- beta.i
           
           ### END OF ITERATED GLS ESTIMATION FOR BETA #
           

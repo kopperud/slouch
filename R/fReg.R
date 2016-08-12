@@ -8,13 +8,13 @@ fReg <- function(hl_vy, treepar, modelpar, seed){
   hl <- hl_vy[1]; vy <- hl_vy[2]
   if(hl==0)
   {
-    a<-1000000000000000000000
+    #a<-1000000000000000000000
+    a <- Inf
   }
   else
   {
     a <- log(2)/hl
   }
-  
   if(model.type=="fReg"){
     X<-cbind(1, fixed.pred)
   }else{
@@ -23,15 +23,40 @@ fReg <- function(hl_vy, treepar, modelpar, seed){
   
   obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition) ## Putting obs_var_con outside iterated loop works. Why?
   
-  ## Initial "half"-V
-  V.initial <- ((vy)*(1-exp(-2*a*ta))*exp(-a*tij)) + na.exclude(me.response)
+
   
   ##### iterated GLS
   con.count<-0;  # Counter for loop break if Beta's dont converge #
   repeat
   {
     #obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition) ## This causes big trouble for beta1 to converge, only when hl == 0. No idea why.
-    V <- V.initial + obs_var_con - diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
+    
+    if(hl == 0){
+      V<-diag(rep(vy, times=N)) + na.exclude(me.response) + obs_var_con-diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
+    }else{
+      obs_var_con <-matrix(0, nrow=N, ncol=N)
+      for (e in seq(from=1, to=ncol(x.ols), by=1)){
+        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
+          tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
+          obs_var_con <-obs_var_con + tmp
+        }
+      }
+      
+      # obs_var_con <-matrix(0, nrow=N, ncol=N)
+      # for (e in seq(from=1, to=ncol(X), by=1)){
+      #   for (j in seq(from=1, to=ncol(X), by=1)) {
+      #     tmp<-error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]
+      #     obs_var_con <-obs_var_con + tmp
+      #   }
+      # }
+      
+      V <- ((vy)*(1-exp(-2*a*ta))*exp(-a*tij)) + 
+        na.exclude(me.response) + obs_var_con - 
+        diag(as.vector(na.exclude(me.cov%*%(2*beta1[(n.fixed+1):length(beta1),]))))
+    }
+    
+    
+    
 
     # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
     V.inverse<-solve(V)
@@ -55,9 +80,8 @@ fReg <- function(hl_vy, treepar, modelpar, seed){
   
   log.det.V <- mk.log.det.V(V = V, N = N)
   
-  #gof[i, k] <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid);
   sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid) %*% V.inverse%*%resid)
-  print(as.numeric(round(cbind(if(a!=0)log(2)/a else 0.00, vy, sup1, t(beta1)), 4)))
+  print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
   
   ## Return list of variables
   list(support = sup1,
@@ -98,7 +122,7 @@ make.seed.fReg.ffANCOVA <- function(treepar, modelpar){
 
     #treepar$regime.specs <- regime.specs
     #print(regime.specs)
-    x.ols<-weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept);
+    x.ols<-weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept)
 
 
     for (i in length(x.ols[1,]):1){
