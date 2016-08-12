@@ -5,11 +5,11 @@ reg.mmfANCOVA <- function(hl_vy, N, me.response, ta, tij, T.term, topology, time
   
   if(hl==0){
     a<-1000000000000000000000
-    X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), pred)
+    X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov, intercept), pred)
   }else{
     a <- log(2)/hl
     cm2 <- make.cm2(a,tia,tja,ta,N,T.term)
-    X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T))/(a*T))*pred)
+    X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov, intercept), (1-(1-exp(-a*T))/(a*T))*pred)
   }
   
   if(length(X[1,]) > length(beta1)) {

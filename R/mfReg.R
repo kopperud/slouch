@@ -10,16 +10,22 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
   {
     a<-Inf
     beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+    X<-cbind(1, fixed.pred, pred)
+    
   }
   else
   {
     a <- log(2)/hl
     cm2 <- make.cm2(a,tia,tja,ta,N,T.term)
-    if(ultrametric==TRUE)
+    if(ultrametric==TRUE){
       beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-    else
+      X<-cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+    }
+    else{
       beta1<-rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
-  }
+      X<-cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+    }
+   }
   
   ### CODE FOR ESTIMATING BETA USING ITERATED GLS ###
   con.count<-0;  # Counter for loop break if Beta's dont converge #
@@ -36,9 +42,6 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     
     if(hl==0)
     {
-      #s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]*beta1[(2+n.fixed.pred):(n.pred+1+n.fixed.pred),]))
-      
-      X<-cbind(1, fixed.pred, pred)
       V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con - 
         diag(as.numeric(me.cov%*%(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))) -
         diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
@@ -47,18 +50,16 @@ sup.mfReg <- function(hl_vy, N, me.response, ta, tij, T.term, topology, times, m
     {
       if(ultrametric==TRUE){
         s1<-as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
-        X<-cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         
-        ## random.cov measuremenr error cov
+        ## random covariances
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
-
         
-        ## fixed.cov measurement error covariances, to be subtracted in V
+        ## fixed covariances
         mcov.fixed <- diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
       }
       else{
         s1<-as.numeric(s.X%*%(beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]))
-        X<-cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+
         
         ## random.cov measuremenr error cov
         mcov<-diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))

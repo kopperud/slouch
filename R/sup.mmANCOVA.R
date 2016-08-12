@@ -11,7 +11,7 @@ sup.mmANCOVA <- function(hl_vy, N, me.response, ta, tij, T, topology, times, mod
     a <- log(2)/hl
     pred.coef <- (1-(1-exp(-a*T))/(a*T))
   }
-  X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov=NULL, intercept, term = term, weight.m.regimes = weight.m.regimes), pred.coef*pred)
+  X<-cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.cov, intercept, term = term, weight.m.regimes = weight.m.regimes), pred.coef*pred)
 
   #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov=NULL, intercept, term = term, weight.m.regimes = weight.m.regimes)))
   

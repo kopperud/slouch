@@ -445,7 +445,7 @@ model.fit.dev<-function(topology,
       message(" ");
       
       vector.grid <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-      estimates <- apply(vector.grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept, term = term, weight.m.regimes = weight.m.regimes)
+      estimates <- apply(vector.grid, 1,sup.mmANCOVA, N=N, me.response = me.response, ta = ta, tia = tia, tja = tja, tij = tij, T = T, topology = topology, times = times, model.type = model.type, ultrametric = ultrametric, Y = Y,  pred = pred, xx = xx, beta1 = beta1, error_condition = error_condition, s.X = s.X, n.pred = n.pred, num.prob = num.prob, cm2 = cm2, me.pred = me.pred, me.cov = me.cov, convergence = convergence, n.fixed = n.fixed, x.ols = x.ols, regime.specs = regime.specs, intercept = intercept, term = term, weight.m.regimes = weight.m.regimes, fixed.cov = fixed.cov)
       sup2 <- sapply(estimates, function(e) e$support)
       gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
       
@@ -742,12 +742,16 @@ model.fit.dev<-function(topology,
       
       xx<-seq(from=1, to	=length(Vd[,1]), by=N)
       
-      if(ultrametric == TRUE) xx<-xx[-(1:(n.fixed+n.fixed.pred))] else xx<-xx[-(1:(n.fixed+ n.fixed.pred))]
+      if(ultrametric == TRUE){
+        xx<-xx[-(1:(n.fixed+n.fixed.pred))]
+        yy<-yy[-(1:(n.fixed+n.fixed.pred))]
+      }  else{
+        xx<-xx[-(1:(n.fixed+n.fixed.pred))]
+        yy<-yy[-(1:(n.fixed+n.fixed.pred))]
+      } 
       
       yy<-seq(from=N, to	=length(Vd[,1]), by=N)
-      
-      if(ultrametric == TRUE) yy<-yy[-(1:(n.fixed+n.fixed.pred))] else yy<-yy[-(1:(n.fixed+n.fixed.pred))]
-      
+
       
       for (i in seq(from=1, to=nrow(s.X), by=1)){
         Vd[xx[i]:yy[i],xx[i]:yy[i]]<-pt$bt*s.X[,i]

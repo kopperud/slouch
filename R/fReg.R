@@ -18,7 +18,8 @@ fReg <- function(hl_vy, treepar, modelpar, seed){
   if(model.type=="fReg"){
     X<-cbind(1, fixed.pred)
   }else{
-    X<-weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept)
+    #X<-weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept)
+    X<-weight.matrix(a, topology, times, N, regime.specs, fixed.cov, intercept)
   }
   
   obs_var_con <- mk.obs_var_con(a, hl, beta1, T, N, xx, x.ols, error_condition) ## Putting obs_var_con outside iterated loop works. Why?
