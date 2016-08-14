@@ -1,12 +1,14 @@
 regression.closures <- function(treepar, modelpar, seed){
   ## bind global variables to this environment
-  for (i in c(treepar, modelpar, seed)){
-    list2env(i, envir = environment())
-  }
+  list2env(treepar, envir = environment())
+  list2env(modelpar, envir = environment())
+  list2env(seed, envir = environment())
+  
+
   
   ## Establish function to calculate design matrix X
   if(is.null(fixed.fact) == FALSE){
-    calc.X <- function(a){
+    calc.X <- function(a, hl){
       if(model.type == "ffANOVA"){
         matrix(cbind(1-exp(-a*T.term), exp(-a*T.term)), nrow=N)
       }else{
@@ -19,7 +21,7 @@ regression.closures <- function(treepar, modelpar, seed){
       }
     }
   }else{
-    calc.X <- function(a){
+    calc.X <- function(a, hl){
       if(hl == 0){
         cbind(1, fixed.pred, pred)
       }else{
@@ -33,7 +35,7 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   
-  ## Function to calculate variance of predictor in the OU-process
+  ## Function to calculate variance of instantaneous predictor in the OU-process
   calc.s1 <- function(beta1){
     if(ultrametric == TRUE){
       as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
@@ -53,10 +55,14 @@ regression.closures <- function(treepar, modelpar, seed){
   
   ## Function to calculate covariances of the instantaneous predictor, to be subtracted in the diagonal of V
   calc.mcov.fixed <- function(a, beta){
-    if(ultrametric == TRUE){
-      diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
+    if(!is.null(me.fixed.cov)){
+      if(ultrametric == TRUE){
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
+      }else{
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])))
+      }
     }else{
-      diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])))
+      NULL
     }
   }
   
@@ -80,10 +86,19 @@ regression.closures <- function(treepar, modelpar, seed){
         diag(as.numeric(me.fixed.cov%*%(2*beta1[(n.fixed+1):(length(beta1)-n.pred),])))
     }else{
       a <- log(2)/hl
-      s1 <- make.s1(beta1)
-      mcov <- make.mcov(a, beta1)
-      mcov.fixed <- make.mcov.fixed(a, beta1)
+      s1 <- calc.s1(beta1)
+      mcov <- calc.mcov(a, beta1)
+      mcov.fixed <- calc.mcov.fixed(a, beta1)
       cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
+      # for (i in c(cm1, (s1*ta*cm2), na.exclude(me.response), obs_var_con, mcov, mcov.fixed)){
+      #   print(str(i))
+      # }
+      print(str(cm1))
+      print(str(s1*ta*cm2))
+      print(str(na.exclude(me.response)))
+      print(str(obs_var_con))
+      print(str(mcov))
+      print(str(mcov.fixed))
       V <- cm1+(s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
     }
   }
@@ -98,7 +113,7 @@ regression.closures <- function(treepar, modelpar, seed){
       a <- log(2)/hl
       cm2 <- make.cm2(a,tia,tja,ta,N,T.term)
     }
-    X <- make.X(a)
+    X <- calc.X(a, hl)
     
     ## beta1 exists from OLS estimate
     
@@ -149,22 +164,23 @@ regression.closures <- function(treepar, modelpar, seed){
 ## Function to seed the OLS
 ## outputs; beta1, x.ols, xx, yy, Vu, Vd
 ols.seed <- function(treepar, modelpar){
-  for (i in c(treepar, modelpar)){
-    list2env(i, envir = environment())
-  }
+  list2env(treepar, envir = environment())
+  list2env(modelpar, envir = environment())
   
   ## RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
-  n.pred<-length(random.cov[1,])
+  n.pred<-length(as.matrix(random.cov)[1,])
   
   if(!is.null(random.cov)){
     pred<-data.frame(random.cov)
     pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred)
     
-    if(is.null(me.random.cov)){
-      me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
-    }else{
+    if(!is.null(me.random.cov)){
       me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred)
+    }else{
+      me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
     }
+
+
     
     if(is.null(mecov.random.cov)){
       me.cov<-matrix(data=0, nrow=N, ncol=n.pred)
@@ -179,7 +195,14 @@ ols.seed <- function(treepar, modelpar){
       s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[2])
       theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[1])
     }
+  }else{
+    pred <- NULL
+    s.X <- NULL
+    theta.X <- NULL
+    me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
+    me.cov <- NULL
   }
+
   
   
   # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
@@ -200,64 +223,121 @@ ols.seed <- function(treepar, modelpar){
     }else{
       me.fixed.cov<-matrix(data=me.cov.fixed.cov[!is.na(me.cov.fixed.cov)], ncol=n.fixed.pred);
     }
+  }else{
+    fixed.pred <- NULL
+    me.fixed.pred <- matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    me.fixed.cov <- NULL
   }
   
-  regime.specs<-fixed.fact
-  n.fixed<-length(levels(as.factor(regime.specs)))
-  regime.specs<-as.factor(regime.specs)
+  regime.specs<-as.factor(fixed.fact)
+  n.factor<-length(levels(regime.specs))
   
-  if(factor.exists == TRUE){
-    x.ols<-cbind(weight.matrix(10000000000, topology, times, N, regime.specs, fixed.pred, intercept), pred)
-    beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+  if(!is.null(fixed.fact) == TRUE){
+    x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept), pred)
   }else{
     x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
-    beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-    if(ultrametric == FALSE){
-      beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
-    }
   }
   
+  beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
+  if(ultrametric == FALSE){
+    beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
+  }
   
   
   #Defining the dimensionality of Vd ## Might need to change the dimensionality of this matrix for different versions of the model and how that impacts the number of columns in x.ols
   Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
   
+
   
-  #Putting in elements in VD for fixed covariates
-  true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N);
-  for (i in 1:n.fixed.pred)
-  {
-    true_var[,i]<-var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i]))
+  if(model.type=="fReg") {
+    Vd<-diag(c(rep(0,N),true_var))
+  }
+  if(model.type =="ffANCOVA"){
+    Vd<-diag(c(rep(0,n.factor*N), true_var))
   }
   
-  true_var<-c(true_var)
-  Vd[(((N* n.fixed)+(1)):(((N* n.fixed)+(1))+((N*n.fixed.pred)-1))),(((N* n.fixed)+(1)):(((N* n.fixed)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
   
+  ## Define true_var
+  if(!is.null(fixed.pred)){
+    #Putting in elements in VD for fixed covariates
+    true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N);
+    for (i in 1:n.fixed.pred)
+    {
+      true_var[,i]<-var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i]))
+    }
+    true_var<-c(true_var)
+    Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
+  }
+
   
   #Putting in elements in VD for random covariates
   
   xx<-seq(from=1, to	=length(Vd[,1]), by=N)
-  
-  if(ultrametric == TRUE){
-    xx<-xx[-(1:(n.fixed+n.fixed.pred))]
-    yy<-yy[-(1:(n.fixed+n.fixed.pred))]
-  }  else{
-    xx<-xx[-(1:(n.fixed+n.fixed.pred))]
-    yy<-yy[-(1:(n.fixed+n.fixed.pred))]
-  } 
-  
   yy<-seq(from=N, to	=length(Vd[,1]), by=N)
   
+  # if(ultrametric == TRUE){
+  #   xx<-xx[-(1:(n.factor+n.fixed.pred))]
+  #   yy<-yy[-(1:(n.factor+n.fixed.pred))]
+  # }  else{
+  #   xx<-xx[-(1:(2 + n.factor+n.fixed.pred))]
+  #   yy<-yy[-(1:(2 + n.factor+n.fixed.pred))]
+  # } 
   
-  for (i in seq(from=1, to=nrow(s.X), by=1)){
-    Vd[xx[i]:yy[i],xx[i]:yy[i]]<-pt$bt*s.X[,i]
-    
+  if(!is.null(random.cov)){
+    if(!is.null(random.cov)){
+      for (i in seq(from=1, to=nrow(s.X), by=1)){
+        Vd[xx[i]:yy[i],xx[i]:yy[i]]<-pt$bt*s.X[,i]
+      }
+    }
   }
+
   
   # Defining Vu
-  if(ultrametric == TRUE) Vu<-diag(c(rep(0,(N*(n.fixed))), c(as.numeric(na.exclude(me.fixed.pred))),c(as.numeric(na.exclude(me.pred))))) else Vu<-diag(c(rep(0,N*(2+ n.fixed))), c(as.numeric(na.exclude(me.fixed.pred))), c(as.numeric(na.exclude(me.pred))))
+  if(!is.null(random.cov) & !is.null(fixed.cov)){
+    if(ultrametric == TRUE){
+      Vu<-diag(c(rep(0,(N*(n.factor))), c(as.numeric(na.exclude(me.fixed.pred))),c(as.numeric(na.exclude(me.pred)))))
+    }  else{
+      Vu<-diag(c(rep(0,N*(2+ n.factor))), c(as.numeric(na.exclude(me.fixed.pred))), c(as.numeric(na.exclude(me.pred))))
+    } 
+  }
+  if(!is.null(random.cov) & is.null(fixed.cov)){
+    if(ultrametric == TRUE) {
+      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
+      print(sum(Vu));print(sum(Vu))
+    } else{
+      Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
+    } 
+  }
+  if(!is.null(fixed.cov) & is.null(random.cov)){
+    if(is.null(fixed.fact)){
+      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
+    }else{
+      Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
+    }
+  }
+  
+  
+
   
   error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
   
-  xx<-seq(from=1, to=length(Vu[,1]), by=N)
+
+  
+  list(n.pred = n.pred,
+       s.X = s.X,
+       theta.X = theta.X,
+       pred = pred,
+       me.pred = me.pred,
+       me.cov = me.cov,
+       fixed.pred = fixed.pred,
+       n.fixed.pred = n.fixed.pred,
+       me.fixed.pred = me.fixed.pred,
+       me.fixed.cov = me.fixed.cov,
+       x.ols = x.ols,
+       beta1 = beta1,
+       Vd = Vd,
+       Vu = Vu,
+       xx = xx,
+       yy = yy,
+       error_condition = error_condition)
 }

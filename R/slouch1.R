@@ -201,11 +201,29 @@ model.fit.dev2<-function(topology,
                    factor.exists = !is.null(fixed.fact))
   
   ## Create seed with OLS
+  #######################
+  ## --------------------
+  #######################
+  
+  seed <- ols.seed(treepar, modelpar)
+  
+  #return(seed)
+  
+  #######################
+  ## --------------------
+  #######################
+  
   
   
   all.closures <- regression.closures(treepar, modelpar, seed)
+  #print(str(all.closures))
+  return(all.closures)
   
   
+  #list2env(all.closures, envir = environment())
+  
+  ## Test hl, vy == 1,1
+  #slouch.regression(c(1,1))
 
   
   
