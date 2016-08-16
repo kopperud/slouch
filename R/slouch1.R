@@ -217,7 +217,7 @@ model.fit.dev2<-function(topology,
   
   all.closures <- regression.closures(treepar, modelpar, seed)
   #print(str(all.closures))
-  return(all.closures)
+  #return(all.closures)
   
   
   #list2env(all.closures, envir = environment())
@@ -225,7 +225,41 @@ model.fit.dev2<-function(topology,
   ## Test hl, vy == 1,1
   #slouch.regression(c(1,1))
 
+  vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+  estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
   
+  sup2 <- sapply(estimates, function(e) e$support)
+  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+  
+  
+  ml<-max(na.exclude(gof))
+  gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+  
+  ############################
+  ###### PASTED IN FROM rREG 
+  
+  ## Very bad: don't add list to env
+  list2env(seed, envir = environment())
+  
+  ## Find the regression for which the support value is maximized
+  best.estimate <- estimates[[which.max(sup2)]]
+  V.est <- best.estimate$V
+  beta1.est <- beta1 <-  best.estimate$beta1
+  beta1.var.est <- beta.i.var <- best.estimate$beta1.var
+  X <- best.estimate$X
+  alpha.est <- best.estimate$alpha.est
+  vy.est <- best.estimate$vy.est
+  
+
+  #print(V.est)
+  print(beta1.est)
+  print(beta1.var.est)
+  print(alpha.est)
+  print(vy.est)
+  
+  
+  ######################## -------------------------------
+  ######################## -------------------------------
   
   # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
   

@@ -66,6 +66,8 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
   }   else {
     y <- ((1-(1-exp(-a*T))/(a*T))*(1-(1-exp(-a*T))/(a*T)))
   }
+
+  
   obs_var_con <- matrix(0, nrow=N, ncol=N)
   for (e in seq(from=1, to=ncol(x.ols), by=1)){
     for (j in seq(from=1, to=ncol(x.ols), by=1)) {
