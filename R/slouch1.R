@@ -78,65 +78,6 @@ model.fit.dev2<-function(topology,
   message("")
   message("MODEL SUMMARY")
   message("")
-  if(model.type=="IntcptReg")
-  {
-    message("You have specified an OU model for a response variable regressed on a grand mean, i.e. one global optima");
-    if(ultrametric==FALSE)
-    {
-      GS_head<-c("Ya", "Theta_Global")
-      #n.par<-2 # Bjorn: unused?
-    }
-    else
-    {
-      GS_head<-("Theta_Global")
-      #n.par<-1 # Bjorn: unused?
-    }
-  }
-  else
-    if(model.type=="ffANOVA" )
-    {
-      message("You have specified an OU model for a response variable modeled on optima determined by fixed, categorical predictor variables");
-      if(is.null(intercept)) GS_head<-c("Ya", levels(as.factor(fixed.fact))) else GS_head<-levels(as.factor(fixed.fact));
-    }
-  
-  else
-    if(model.type=="ffANCOVA")
-    {
-      message("You have specified an OU model for a response variable modeled on optima determined by both fixed categorical predictors and an instantaneous scaling with a fixed covariate");
-      if(is.null(intercept)) GS_head<-c("Ya", levels(as.factor(fixed.fact))) else GS_head<-levels(as.factor(fixed.fact));
-      
-    }
-  
-  
-  else
-    
-    if(model.type=="mmANCOVA")
-    {
-      message("You have specified an OU model for a response variable modeled on optima determined by both fixed, categorical factors as well as covariates which themselves randomly evolve (modeled as Brownian-motions)");
-      
-      
-      if(is.null(intercept)) GS_head<-c("Ya", levels(as.factor(fixed.fact))) else GS_head<-levels(as.factor(fixed.fact));
-    }
-  
-  if(model.type=="mmfANCOVA")
-  {
-    message("You have specified an OU model for a response variable modeled on optima determined by both fixed, categorical factors as well as covariates which themselves randomly evolve (modeled as Brownian-motions)");
-    
-    
-    if(is.null(intercept)) GS_head<-c("Ya", levels(as.factor(fixed.fact))) else GS_head<-levels(as.factor(fixed.fact));
-  }
-  else
-    
-    
-    
-    if(model.type=="rReg") message("You have specified an OU model for a response variable modeled on optima that are determined by randomly evolving covariates (modeled as Brownian-motions)")
-  
-  else
-    if(model.type=="fReg") message("You have specified an OU model for a response variable modeled on optima that are determined by an instantaneous scaling with fixed covariates")
-  
-  else
-    if(model.type=="mfReg") message("You have specified an OU model for a response variable modeled on optima that are determined by both an instantaneous scaling with fixed covariates and randomly evolving covariates (modeled as Brownian-motions)");
-  message("")
   
   # Summarize dataset, response, predictors,  tree height and sample size and write to screen
   

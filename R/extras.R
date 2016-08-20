@@ -1,7 +1,5 @@
 ## Extra functions
 
-setClass("slouch", contains = "list")
-
 fitch<-function(tree.data, niche, deltran=FALSE, acctran=FALSE, root=NULL){
   niche<-as.factor(niche)
   anc.char<-as.character(tree.data$ancestor)
