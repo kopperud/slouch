@@ -216,8 +216,6 @@ model.fit.dev2<-function(topology,
   
   
   all.closures <- regression.closures(treepar, modelpar, seed)
-  #print(str(all.closures))
-  #return(all.closures)
   
   
   #list2env(all.closures, envir = environment())
@@ -243,29 +241,56 @@ model.fit.dev2<-function(topology,
   
   ## Find the regression for which the support value is maximized
   best.estimate <- estimates[[which.max(sup2)]]
-  V.est <- best.estimate$V
+  V.est <- best.estimate$V; V.inverse <- solve(V.est)
   beta1.est <- beta1 <-  best.estimate$beta1
   beta1.var.est <- beta.i.var <- best.estimate$beta1.var
   X <- best.estimate$X
   alpha.est <- best.estimate$alpha.est
   vy.est <- best.estimate$vy.est
+  Y <- best.estimate$Y
   
+  X1<-cbind(1, pred)
+  ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
+  ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
+  
+  ## Calculate model fit stats
+  pred.mean<-X%*%beta1.est
+  g.mean<-(t(rep(1, times=N))%*%solve(V.est)%*%Y)/sum(solve(V.est))
+  sst<-t(Y-g.mean)%*% solve(V.est)%*%(Y-g.mean)
+  sse<-t(Y-pred.mean)%*%solve(V.est)%*%(Y-pred.mean)
+  r.squared<-(sst-sse)/sst
+  
+  ## Calculate AIC, AICc
+  n.par<-length(beta1)
+  aic <- -2*ml+2*(2+n.par)
+  aicc <- aic +(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
 
   #print(V.est)
-  print(beta1.est)
-  print(beta1.var.est)
-  print(alpha.est)
-  print(vy.est)
+  message("Optimal regression, estimates + SE")
+  print(cbind(beta1.est, sqrt(diag(beta1.var.est))))
+  message("Ev regr")
+  print(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
+  message("Alpha, hl, vy")
+  print(c(alpha.est, 
+          if(alpha.est == Inf) 0 else log(2)/alpha.est, 
+          vy.est))
   
   
-  ######################## -------------------------------
-  ######################## -------------------------------
+  modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
+  modfit[1,1]=ml
+  modfit[2,1]=-2*ml+2*(2+n.par)
+  modfit[3,1]=modfit[2,1]+(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
+  modfit[4,1]=-2*ml+log(N)*(2+n.par)
+  modfit[5,1]=r.squared*100
+  modfit[6,1]=sst
+  modfit[7,1]=sse
+  
+  print(modfit)
   
   # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
   
   
   if(length(half_life_values) > 1 && length(vy_values) > 1){
-    #if(length(gof[gof>-2])){
       z1<-gof
       for(i in 1:length(vy_values)){
         h.lives[,i]=rev(z1[,i])
@@ -275,327 +300,12 @@ model.fit.dev2<-function(topology,
       y<-vy_values
       op <- par(bg = "white")
       
-      # plot.slouch.x <<- x
-      # plot.slouch.y <<- y
-      # plot.slouch.loglik <<- z
-      
-      #persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA") ## plot.angle = 30 default
       persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
             ltheta = 120, shade = 0.75, ticktype = "detailed",
             xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
-    #}else{
-      #print(sort(gof, decreasing = TRUE))
-    #}
   }
-  #plot.coord <- cbind(rep(x, length(y)), rep(rev(y), length(x)))
-  
-  
-  
-  
-  
-  # fixed.cov.names <- if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)
-  # random.cov.names <- if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)
-  #
-  # output5 <- list(model.type = model.type,
-  #                 alpha.est = alpha.est,
-  #                 vy.est = vy.est,
-  #                 pred.mean = pred.mean,
-  #                 g.mean = g.mean,
-  #                 sst = sst,
-  #                 sse = sse,
-  #                 r.squared = r.squared,
-  #                 ml = ml,
-  #                 n.pred = n.pred,
-  #                 ultrametric = ultrametric,
-  #                 intercept = intercept,
-  #                 N = N,
-  #                 beta.est = beta.est,
-  #                 theta.X = theta.X,
-  #                 s.X = s.X,
-  #                 beta.var.est = beta.var.est,
-  #                 X = X,
-  #                 x.ols = x.ols,
-  #                 random.cov = random.cov,
-  #                 corrected_betas = corrected_betas,
-  #                 fixed.fact = fixed.fact,
-  #                 random.cov.names = random.cov.names,
-  #                 glsyx.beta1 = glsyx.beta1,
-  #                 glsyx.beta1.var = glsyx.beta1.var,
-  #                 fixed.cov = fixed.cov,
-  #                 me.fixed.cov = me.fixed.cov,
-  #                 fixed.cov.names = fixed.cov.names)
-  #
-  # result <- new("slouch", output5)
-  # return(result)
-  
-  
-  
-  # MODEL OUTPUT
-  # alpha, half-lives, correction factor, v
-  
-  
-  message("==================================================")
-  half.life<-log(2)/alpha.est
-  c.factor<-mean(1-(1-exp(-alpha.est*T))/(alpha.est*T))
-  modeloutput<-matrix(data=0, nrow=4, ncol=1, dimnames=list(c("Rate of adaptation ", "Phylogenetic half-life ","Phylogenetic correction factor", "Stationary variance "), "    Estimate"))
-  modeloutput[1, 1]=alpha.est; modeloutput[2, 1]=half.life; modeloutput[3,1]=c.factor; modeloutput[4,1]=vy.est;   ##### Rememeber to output s.X
-  
-  
-  
-  
-  
-  modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
-  
-  
-  #if(ultrametric==TRUE) n.par=1+n.pred else n.par=3+n.pred
-  
-  if(model.type=="ffANOVA" || model.type=="fReg" || model.type=="ffANCOVA") n.par<-length(gls.beta0)
-  if(model.type == "mmANCOVA" || model.type=="rReg" || model.type=="mfReg" || model.type=="mmfANCOVA")   n.par<-length(beta1)
-  
-  modfit[1,1]=ml
-  modfit[2,1]=-2*ml+2*(2+n.par)
-  modfit[3,1]=modfit[2,1]+(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
-  modfit[4,1]=-2*ml+log(N)*(2+n.par)
-  modfit[5,1]=r.squared*100
-  modfit[6,1]=sst
-  modfit[7,1]=sse
-  
-  message("");
-  message("BEST ESTIMATES & MODEL FIT");message("");
-  message("==================================================");
-  message("MODEL PARAMETERS");
-  print(modeloutput);message("");
-  
-  
-  # predictor means and variances for random predictors
-  
-  if(model.type == "mmANCOVA" || model.type=="rReg" || model.type=="mfReg" || model.type=="mmfANCOVA")
-  {
-    print(matrix(data=rbind(theta.X, s.X), nrow=2, ncol=n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))));
-    message("");
-  }
-  
-  # PRIMARY OPTIMA OR REGRESSION SLOPE ESTIMATES
-  
-  message("--------------------------------------------------");
-  message("PRIMARY OPTIMA");message("");
-  
-  
-  if(model.type=="IntcptReg")
-  {
-    if(ultrametric==TRUE || alpha.est==Inf || alpha.est>=1000000000000000){
-      Intercept<-matrix(nrow=1, ncol=2, dimnames=list(("Theta_global"), c("Estimate", "Std.error")))
-      Intercept[,1]<-gls.beta0
-      Intercept[,2]<-sqrt(beta.i.var)}
-    else {
-      Intercept<-matrix(data=0, nrow=2, ncol=1, dimnames=list(c("Bo", "Ya"), ("     Estimate")))
-      Intercept[1,1]<-beta.i[1]
-      Intercept[2,1]<-beta.i[2]
-    }
-    print(Intercept); message("")
-  }
-  
-  if(model.type=="ffANOVA")
-  {
-    std<-sqrt(diag(beta.i.var))
-    
-    optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(colnames(X), c("Estimates", "Std.error")));
-    optima[,1] = gls.beta0;
-    optima[,2] = std;
-    
-    
-    reg <- set.of.regimes(topology,regime.specs);
-    root.reg<-as.character(regime.specs[times==0])
-    nonroot.reg<-as.character(reg[reg != root.reg])
-    
-    
-    if(is.null(intercept))
-    {
-      if(ncol(X) == length(reg)) message ("The ancestral state (Ya) parameter was dropped from this model as there is not enough information to estimate it")  else
-        if(ncol(X)<length(reg)) message ("Ya and the parameter at the root were dropped") else
-          message("this model does not drop Ya as it may influence the other parameters")
-    }
-    else
-    {
-      if(intercept=="root") message(root.reg, " ", "mapped to the root of the tree and includes the coefficent for the ancestral state (Ya)") else
-        message("you set the intercept coefficent to a value of", " ", intercept,". Ya is not the true ancestral state anymore")
-    }
-    print(optima);message("");
-  }
-  
-  
-  if(model.type== "fReg")
-  {
-    std<-sqrt(diag(beta.i.var))
-    
-    optima<-matrix(data=0, nrow=(nrow(gls.beta0)), ncol=2, dimnames=list(c("Bo", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), c("Estimate", "Std. Error")))
-    optima[,1] = gls.beta0;
-    optima[,2] = std;
-    
-    
-    corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames=list(c("Bo", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), c("Bias-corr. regression parameters")))
-    
-    
-    print(optima);message("");message("");
-    print(corrected_beta_values);message("");
-    
-  }
-  
-  if(model.type=="ffANCOVA")
-  {
-    std<-sqrt(diag(beta.i.var))
-    
-    
-    optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), c("Estimates", "Std.error")));
-    optima[,1] = gls.beta0;
-    optima[,2] = std;
-    
-    corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov)), c("Bias-corr. regression parameters")));
-    
-    print(optima);message("");message("");
-    print(corrected_beta_values);message("");
-    
-  }
-  
-  
-  
-  if(model.type  == "mmANCOVA")
-  {
-    std<-sqrt(diag(beta.i.var))
-    if(length(X[1,]) > length(x.ols[1,])) optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(c(c("Ya",as.character(levels(fixed.fact))), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimates", "Std.error")))
-    else
-      
-      optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimates", "Std.error")));
-    
-    corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Bias-corr. regression parameters")));
-    
-    
-    optima[,1] = gls.beta1;
-    optima[,2] = std;
-    print(optima);message("");message("");
-    print(corrected_beta_values);message("");
-  }
-  
-  if(model.type  == "mmfANCOVA")
-  {
-    std<-sqrt(diag(beta.i.var))
-    
-    if(length(X[1,]) > length(x.ols[1,])) optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(c(c("Ya",as.character(levels(fixed.fact))),if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimates", "Std.error")))
-    else
-      
-      optima<-matrix(data=0, nrow=ncol(X), ncol=2, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov),if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimates", "Std.error")));
-    
-    corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames = list(c(as.character(levels(fixed.fact)), if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov),if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Bias-corr. regression parameters")))
-    
-    
-    optima[,1] = gls.beta1
-    optima[,2] = std
-    print(optima);message("");message("")
-    print(corrected_beta_values);message("")
-  }
-  if(model.type=="rReg")
-  {
-    if(ultrametric==TRUE || alpha.est == Inf)
-      opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("K", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-    else
-    {
-      if(alpha.est != Inf)
-        opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("Xa", "Bo","Ya" ,if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-      else opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("K", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))}
-    
-    opreg[,1] =round(gls.beta1, 5)
-    opreg[,2]= round(sqrt(diag(beta.i.var)),5)
-    
-    
-    corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames=list(c("K", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Bias-corr. regression parameters")))
-    
-    if(model.type=="rReg")
-    {
-      
-      evreg<-matrix(data=0, nrow=(nrow(glsyx.beta1)), ncol=2, dimnames=list(c("Intercept", if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-      
-      
-      evreg[,1] =round(glsyx.beta1, 5)
-      evreg[,2]= round(sqrt(diag(ev.beta.i.var)),5)
-      
-      message("Evolutionary regression"); message("")
-      print(evreg);
-      message("");
-    }
-    message("Optimal regression"); message("")
-    print(opreg);message("");message("");
-    
-    print(corrected_beta_values); message("");
-    
-    if(model.type=="rReg" && ultrametric==TRUE && alpha.est != Inf)
-    {
-      message("")
-      message("Decomposition of K assuming Ya = Xa to get the optimal regression intercept Bo")
-      message("")
-      
-      bo<-opreg[1,1] + (c.factor-1)*(sum(gls.beta1[-1]*theta.X))
-      print(bo)
-      message("")
-      message("(Use this as the intercept when plotting the regression line)")
-      
-      message("")
-    }
-  }
-  
-  
-  if(model.type=="mfReg")
-  {
-    if(ultrametric==TRUE || alpha.est == Inf)
-      opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("K",if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov),if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-    else
-    {
-      if(alpha.est != Inf)
-        opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("Xa", "Bo","Ya" ,if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov),if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-      else opreg<-matrix(data=0, nrow=(nrow(gls.beta1)), ncol=2, dimnames=list(c("K", if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov),if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))}
-    
-    opreg[,1] =round(gls.beta1, 5)
-    opreg[,2]= round(sqrt(diag(beta.i.var)),5)
-    
-    if(model.type=="mfReg")
-    {
-      
-      evreg<-matrix(data=0, nrow=(nrow(glsyx.beta1)), ncol=2, dimnames=list(c("Intercept",if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Estimate", "Std. Error")))
-      
-      corrected_beta_values<-matrix(data= c(corrected_betas), nrow=(nrow(beta1)), ncol=1, dimnames=list(c("Intercept",if(is.null(dim(fixed.cov))) deparse(substitute(fixed.cov)) else colnames(fixed.cov), if(is.null(dim(random.cov))) deparse(substitute(random.cov)) else colnames(random.cov)), c("Bias-corr. regression parameters")))
-      
-      evreg[,1] =round(glsyx.beta1, 5)
-      evreg[,2]= round(sqrt(diag(ev.beta.i.var)),5)
-      
-      message("Evolutionary regression"); message("")
-      print(evreg);
-      message("");
-    }
-    message("Optimal regression"); message("")
-    print(opreg);message("");message("");
-    
-    print(corrected_beta_values); message("");
-    
-    if(model.type=="mfReg" && ultrametric==TRUE && alpha.est != Inf)
-    {
-      message("")
-      message("Decomposition of K assuming Ya = Xa to get the optimal regression intercept Bo")
-      message("")
-      
-      bo<-opreg[1,1] + (c.factor-1)*(sum(gls.beta1[-(1:(1+n.fixed.pred))]*theta.X))
-      print(bo)
-      message("")
-      message("(Use this as the intercept when plotting the regression line)")
-      
-      message("")
-    }
-  }
-  
-  message("--------------------------------------------------");
-  message("MODEL FIT");message("");
-  print(modfit); message("");
-  message("==================================================");
-  
-  print("debug: model.fit.dev")
+
+  print("debug: model.fit.dev w closures")
   
   
 } # END OF MODEL FITTING FUNCTION

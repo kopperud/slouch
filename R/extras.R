@@ -659,7 +659,7 @@ pseudoinverse <-
     return(reg);
   }
 
-`sigma.X.estimate` <-
+sigma.X.estimate <-
   function (predictor,me.predictor, topology, times) {
     pt <- parse.tree(topology,times);
     n <- pt$N;

@@ -370,6 +370,7 @@ model.fit.dev<-function(topology,
     s.X<-matrix(data=0, ncol=n.pred)  # PREDICTOR SIGMA
     for(i in 1:n.pred)
     {
+      print("Hello")
       s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i], me.pred[,i], topology, times)[2]);
     }
     
@@ -394,6 +395,7 @@ model.fit.dev<-function(topology,
     if(model.type=="rReg")
     {
       seed <- seed.rReg(treepar, modelpar)
+      #return(seed)
       list2env(seed, envir = environment()) ## Quick, dirty bugfix: NOT A GOOD ONE. VERY BAD. Check for Vu, Vd throughout next 200 lines
     }
     

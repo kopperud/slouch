@@ -40,6 +40,7 @@ make.sup.rReg <- function(modelpar,treepar,seed){
     repeat
     {
       V <- estimate.V.rReg(hl, vy, a, ta, tij, T.term, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half)
+
       
       # INTERMEDIATE ESTIMATION OF OPTIMAL REGRESSION #
       V.inverse<-solve(V)
@@ -79,6 +80,10 @@ make.sup.rReg <- function(modelpar,treepar,seed){
 estimate.V.rReg <- function(hl, vy, a, ta, tij, T.term, N, xx, x.ols, error_condition, me.response, me.cov, beta1, n.fixed, n.pred, ultrametric, s.X, cm2, cm1.half){
   obs_var_con <- mk.obs_var_con(a, hl, beta1, T.term, N, xx, x.ols, error_condition)
 
+  
+  # print("Sum obsvarcon")
+  # print(sum(obs_var_con))
+  
   if (ultrametric == TRUE){
     mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[2:(n.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
     s1 <- as.numeric(s.X%*%(beta1[2:(n.pred+1),]*beta1[2:(n.pred+1),]))
@@ -150,6 +155,7 @@ seed.rReg <- function(treepar, modelpar){
     }
   }
   
+
 
   
   seed <- list(x.ols = x.ols,

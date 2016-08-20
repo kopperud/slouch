@@ -26,7 +26,8 @@ regression.closures <- function(treepar, modelpar, seed){
         cbind(1, fixed.pred, pred)
       }else{
         if (ultrametric == TRUE){
-          matrix(cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred), nrow=N)
+          #matrix(cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred), nrow=N)
+          cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         }else{
           cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
         }
@@ -100,13 +101,13 @@ regression.closures <- function(treepar, modelpar, seed){
       mcov <- calc.mcov(a, beta1)
       mcov.fixed <- calc.mcov.fixed(a, beta1)
       if(!is.null(random.cov)){
-        cm1<-(s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij)
+        cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
       }else{
-        cm1 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
+        cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
       }
       
 
-      V <- cm1+(s1*ta*cm2) + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
+      V <- cm0 + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
       
     }
     return(V)
@@ -124,7 +125,8 @@ regression.closures <- function(treepar, modelpar, seed){
     }
     X <- calc.X(a, hl)
     
-    ## beta1 exists from OLS estimate
+    ## ols.beta1 exists from OLS estimate
+    beta1 <- ols.beta1
     
     con.count <- 0
     repeat{
@@ -156,6 +158,7 @@ regression.closures <- function(treepar, modelpar, seed){
          V = V,
          beta1 = beta1,
          X = X,
+         Y = Y,
          beta1.var = beta.i.var,
          alpha.est = a,
          vy.est = vy)
@@ -216,13 +219,9 @@ ols.seed <- function(treepar, modelpar){
     me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
     me.cov <- NULL
   }
-
-  
-  
   # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
   # FIXED COVARIATES
-
   if(!is.null(fixed.cov)){
     print(fixed.cov)
     n.fixed.pred<-length(as.matrix(fixed.cov)[1,])
@@ -295,8 +294,8 @@ ols.seed <- function(treepar, modelpar){
   
   #Putting in elements in VD for random covariates
   
-  xx<-seq(from=1, to	=length(Vd[,1]), by=N)
-  yy<-seq(from=N, to	=length(Vd[,1]), by=N)
+  xx<-seq(from=1, to = length(Vd[,1]), by=N)
+  yy<-seq(from=N, to = length(Vd[,1]), by=N)
   
   if(ultrametric == TRUE){
     xx<-xx[-(1:(n.factor+n.fixed.pred))]
@@ -307,25 +306,21 @@ ols.seed <- function(treepar, modelpar){
   }
   
   if(!is.null(random.cov)){
-    if(!is.null(random.cov)){
-      for (i in seq(from=1, to=nrow(s.X), by=1)){
-        Vd[xx[i]:yy[i],xx[i]:yy[i]]<-pt$bt*s.X[,i]
-      }
+    for (i in seq(from=1, to=nrow(s.X), by=1)){
+      Vd[xx[i]:yy[i],xx[i]:yy[i]] <- pt$bt*s.X[,i]
     }
   }
   
 
-
-  
   # Defining Vu
-  if(!is.null(random.cov) & !is.null(fixed.cov)){
+  if(!is.null(random.cov) & !is.null(fixed.cov) & !is.null(fixed.fact)){
     if(ultrametric == TRUE){
       Vu<-diag(c(rep(0,(N*(n.factor))), c(as.numeric(na.exclude(me.fixed.pred))),c(as.numeric(na.exclude(me.pred)))))
     }  else{
       Vu<-diag(c(rep(0,N*(2+ n.factor))), c(as.numeric(na.exclude(me.fixed.pred))), c(as.numeric(na.exclude(me.pred))))
     } 
   }
-  if(!is.null(random.cov) & is.null(fixed.cov)){
+  if(!is.null(random.cov) & is.null(fixed.cov) & is.null(fixed.fact)){
     if(ultrametric == TRUE) {
       Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
       #print(sum(Vu));print(sum(Vu))
@@ -333,7 +328,7 @@ ols.seed <- function(treepar, modelpar){
       Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
     } 
   }
-  if(!is.null(fixed.cov) & is.null(random.cov)){
+  if(!is.null(fixed.cov) & is.null(random.cov) & !is.null(fixed.fact)){
     if(is.null(fixed.fact)){
       Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
     }else{
@@ -359,7 +354,8 @@ ols.seed <- function(treepar, modelpar){
        me.fixed.pred = me.fixed.pred,
        me.fixed.cov = me.fixed.cov,
        x.ols = x.ols,
-       beta1 = beta1,
+       ols.beta1 = beta1,
+       Y = Y,
        Vd = Vd,
        Vu = Vu,
        xx = xx,
