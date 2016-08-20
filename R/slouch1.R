@@ -141,28 +141,19 @@ model.fit.dev2<-function(topology,
                    regime.specs = as.factor(fixed.fact),
                    factor.exists = !is.null(fixed.fact))
   
-  ## Create seed with OLS
-  #######################
-  ## --------------------
-  #######################
+
   
   seed <- ols.seed(treepar, modelpar)
   
-  #return(seed)
-  
-  #######################
-  ## --------------------
-  #######################
+
   
   
   
   all.closures <- regression.closures(treepar, modelpar, seed)
   
+  ## Debug, commented out
+  #return(all.closures)
   
-  #list2env(all.closures, envir = environment())
-  
-  ## Test hl, vy == 1,1
-  #slouch.regression(c(1,1))
 
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
   estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
@@ -190,9 +181,16 @@ model.fit.dev2<-function(topology,
   vy.est <- best.estimate$vy.est
   Y <- best.estimate$Y
   
-  X1<-cbind(1, pred)
-  ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
-  ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
+  ## Calculate evolutionary regression coefficients
+  if(!is.null(random.cov)){
+    X1<-cbind(1, pred)
+    ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
+    ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
+  }else{
+    ev.beta.i.var <- NULL
+    ev.beta.i <- NULL
+  }
+
   
   ## Calculate model fit stats
   pred.mean<-X%*%beta1.est
@@ -206,7 +204,9 @@ model.fit.dev2<-function(topology,
   aic <- -2*ml+2*(2+n.par)
   aicc <- aic +(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
 
-  #print(V.est)
+  # Find beta coef names
+  
+  
   message("Optimal regression, estimates + SE")
   print(cbind(beta1.est, sqrt(diag(beta1.var.est))))
   message("Ev regr")

@@ -4,16 +4,11 @@ regression.closures <- function(treepar, modelpar, seed){
   list2env(modelpar, envir = environment())
   list2env(seed, envir = environment())
   
-
+  
   
   ## Establish function to calculate design matrix X
-  if(is.null(fixed.fact) == FALSE){
+  if(!is.null(fixed.fact)){
     calc.X <- function(a, hl){
-      if(model.type == "ffANOVA"){
-        matrix(cbind(1-exp(-a*T.term), exp(-a*T.term)), nrow=N)
-      }else{
-        
-      }
       if(hl == 0){
         cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), pred)
       }else{
@@ -26,10 +21,14 @@ regression.closures <- function(treepar, modelpar, seed){
         cbind(1, fixed.pred, pred)
       }else{
         if (ultrametric == TRUE){
-          #matrix(cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred), nrow=N)
-          cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+          matrix(cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred), nrow=N)
         }else{
-          cbind(1-exp(-a*T.term), 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)), exp(-a*T.term), fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+          matrix(cbind(1-exp(-a*T.term), 
+                       if (is.null(random.cov) & is.null(fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL,
+                       exp(-a*T.term),
+                       fixed.pred,
+                       (1-(1-exp(-a*T.term))/(a*T.term))*pred),
+                nrow=N)
         }
       }
     }
@@ -47,10 +46,14 @@ regression.closures <- function(treepar, modelpar, seed){
   
   ## Function to calculate covariances of the stochastic predictor, to be subtracted in the diagonal of V
   calc.mcov <- function(a, beta1){
-    if(ultrametric == TRUE){
-      diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+    if(!is.null(random.cov)){
+      if(ultrametric == TRUE){
+        diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+      }else{
+        diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+      }
     }else{
-      diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+      0
     }
   }
   
@@ -60,16 +63,16 @@ regression.closures <- function(treepar, modelpar, seed){
       matrix(0, nrow=N, ncol=N)
     }else{
       if(ultrametric == TRUE){
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[2:(length(beta1)-n.pred),])))
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[(2 + n.factor):(length(beta1)-n.pred),])))
       }else{
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[4:(length(beta1)-n.pred),])))
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[(4 + n.factor):(length(beta1)-n.pred),])))
       }
     }
   }
   
   ## Function to calculate V
   calc.V <- function(hl, vy, a, cm2, beta1){
-
+    
     ## Update measurement error in X
     if (hl == 0 | is.null(random.cov)){
       y <- 1
@@ -77,40 +80,48 @@ regression.closures <- function(treepar, modelpar, seed){
       y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
     }
     
-    obs_var_con <- matrix(0, nrow=N, ncol=N)
-    for (e in seq(from=1, to=ncol(x.ols), by=1)){
-      for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-        tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
-        obs_var_con <- obs_var_con + tmp
+    if(!is.null(fixed.cov) | !is.null(random.cov)){
+      obs_var_con <- matrix(0, nrow=N, ncol=N)
+      for (e in seq(from=1, to=ncol(x.ols), by=1)){
+        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
+          tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
+          obs_var_con <- obs_var_con + tmp
+        }
       }
+      
+      mcov <- calc.mcov(a, beta1)
+      mcov.fixed <- calc.mcov.fixed(a, beta1)
+    }else{
+      obs_var_con <- 0
+      mcov <- 0
+      mcov.fixed <- 0
     }
-    
-    # print("Sum obsvarcon")
-    # print(sum(obs_var_con))
-
-    
+      
     ## Piece together V
     if(hl == 0){
       a <- Inf
-      V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con - 
-        diag(as.numeric(me.cov%*%(2*beta1[(n.factor+1+n.fixed.pred):length(beta1),]))) -
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[(n.fixed+1):(length(beta1)-n.pred),])))
+
+      cm0 <- diag(rep(vy, times=N))
     }else{
       a <- log(2)/hl
-      s1 <- calc.s1(beta1)
-      mcov <- calc.mcov(a, beta1)
-      mcov.fixed <- calc.mcov.fixed(a, beta1)
+
+
       if(!is.null(random.cov)){
+        s1 <- calc.s1(beta1)
         cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
       }else{
         cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
       }
-      
-
-      V <- cm0 + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
-      
     }
+    V <- cm0 + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
     return(V)
+  }
+  
+  calc.cm2 <- function(a){
+    T.row <- replicate(N,T.term)
+    T.col <- t(T.row)
+    num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
+    return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
   }
   
   ## Function for regression & grid search
@@ -121,7 +132,9 @@ regression.closures <- function(treepar, modelpar, seed){
       a <- Inf
     }else{
       a <- log(2)/hl
-      cm2 <- make.cm2(a,tia,tja,ta,N,T.term)
+      if (!is.null(random.cov)){
+        cm2 <- calc.cm2(a)
+      }else cm2 <- NULL
     }
     X <- calc.X(a, hl)
     
@@ -130,8 +143,8 @@ regression.closures <- function(treepar, modelpar, seed){
     
     con.count <- 0
     repeat{
-      V <- calc.V(hl, vy, a, cm2, beta1) # beta1, cm2
-
+      V <- calc.V(hl, vy, a, cm2, beta1 = beta1) # beta1, cm2
+      
       
       V.inverse<-solve(V)
       beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
@@ -171,204 +184,4 @@ regression.closures <- function(treepar, modelpar, seed){
                        calc.V = calc.V,
                        slouch.regression = slouch.regression)
   return(all.closures)
-}
-
-
-
-
-
-
-
-
-
-
-
-## Function to seed the OLS
-## outputs; beta1, x.ols, xx, yy, Vu, Vd
-ols.seed <- function(treepar, modelpar){
-  list2env(treepar, envir = environment())
-  list2env(modelpar, envir = environment())
-  
-  ## RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
-  
-  
-  if(!is.null(random.cov)){
-    n.pred<-length(as.matrix(random.cov)[1,])
-    pred<-data.frame(random.cov)
-    pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred)
-    
-    if(!is.null(me.random.cov)){
-      me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred)
-    }else{
-      me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
-    }
-
-
-    
-    if(is.null(mecov.random.cov)){
-      me.cov<-matrix(data=0, nrow=N, ncol=n.pred)
-    }else{
-      me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=n.pred)
-    }
-    
-
-    
-    s.X<-matrix(data=0, ncol=n.pred)  # PREDICTOR SIGMA
-    theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
-    for(i in 1:n.pred)
-    {
-      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[2])
-      theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[1])
-    }
-  }else{
-    n.pred <- 0
-    pred <- NULL
-    s.X <- NULL
-    theta.X <- NULL
-    me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
-    me.cov <- NULL
-  }
-  # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
-  
-  # FIXED COVARIATES
-  if(!is.null(fixed.cov)){
-    print(fixed.cov)
-    n.fixed.pred<-length(as.matrix(fixed.cov)[1,])
-    
-    fixed.pred<-data.frame(fixed.cov)
-    fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred)
-    
-    if(is.null(me.fixed.cov)) {
-      me.fixed.pred<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
-    } else{
-      me.fixed.pred<- matrix(data=me.fixed.cov[!is.na(me.fixed.cov)], ncol=n.fixed.pred)
-    }
-    if(is.null(mecov.fixed.cov)){
-      me.fixed.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
-    }else{
-      me.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
-    }
-  }else{
-    n.fixed.pred <- 0
-    fixed.pred <- NULL
-    me.fixed.pred <- matrix(data=0, nrow=N, ncol=n.fixed.pred)
-    me.fixed.cov <- NULL
-  }
-  
-  regime.specs<-as.factor(fixed.fact)
-  n.factor<-length(levels(regime.specs))
-  
-  if(!is.null(fixed.fact) == TRUE){
-    x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept), pred)
-  }else{
-    x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
-  }
-  
-  beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  if(ultrametric == FALSE){
-    beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
-  }
-  
-  
-  #Defining the dimensionality of Vd ## Might need to change the dimensionality of this matrix for different versions of the model and how that impacts the number of columns in x.ols
-  Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
-  
-
-  
-
-  
-  
-  ## Define true_var
-  if(!is.null(fixed.pred)){
-    #Putting in elements in VD for fixed covariates
-    true_var<-matrix(data=0, ncol=n.fixed.pred, nrow=N);
-    for (i in 1:n.fixed.pred)
-    {
-      true_var[,i]<-var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i]))
-    }
-    true_var<-c(true_var)
-    
-    if(model.type=="fReg") {
-      Vd<-diag(c(rep(0,N),true_var))
-    }
-    if(model.type =="ffANCOVA"){
-      Vd<-diag(c(rep(0,n.factor*N), true_var))
-    }
-    
-    if(model.type =="mmfANCOVA" | model.type =="mfReg"){
-      Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
-    }
-  }
-
-  
-  #Putting in elements in VD for random covariates
-  
-  xx<-seq(from=1, to = length(Vd[,1]), by=N)
-  yy<-seq(from=N, to = length(Vd[,1]), by=N)
-  
-  if(ultrametric == TRUE){
-    xx<-xx[-(1:(n.factor+n.fixed.pred))]
-    yy<-yy[-(1:(n.factor+n.fixed.pred))]
-  }  else{
-    xx<-xx[-(1:(2 + n.factor+n.fixed.pred))]
-    yy<-yy[-(1:(2 + n.factor+n.fixed.pred))]
-  }
-  
-  if(!is.null(random.cov)){
-    for (i in seq(from=1, to=nrow(s.X), by=1)){
-      Vd[xx[i]:yy[i],xx[i]:yy[i]] <- pt$bt*s.X[,i]
-    }
-  }
-  
-
-  # Defining Vu
-  if(!is.null(random.cov) & !is.null(fixed.cov) & !is.null(fixed.fact)){
-    if(ultrametric == TRUE){
-      Vu<-diag(c(rep(0,(N*(n.factor))), c(as.numeric(na.exclude(me.fixed.pred))),c(as.numeric(na.exclude(me.pred)))))
-    }  else{
-      Vu<-diag(c(rep(0,N*(2+ n.factor))), c(as.numeric(na.exclude(me.fixed.pred))), c(as.numeric(na.exclude(me.pred))))
-    } 
-  }
-  if(!is.null(random.cov) & is.null(fixed.cov) & is.null(fixed.fact)){
-    if(ultrametric == TRUE) {
-      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
-      #print(sum(Vu));print(sum(Vu))
-    } else{
-      Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
-    } 
-  }
-  if(!is.null(fixed.cov) & is.null(random.cov) & !is.null(fixed.fact)){
-    if(is.null(fixed.fact)){
-      Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
-    }else{
-      Vu<-diag(c(rep(0,n.fixed*N),as.numeric(na.exclude(me.fixed.pred))))
-    }
-  }
-  
-  
-  xx<-seq(from=1, to=length(Vu[,1]), by=N)
-  
-  error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
-  
-
-  
-  list(n.pred = n.pred,
-       s.X = s.X,
-       theta.X = theta.X,
-       pred = pred,
-       me.pred = me.pred,
-       me.cov = me.cov,
-       n.factor = n.factor,
-       fixed.pred = fixed.pred,
-       n.fixed.pred = n.fixed.pred,
-       me.fixed.pred = me.fixed.pred,
-       me.fixed.cov = me.fixed.cov,
-       x.ols = x.ols,
-       ols.beta1 = beta1,
-       Y = Y,
-       Vd = Vd,
-       Vu = Vu,
-       xx = xx,
-       yy = yy,
-       error_condition = error_condition)
 }

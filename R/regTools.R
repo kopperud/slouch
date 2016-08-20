@@ -15,16 +15,6 @@ make.cm2 <- function(a,tia,tja,ta,N,T.term){
   return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
 }
 
-test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultrametric){
-  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-  if(sum(test)==0) return (TRUE)
-  if(con.count >= 50)
-  {
-    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-    return(TRUE)
-  }
-  return(FALSE)
-}
 
 mk.log.det.V <- function(V, N){
   det.V<-det(V)
@@ -59,25 +49,15 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
   obs_var_con
 }
 
-
-
-# Deprecated.
-# make.beta1.rReg <- function(hl, x.ols, Y, ultrametric){
-#   if (hl != 0 & ultrametric == FALSE){
-#     rbind(0, 0, solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y))
-#   } else{
-#     solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-#   }
-# }
-
 ## General test for beta convergence
 test.conv <- function(beta.i, beta1, convergence, con.count, ultrametric){
   if(ultrametric){
-    y <- 1
+    test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
   }else{
-    y <- 1:3 ## Effectively removes beta[1:3] <= 0.001 from being criteria in convergence, when non-ultrametric.
+    test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
+    ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric.
   }
-  test <- ifelse(abs(as.numeric(beta.i - beta1))[-y] <= convergence, 0, 1)
+  
   if(sum(test)==0) return (TRUE)
   if(con.count >= 50)
   {
