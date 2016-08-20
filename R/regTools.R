@@ -10,9 +10,9 @@ make.cm2 <- function(a,tia,tja,ta,N,T.term){
   T.row <- replicate(N,T.term)
   T.col <- t(T.row)
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  common_term <- 1-exp(-a*T.row)
+  #common_term <- 1-exp(-a*T.row)
   
-  return(((common_term)/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(common_term)/(a*T.col) + exp(-a*tja)*(common_term)/(a*T.row))*num.prob)
+  return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
 }
 
 test.conv.rReg <- function(beta.i, beta1, n.pred, convergence, con.count, ultrametric){

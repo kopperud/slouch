@@ -93,7 +93,7 @@ regression.closures <- function(treepar, modelpar, seed){
     if(hl == 0){
       a <- Inf
       V<-diag(rep(vy, times=N))+na.exclude(me.response)+ obs_var_con - 
-        diag(as.numeric(me.cov%*%(2*beta1[(n.fixed+1+n.fixed.pred):length(beta1),]))) -
+        diag(as.numeric(me.cov%*%(2*beta1[(n.factor+1+n.fixed.pred):length(beta1),]))) -
         diag(as.numeric(me.fixed.cov%*%(2*beta1[(n.fixed+1):(length(beta1)-n.pred),])))
     }else{
       a <- log(2)/hl
@@ -170,8 +170,17 @@ regression.closures <- function(treepar, modelpar, seed){
                        calc.mcov.fixed = calc.mcov.fixed,
                        calc.V = calc.V,
                        slouch.regression = slouch.regression)
-  #return(all.closures)
+  return(all.closures)
 }
+
+
+
+
+
+
+
+
+
 
 
 ## Function to seed the OLS
@@ -349,6 +358,7 @@ ols.seed <- function(treepar, modelpar){
        pred = pred,
        me.pred = me.pred,
        me.cov = me.cov,
+       n.factor = n.factor,
        fixed.pred = fixed.pred,
        n.fixed.pred = n.fixed.pred,
        me.fixed.pred = me.fixed.pred,
