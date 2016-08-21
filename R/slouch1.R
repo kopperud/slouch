@@ -46,49 +46,18 @@ model.fit.dev2<-function(topology,
                         mecov.random.cov=NULL,  
                         intercept="root", 
                         ultrametric=TRUE, 
-                        support=NULL, 
-                        convergence=NULL, 
-                        plot.angle=30, 
-                        parallel.compute = FALSE)
+                        support = 2, 
+                        convergence = 0.000001, 
+                        plot.angle = 30)
 {
   ancestor <- topology
   # SET DEFAULTS IF NOT SPECIFIED
-  
-  if(is.null(support)) support <- 2
-  if(is.null(convergence)) convergence <- 0.000001
   if(is.null(me.response)){
     me.response<-diag(rep(0, times=length(response[!is.na(response)])))
   }else{
     me.response<-diag(me.response[!is.na(me.response)])
   }
-  
-  
-  # DETERMINE MODEL STRUCTURE FROM INPUT AND WRITE A SUMMARY TO THE R CONSOLE
-  
-  if(is.null(fixed.fact) && is.null(fixed.cov) && is.null(random.cov)) model.type <- "IntcptReg";
-  if(!is.null(fixed.fact) && is.null(fixed.cov) && is.null(random.cov)) model.type <- "ffANOVA";
-  if(!is.null(fixed.fact) && !is.null(fixed.cov) && is.null(random.cov)) model.type <-"ffANCOVA";
-  if(!is.null(fixed.fact) && is.null(fixed.cov) && !is.null(random.cov)) model.type <- "mmANCOVA";
-  if(!is.null(fixed.fact) && !is.null(fixed.cov) && !is.null(random.cov)) model.type <- "mmfANCOVA";
-  if(is.null(fixed.fact) && is.null(fixed.cov) && !is.null(random.cov)) model.type <- "rReg";
-  if(is.null(fixed.fact) && !is.null(fixed.cov) && is.null(random.cov)) model.type <- "fReg";
-  if(is.null(fixed.fact) && !is.null(fixed.cov) && !is.null(random.cov)) model.type <- "mfReg";
-  
-  # Write type of model to screen
-  message("")
-  message("MODEL SUMMARY")
-  message("")
-  
-  # Summarize dataset, response, predictors,  tree height and sample size and write to screen
-  
-  ms<-list(Dataset=search()[2], Response=deparse(substitute(response)), Fixed.factor=deparse(substitute(fixed.fact)),Fixed.covariates=deparse(substitute(fixed.cov)), Random.covariates=deparse(substitute(random.cov)), Sample.size=length(response[!is.na(response)]), Tree.height=max(times), Model.type=substitute(model.type))
-  ms<-as.matrix(ms)
-  colnames(ms)<-"Summary"
-  print(ms)
-  message("")
-  message("GRID SEARCH PARAMETER SUPPORT")
-  message("")
-  
+
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
   
   Y <- response[!is.na(response)]
@@ -120,8 +89,7 @@ model.fit.dev2<-function(topology,
                   species = species)
   
   ## Cluster parameters concerning the type of model being run
-  modelpar <- list(model.type = model.type,
-                   response = response,
+  modelpar <- list(response = response,
                    me.response = me.response,
                    fixed.fact = fixed.fact,
                    fixed.cov = fixed.cov,
@@ -146,8 +114,9 @@ model.fit.dev2<-function(topology,
   seed <- ols.seed(treepar, modelpar)
   
 
-  
-  
+  message("GRID SEARCH PARAMETER SUPPORT")
+  coef.names <- coef.names.f(modelpar, treepar, seed)
+  print(c("hl", "vy", "support", coef.names))
   
   all.closures <- regression.closures(treepar, modelpar, seed)
   
@@ -159,11 +128,14 @@ model.fit.dev2<-function(topology,
   estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
   
   sup2 <- sapply(estimates, function(e) e$support)
-  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-  
-  
-  ml<-max(na.exclude(gof))
+  #gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
+
+  ml <- max(na.exclude(gof))
   gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+  
+  
+  
   
   ############################
   ###### PASTED IN FROM rREG 
@@ -182,8 +154,8 @@ model.fit.dev2<-function(topology,
   Y <- best.estimate$Y
   
   ## Calculate evolutionary regression coefficients
-  if(!is.null(random.cov)){
-    X1<-cbind(1, pred)
+  if(!is.null(random.cov) & is.null(fixed.fact)){
+    X1<-cbind(1, seed$fixed.pred, seed$pred)
     ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
     ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
   }else{
@@ -204,13 +176,29 @@ model.fit.dev2<-function(topology,
   aic <- -2*ml+2*(2+n.par)
   aicc <- aic +(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
 
-  # Find beta coef names
+
+  
+  opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
+  row.names(opt.reg) <- coef.names
+  colnames(opt.reg) <- c("Estimate", "Std. Error")
+
   
   
   message("Optimal regression, estimates + SE")
-  print(cbind(beta1.est, sqrt(diag(beta1.var.est))))
-  message("Ev regr")
-  print(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
+  print(opt.reg)
+
+  
+  if(!is.null(random.cov) & is.null(fixed.fact)){
+    ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
+    row.names(ev.reg) <- coef.names
+    colnames(ev.reg) <- c("Estimate", "Std. Error")
+    
+    message("Ev regr")
+    print(ev.reg)
+    message("Stochastic predictor")
+    print(matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))))
+  }
+  
   message("Alpha, hl, vy")
   print(c(alpha.est, 
           if(alpha.est == Inf) 0 else log(2)/alpha.est, 
@@ -228,13 +216,13 @@ model.fit.dev2<-function(topology,
   
   print(modfit)
   
+
+  
   # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
-  
-  
   if(length(half_life_values) > 1 && length(vy_values) > 1){
-      z1<-gof
+      h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values))
       for(i in 1:length(vy_values)){
-        h.lives[,i]=rev(z1[,i])
+        h.lives[,i]=rev(gof[,i])
       }
       z<-h.lives
       x<-rev(half_life_values)
@@ -247,8 +235,6 @@ model.fit.dev2<-function(topology,
   }
 
   print("debug: model.fit.dev w closures")
-  
-  
 } # END OF MODEL FITTING FUNCTION
 
 

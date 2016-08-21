@@ -37,7 +37,7 @@ ols.seed <- function(treepar, modelpar){
   if(is.null(mecov.random.cov)){
     me.cov<-matrix(data=0, nrow=N, ncol=n.pred)
   }else{
-    me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=n.pred)
+    me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=ncol(as.matrix(mecov.random.cov)))
   }
   # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
@@ -70,13 +70,13 @@ ols.seed <- function(treepar, modelpar){
   n.factor<-length(levels(regime.specs))
   
   if(!is.null(fixed.fact) == TRUE){
-    x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept), pred)
+    #x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept), pred)
+    x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.cov, intercept), pred)
   }else{
     x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
   }
-  
   beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  if(ultrametric == FALSE){
+  if(ultrametric == FALSE & !is.null(random.cov)){
     beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
   }
   
@@ -99,16 +99,26 @@ ols.seed <- function(treepar, modelpar){
     }
     true_var<-c(true_var)
     
-    if(model.type=="fReg") {
-      Vd<-diag(c(rep(0,N),true_var))
-    }
-    if(model.type =="ffANCOVA"){
-      Vd<-diag(c(rep(0,n.factor*N), true_var))
-    }
-    
-    if(model.type =="mmfANCOVA" | model.type =="mfReg"){
+    if(is.null(random.cov)){
+      if(is.null(fixed.fact)){
+        Vd<-diag(c(rep(0,N),true_var))
+      }else{
+        Vd<-diag(c(rep(0,n.factor*N), true_var))
+      }
+    }else{
       Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
     }
+    
+    # if(model.type=="fReg") {
+    #   Vd<-diag(c(rep(0,N),true_var))
+    # }
+    # if(model.type =="ffANCOVA"){
+    #   Vd<-diag(c(rep(0,n.factor*N), true_var))
+    # }
+    # 
+    # if(model.type =="mmfANCOVA" | model.type =="mfReg"){
+    #   Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
+    # }
   }
   
   
@@ -134,11 +144,15 @@ ols.seed <- function(treepar, modelpar){
   ##               Defining Vu                  ##   
   ## ------------------------------------------ ##
   
-  if(!is.null(random.cov) & !is.null(fixed.cov) & !is.null(fixed.fact)){
+  if(!is.null(random.cov) & !is.null(fixed.fact)){
     if(ultrametric == TRUE){
-      Vu<-diag(c(rep(0,(N*(n.factor))), c(as.numeric(na.exclude(me.fixed.pred))),c(as.numeric(na.exclude(me.pred)))))
+      Vu<-diag(c(rep(0,(N*(n.factor))), 
+                 c(as.numeric(na.exclude(me.fixed.pred))),
+                 c(as.numeric(na.exclude(me.pred)))))
     }  else{
-      Vu<-diag(c(rep(0,N*(2+ n.factor))), c(as.numeric(na.exclude(me.fixed.pred))), c(as.numeric(na.exclude(me.pred))))
+      Vu<-diag(c(rep(0,N*(2+ n.factor))), 
+               c(as.numeric(na.exclude(me.fixed.pred))), 
+               c(as.numeric(na.exclude(me.pred))))
     } 
   }
   if(!is.null(random.cov) & is.null(fixed.cov) & is.null(fixed.fact)){

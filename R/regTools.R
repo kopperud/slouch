@@ -4,7 +4,7 @@
 ####
 
 # Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
-# account for non-ultrametric trees. Confirm?
+# account for non-ultrametric trees.
 
 make.cm2 <- function(a,tia,tja,ta,N,T.term){
   T.row <- replicate(N,T.term)
@@ -49,20 +49,20 @@ mk.obs_var_con <- function(a, hl, beta1, T, N, xx, x.ols, error_condition){
   obs_var_con
 }
 
-## General test for beta convergence
-test.conv <- function(beta.i, beta1, convergence, con.count, ultrametric){
-  if(ultrametric){
-    test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-  }else{
-    test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
-    ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric.
-  }
-  
-  if(sum(test)==0) return (TRUE)
-  if(con.count >= 50)
-  {
-    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-    return(TRUE)
-  }
-  return(FALSE)
-}
+# ## General test for beta convergence
+# test.conv <- function(beta.i, beta1, convergence, con.count, ultrametric){
+#   if(ultrametric | (is.null(fixed.cov) & is.null(random.cov))){
+#     test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+#   }else{
+#     test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
+#     ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
+#   }
+#   
+#   if(sum(test)==0) return (TRUE)
+#   if(con.count >= 50)
+#   {
+#     message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+#     return(TRUE)
+#   }
+#   return(FALSE)
+# }

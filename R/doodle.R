@@ -9,27 +9,28 @@ regression.closures <- function(treepar, modelpar, seed){
   ## Establish function to calculate design matrix X
   if(!is.null(fixed.fact)){
     calc.X <- function(a, hl){
-      if(hl == 0){
-        cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), pred)
-      }else{
-        cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
-      }
+      # if (hl == 0)
+      #   cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), pred)
+      # else
+      cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
     }
   }else{
     calc.X <- function(a, hl){
-      if(hl == 0){
-        cbind(1, fixed.pred, pred)
+      #if(hl == 0)
+      #  cbind(1, fixed.pred, pred)
+      #else
+      if (ultrametric == TRUE | is.null(random.cov)){
+        matrix(cbind(1,
+                     fixed.pred, 
+                     (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
+               nrow=N)
       }else{
-        if (ultrametric == TRUE){
-          matrix(cbind(1, fixed.pred, (1-(1-exp(-a*T.term))/(a*T.term))*pred), nrow=N)
-        }else{
-          matrix(cbind(1-exp(-a*T.term), 
-                       if (is.null(random.cov) & is.null(fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL,
-                       exp(-a*T.term),
-                       fixed.pred,
-                       (1-(1-exp(-a*T.term))/(a*T.term))*pred),
-                nrow=N)
-        }
+        matrix(cbind(1-exp(-a*T.term), 
+                     if (is.null(random.cov) & is.null(fixed.cov)) NULL else 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)),
+                     exp(-a*T.term),
+                     fixed.pred,
+                     (1-(1-exp(-a*T.term))/(a*T.term))*pred),
+               nrow=N)
       }
     }
   }
@@ -89,6 +90,7 @@ regression.closures <- function(treepar, modelpar, seed){
         }
       }
       
+      # Covariances
       mcov <- calc.mcov(a, beta1)
       mcov.fixed <- calc.mcov.fixed(a, beta1)
     }else{
@@ -96,16 +98,11 @@ regression.closures <- function(treepar, modelpar, seed){
       mcov <- 0
       mcov.fixed <- 0
     }
-      
+    
     ## Piece together V
     if(hl == 0){
-      a <- Inf
-
       cm0 <- diag(rep(vy, times=N))
     }else{
-      a <- log(2)/hl
-
-
       if(!is.null(random.cov)){
         s1 <- calc.s1(beta1)
         cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
@@ -117,6 +114,8 @@ regression.closures <- function(treepar, modelpar, seed){
     return(V)
   }
   
+  # Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
+  # account for non-ultrametric trees.
   calc.cm2 <- function(a){
     T.row <- replicate(N,T.term)
     T.col <- t(T.row)
@@ -124,12 +123,31 @@ regression.closures <- function(treepar, modelpar, seed){
     return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
   }
   
+  ## General test for beta convergence
+  test.conv <- function(beta.i, beta1, con.count){
+    if(ultrametric | (is.null(fixed.cov) & is.null(random.cov))){
+      test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+    }else{
+      #test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
+      test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+      ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
+    }
+    
+    if(sum(test)==0) return (TRUE)
+    if(con.count >= 50)
+    {
+      message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+      return(TRUE)
+    }
+    return(FALSE)
+  }
+  
   ## Function for regression & grid search
   slouch.regression <- function(hl_vy){
     hl <- hl_vy[1]; vy <- hl_vy[2]
     
     if(hl == 0){
-      a <- Inf
+      a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
     }else{
       a <- log(2)/hl
       if (!is.null(random.cov)){
@@ -143,32 +161,42 @@ regression.closures <- function(treepar, modelpar, seed){
     
     con.count <- 0
     repeat{
-      V <- calc.V(hl, vy, a, cm2, beta1 = beta1) # beta1, cm2
-      
+      V <- calc.V(hl, vy, a, cm2, beta1 = beta1)
       
       V.inverse<-solve(V)
+      #beta.i.var <- solve(t(X)%*%V.inverse%*%X)
       beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+      
+      #### Ask Thomas about this one.
+      if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
+      beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
+      if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
+      beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
+      
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
       
       ## Check for convergence
       con.count <- con.count + 1
-      if (test.conv(beta.i, beta1, convergence, con.count, ultrametric)) break
-      beta1<-beta.i
+      if (test.conv(beta.i, beta1, con.count)) {
+        beta1<-beta.i
+        break
+      }else{
+        beta1<-beta.i
+      }
     }
-    # Remember to bring the last beta
-    beta1<-beta.i
     
     ## Compute residuals
     eY<-X%*%beta1
     resid1<-Y-eY
     
+    ## Log-likelihood
     log.det.V <- mk.log.det.V(V = V, N = N)
-    
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
     
+    
     list(support = sup1,
-         V = V,
+         V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
          beta1 = beta1,
          X = X,
          Y = Y,
@@ -184,4 +212,24 @@ regression.closures <- function(treepar, modelpar, seed){
                        calc.V = calc.V,
                        slouch.regression = slouch.regression)
   return(all.closures)
+}
+
+# Find beta coef names
+coef.names.f <- function(modelpar, treepar, seed){
+  names.intercept <- 
+    if(is.null(modelpar$fixed.fact)){
+      if(treepar$ultrametric){
+        "Intercept"
+      }else{
+        c("Ya", "Xa", "Bo")
+      }
+    }else{
+      if(is.null(modelpar$intercept)){
+        c("Ya", levels(modelpar$regime.specs)[unique(modelpar$regime.specs)])
+      }
+      levels(modelpar$regime.specs)[unique(modelpar$regime.specs)]
+    } 
+  names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(modelpar$fixed.cov)) else colnames(modelpar$fixed.cov), 
+                        if(seed$n.pred == 1) deparse(substitute(modelpar$random.cov)) else colnames(modelpar$random.cov))
+  c(names.intercept, names.continuous)
 }

@@ -653,7 +653,8 @@ pseudoinverse <-
   function (topology, regime.specs) {
     n <- length(regime.specs);
     id <- seq(1,n)[topology > 0];       # find all non-root nodes
-    reg <- sort(unique(regime.specs[id]));
+    #reg <- sort(unique(regime.specs[id])) ## Bug: Sort can\will change order of levels in design matrix X at alpha = Inf, or atleast large alpha >~ 10000
+    reg <- unique(regime.specs[id])
     return(reg);
   }
 
@@ -860,8 +861,9 @@ weight.matrix<-function(alpha,
                         weight.m.regimes = regimes(topology, times, regime.specs, term))
 {
   if (alpha == Inf) alpha<-10000000000000000000
-  N <- N
+  #N <- N
   reg <- set.of.regimes(topology, regime.specs)
+  #print(reg)
   R <- length(reg)
   #term <- terminal.twigs(topology)
   T <- times[term]
@@ -894,7 +896,8 @@ weight.matrix<-function(alpha,
   else {
     if (intercept == "root") {
       root.reg <- as.character(regime.specs[times == 0])
-      nonroot.reg <- as.character(reg[reg != root.reg])
+      nonroot.reg <- as.character(reg[reg != root.reg]) ## Throws warning: -----  In is.na(e1) | is.na(e2) : longer object length is not a multiple of shorter object length
+      #nonroot.reg <- as.character(reg[-(reg %in% root.reg)])
       int <- as.matrix(W[, 1] + W[, root.reg])
       colnames(int) = root.reg
       if (max(int[, 1]) <= 0.01)
@@ -902,11 +905,14 @@ weight.matrix<-function(alpha,
       else {
         W2 <- cbind(int, W[, nonroot.reg])
         W <- W2
-        if(max(abs(W[,1]-W[,2]))<= 0.01) W<-W[,(2:length(W[1,]))] #sjekk denne for treghet
+        if(max(abs(W[,1]-W[,2]))<= 0.01){
+          W<-W[,(2:length(W[1,]))] #sjekk denne for treghet
+        } 
         #W <- W2[, 2:length(W2[1,])]
       }
-    }
-    else W[, 1] <- intercept
+    }else{
+      W[, 1] <- intercept
+    } 
   }
   if (max(W[, 1]) <= 0.01)
     W <- W[, -1];
