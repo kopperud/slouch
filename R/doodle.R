@@ -59,14 +59,16 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   ## Function to calculate covariances of the instantaneous predictor, to be subtracted in the diagonal of V
-  calc.mcov.fixed <- function(a, beta){
+  calc.mcov.fixed <- function(a, beta1){
     if(sum(me.fixed.cov) == 0){
       matrix(0, nrow=N, ncol=N)
     }else{
       if(ultrametric == TRUE){
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[(2 + n.factor):(length(beta1)-n.pred),])))
+        #diag(as.numeric(me.fixed.cov%*%(2*beta1[(1 + n.factor):(length(beta1)-n.pred),])))
+        diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+1):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
       }else{
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[(4 + n.factor):(length(beta1)-n.pred),])))
+        #diag(as.numeric(me.fixed.cov%*%(2*beta1[(3 + n.factor):(length(beta1)-n.pred),])))
+        diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+3):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
       }
     }
   }
@@ -214,22 +216,3 @@ regression.closures <- function(treepar, modelpar, seed){
   return(all.closures)
 }
 
-# Find beta coef names
-coef.names.f <- function(modelpar, treepar, seed){
-  names.intercept <- 
-    if(is.null(modelpar$fixed.fact)){
-      if(treepar$ultrametric){
-        "Intercept"
-      }else{
-        c("Ya", "Xa", "Bo")
-      }
-    }else{
-      if(is.null(modelpar$intercept)){
-        c("Ya", levels(modelpar$regime.specs)[unique(modelpar$regime.specs)])
-      }
-      levels(modelpar$regime.specs)[unique(modelpar$regime.specs)]
-    } 
-  names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(modelpar$fixed.cov)) else colnames(modelpar$fixed.cov), 
-                        if(seed$n.pred == 1) deparse(substitute(modelpar$random.cov)) else colnames(modelpar$random.cov))
-  c(names.intercept, names.continuous)
-}

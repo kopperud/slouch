@@ -63,7 +63,6 @@ model.fit.dev2<-function(topology,
   Y <- response[!is.na(response)]
   N <- length(Y)
   T.term <- times[terminal.twigs(topology)]
-  
   tia<-tsia(ancestor, time)
   tja<-tsja(ancestor, time)
   term<-terminal.twigs(topology)
@@ -115,7 +114,11 @@ model.fit.dev2<-function(topology,
   
 
   message("GRID SEARCH PARAMETER SUPPORT")
-  coef.names <- coef.names.f(modelpar, treepar, seed)
+  factor.names <- coef.names.factor(modelpar, treepar, seed)
+  names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov), 
+                        if(seed$n.pred == 1) deparse(substitute(random.cov)) else colnames(random.cov))
+  
+  coef.names <- c(factor.names, names.continuous)
   print(c("hl", "vy", "support", coef.names))
   
   all.closures <- regression.closures(treepar, modelpar, seed)
@@ -128,8 +131,8 @@ model.fit.dev2<-function(topology,
   estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
   
   sup2 <- sapply(estimates, function(e) e$support)
-  #gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
+  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+  #gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
 
   ml <- max(na.exclude(gof))
   gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
@@ -140,7 +143,7 @@ model.fit.dev2<-function(topology,
   ############################
   ###### PASTED IN FROM rREG 
   
-  ## Very bad: don't add list to env
+  ## Very bad: don't add list to env. Todo: Remove this
   list2env(seed, envir = environment())
   
   ## Find the regression for which the support value is maximized
@@ -195,6 +198,8 @@ model.fit.dev2<-function(topology,
     
     message("Ev regr")
     print(ev.reg)
+  }
+  if(!is.null(random.cov)){
     message("Stochastic predictor")
     print(matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))))
   }
