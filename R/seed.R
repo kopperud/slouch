@@ -141,7 +141,7 @@ ols.seed <- function(treepar, modelpar){
   }
   
   ## ------------------------------------------ ##
-  ##               Defining Vu                  ##   
+  ##               Defining Vu                  ##
   ## ------------------------------------------ ##
   
   if(!is.null(random.cov) & !is.null(fixed.fact)){

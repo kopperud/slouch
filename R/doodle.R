@@ -36,16 +36,20 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   
-  ## Function to calculate variance of instantaneous predictor in the OU-process
+  ## Function to return variance parameter of the OU-process, for potentially multiple random predictor variables.
+  ## FUNCTION BROKEN!!! (2+n.fixed.pred):(n.pred+n.fixed.pred+1) does not reflect which of beta1 pertains to the stochastic predictor
   calc.s1 <- function(beta1){
     if(ultrametric == TRUE){
-      as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
+      #as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
+      as.numeric(s.X%*%((beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),])^2))
     }else{
-      as.numeric(s.X%*%(beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]))
+      #as.numeric(s.X%*%(beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]))
+      as.numeric(s.X%*%((beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),])^2))
     }
   }
   
   ## Function to calculate covariances of the stochastic predictor, to be subtracted in the diagonal of V
+  ## BROKEN! Same as above. Needs fix.
   calc.mcov <- function(a, beta1){
     if(!is.null(random.cov)){
       if(ultrametric == TRUE){
@@ -59,6 +63,7 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   ## Function to calculate covariances of the instantaneous predictor, to be subtracted in the diagonal of V
+  ## potentially broken, untested 23 aug
   calc.mcov.fixed <- function(a, beta1){
     if(sum(me.fixed.cov) == 0){
       matrix(0, nrow=N, ncol=N)
@@ -83,6 +88,7 @@ regression.closures <- function(treepar, modelpar, seed){
       y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
     }
     
+    ## measurement error of predictor variables
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       obs_var_con <- matrix(0, nrow=N, ncol=N)
       for (e in seq(from=1, to=ncol(x.ols), by=1)){
