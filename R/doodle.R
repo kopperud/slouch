@@ -16,22 +16,18 @@ regression.closures <- function(treepar, modelpar, seed){
     }
   }else{
     calc.X <- function(a, hl){
-      #if(hl == 0)
-      #  cbind(1, fixed.pred, pred)
-      #else
-      if (ultrametric == TRUE | is.null(random.cov)){
-        matrix(cbind(1,
-                     fixed.pred, 
-                     (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
-               nrow=N)
+      if(!is.null(modelpar$intercept)){
+        K <- 1
       }else{
-        matrix(cbind(1-exp(-a*T.term), 
-                     if (is.null(random.cov) & is.null(fixed.cov)) NULL else 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)),
-                     exp(-a*T.term),
-                     fixed.pred,
-                     (1-(1-exp(-a*T.term))/(a*T.term))*pred),
-               nrow=N)
+        K <- cbind(exp(-a*T.term),
+                   1-exp(-a*T.term),
+                   if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
+                   )
       }
+      matrix(cbind(K,
+                   fixed.pred, 
+                   (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
+             nrow=N)
     }
   }
   
@@ -68,12 +64,12 @@ regression.closures <- function(treepar, modelpar, seed){
     if(sum(me.fixed.cov) == 0){
       matrix(0, nrow=N, ncol=N)
     }else{
-      if(ultrametric == TRUE){
-        #diag(as.numeric(me.fixed.cov%*%(2*beta1[(1 + n.factor):(length(beta1)-n.pred),])))
-        diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+1):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
+      if(!is.null(intercept)){
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[(1 + n.factor):(length(beta1)-n.pred),])))
+        #diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+1):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
       }else{
-        #diag(as.numeric(me.fixed.cov%*%(2*beta1[(3 + n.factor):(length(beta1)-n.pred),])))
-        diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+3):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
+        diag(as.numeric(me.fixed.cov%*%(2*beta1[(3 + n.factor):(length(beta1)-n.pred),])))
+        #diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+3):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
       }
     }
   }
@@ -133,7 +129,7 @@ regression.closures <- function(treepar, modelpar, seed){
   
   ## General test for beta convergence
   test.conv <- function(beta.i, beta1, con.count){
-    if(ultrametric | (is.null(fixed.cov) & is.null(random.cov))){
+    if(!is.null(modelpar$intercept) | (is.null(fixed.cov) & is.null(random.cov))){
       test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
     }else{
       #test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
@@ -182,6 +178,7 @@ regression.closures <- function(treepar, modelpar, seed){
       beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
       
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      print(beta.i);print(beta1)
       
       ## Check for convergence
       con.count <- con.count + 1

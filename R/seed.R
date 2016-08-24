@@ -76,7 +76,8 @@ ols.seed <- function(treepar, modelpar){
     x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
   }
   beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  if(ultrametric == FALSE & !is.null(random.cov)){
+  #if(ultrametric == FALSE & !is.null(random.cov)){
+  if(is.null(intercept)){
     beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
   }
   
@@ -129,7 +130,7 @@ ols.seed <- function(treepar, modelpar){
   if(ultrametric == TRUE){
     xx<-xx[-(1:(n.factor+n.fixed.pred))]
     yy<-yy[-(1:(n.factor+n.fixed.pred))]
-  }  else{
+  }else{
     xx<-xx[-(1:(2 + n.factor+n.fixed.pred))]
     yy<-yy[-(1:(2 + n.factor+n.fixed.pred))]
   }
@@ -171,7 +172,7 @@ ols.seed <- function(treepar, modelpar){
     Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.fixed.pred)))))
   }
   
-  if(is.null(random.cov) & is.null(fixed.cov) & !is.null(fixed.fact)){
+  if(is.null(random.cov) & is.null(fixed.cov)){
     Vu <- NULL
   }
   

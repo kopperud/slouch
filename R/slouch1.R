@@ -44,12 +44,13 @@ model.fit.dev2<-function(topology,
                         random.cov=NULL, 
                         me.random.cov=NULL, 
                         mecov.random.cov=NULL,  
-                        intercept="root", 
                         ultrametric=TRUE, 
+                        intercept= if(ultrametric==TRUE) "root" else NULL, 
                         support = 2, 
                         convergence = 0.000001, 
                         plot.angle = 30)
 {
+  stopifnot(intercept == "root" | is.null(intercept))
   ancestor <- topology
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -158,6 +159,8 @@ model.fit.dev2<-function(topology,
   
   ## Calculate evolutionary regression coefficients
   if(!is.null(random.cov) & is.null(fixed.fact)){
+    
+    
     X1<-cbind(1, seed$fixed.pred, seed$pred)
     ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
     ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
@@ -190,10 +193,11 @@ model.fit.dev2<-function(topology,
   message("Optimal regression, estimates + SE")
   print(opt.reg)
 
+  print(coef.names)
   
   if(!is.null(random.cov) & is.null(fixed.fact)){
     ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
-    row.names(ev.reg) <- coef.names
+    row.names(ev.reg) <- c("Intercept", names.continuous)
     colnames(ev.reg) <- c("Estimate", "Std. Error")
     
     message("Ev regr")

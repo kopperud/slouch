@@ -21,19 +21,22 @@ mk.log.det.V <- function(V, N){
 coef.names.factor <- function(modelpar, treepar, seed){
   names.intercept <- 
     if(is.null(modelpar$fixed.fact)){
-      if(treepar$ultrametric | is.null(modelpar$random.cov)){
+      #if(treepar$ultrametric | is.null(modelpar$random.cov)){
+      if(!is.null(modelpar$intercept)){
         "Intercept"
       }else{
-        c("Ya", "Xa", "Bo")
+        c("Intercept", "b0", if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov))"b1Xa" else NULL)
       }
     }else{
       if(is.null(modelpar$intercept)){
         c("Ya", levels(modelpar$regime.specs)[unique(modelpar$regime.specs)])
       }
-      levels(modelpar$regime.specs)[unique(modelpar$regime.specs)]
+      #levels(modelpar$regime.specs)[unique(modelpar$regime.specs)]
     } 
   # names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(modelpar$fixed.cov)) else colnames(modelpar$fixed.cov), 
   #                       if(seed$n.pred == 1) deparse(substitute(modelpar$random.cov)) else colnames(modelpar$random.cov))
   #c(names.intercept, names.continuous)
   names.intercept
 }
+
+##
