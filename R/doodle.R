@@ -31,46 +31,22 @@ regression.closures <- function(treepar, modelpar, seed){
     }
   }
   
-  
-  ## Function to return variance parameter of the OU-process, for potentially multiple random predictor variables.
-  ## FUNCTION BROKEN!!! (2+n.fixed.pred):(n.pred+n.fixed.pred+1) does not reflect which of beta1 pertains to the stochastic predictor
-  calc.s1 <- function(beta1){
-    if(ultrametric == TRUE){
-      #as.numeric(s.X%*%(beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),]))
-      as.numeric(s.X%*%((beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),])^2))
-    }else{
-      #as.numeric(s.X%*%(beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),]))
-      as.numeric(s.X%*%((beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),])^2))
-    }
-  }
-  
-  ## Function to calculate covariances of the stochastic predictor, to be subtracted in the diagonal of V
+  ## Function to calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
   ## BROKEN! Same as above. Needs fix.
   calc.mcov <- function(a, beta1){
-    if(!is.null(random.cov)){
-      if(ultrametric == TRUE){
-        diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(2+n.fixed.pred):(n.pred+n.fixed.pred+1),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
-      }else{
-        diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[(4+n.fixed.pred):(n.pred+n.fixed.pred+3),], (1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
-      }
-    }else{
+    if(sum(me.cov) == 0){
       0
+    }else{
+      diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
     }
   }
   
-  ## Function to calculate covariances of the instantaneous predictor, to be subtracted in the diagonal of V
-  ## potentially broken, untested 23 aug
+  ## Function to calculate covariances between response and instantaneous predictor, to be subtracted in the diagonal of V
   calc.mcov.fixed <- function(a, beta1){
     if(sum(me.fixed.cov) == 0){
       matrix(0, nrow=N, ncol=N)
     }else{
-      if(!is.null(intercept)){
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[(1 + n.factor):(length(beta1)-n.pred),])))
-        #diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+1):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
-      }else{
-        diag(as.numeric(me.fixed.cov%*%(2*beta1[(3 + n.factor):(length(beta1)-n.pred),])))
-        #diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[(n.factor+3):(length(beta1)-n.pred),], rep(1, times=N))), ncol=n.fixed.pred)))
-      }
+      diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
     }
   }
   
@@ -108,7 +84,7 @@ regression.closures <- function(treepar, modelpar, seed){
       cm0 <- diag(rep(vy, times=N))
     }else{
       if(!is.null(random.cov)){
-        s1 <- calc.s1(beta1)
+        s1 <- as.numeric(s.X%*%((beta1[which.random.cov,])^2))
         cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
       }else{
         cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
@@ -120,6 +96,7 @@ regression.closures <- function(treepar, modelpar, seed){
   
   # Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
   # account for non-ultrametric trees.
+  # It looks a little cryptic since it was vectorized from a nested for-loop
   calc.cm2 <- function(a){
     T.row <- replicate(N,T.term)
     T.col <- t(T.row)
@@ -178,7 +155,7 @@ regression.closures <- function(treepar, modelpar, seed){
       beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
       
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-      print(beta.i);print(beta1)
+      #print(beta.i);print(beta1)
       
       ## Check for convergence
       con.count <- con.count + 1
@@ -211,7 +188,6 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   all.closures <- list(calc.X = calc.X,
-                       calc.s1 = calc.s1,
                        calc.mcov = calc.mcov,
                        calc.mcov.fixed = calc.mcov.fixed,
                        calc.V = calc.V,

@@ -74,6 +74,33 @@ model.fit.dev2<-function(topology,
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
   
+  ## Establish beta names and descriptor
+  factor.names <- coef.names.factor(fixed.fact, random.cov, fixed.cov, intercept)
+  
+  names.fixed.cov <- if(!is.null(fixed.cov)){
+    if(ncol(as.matrix(fixed.cov))==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov)
+  }else{
+    NULL
+  }
+  
+  names.random.cov <- if(!is.null(random.cov)){
+    if(ncol(as.matrix(random.cov)) == 1) deparse(substitute(random.cov)) else colnames(random.cov)
+  }else{
+    NULL
+  }
+  
+  beta.descriptor <- c(rep("intercept", length(factor.names)),
+                       if (!is.null(fixed.cov)) rep("fixed.cov", ncol(as.matrix(fixed.cov))) else NULL,
+                       if (!is.null(random.cov)) rep("random.cov", ncol(as.matrix(random.cov))) else NULL)
+  
+  which.random.cov <- which(beta.descriptor == "random.cov")
+  which.fixed.cov <- which(beta.descriptor == "fixed.cov")
+  
+  ## All coefficient names
+  coef.names <- c(factor.names, names.fixed.cov, names.random.cov)
+  
+
+  
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T.term = T.term,
                   tia = tia,
@@ -107,19 +134,19 @@ model.fit.dev2<-function(topology,
                    convergence = convergence,
                    intercept = intercept,
                    regime.specs = as.factor(fixed.fact),
-                   factor.exists = !is.null(fixed.fact))
+                   factor.exists = !is.null(fixed.fact),
+                   which.random.cov = which.random.cov,
+                   which.fixed.cov = which.fixed.cov)
   
 
   
   seed <- ols.seed(treepar, modelpar)
   
 
-  message("GRID SEARCH PARAMETER SUPPORT")
-  factor.names <- coef.names.factor(modelpar, treepar, seed)
-  names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov), 
-                        if(seed$n.pred == 1) deparse(substitute(random.cov)) else colnames(random.cov))
   
-  coef.names <- c(factor.names, names.continuous)
+
+  message("GRID SEARCH PARAMETER SUPPORT")
+
   print(c("hl", "vy", "support", coef.names))
   
   all.closures <- regression.closures(treepar, modelpar, seed)
@@ -192,12 +219,10 @@ model.fit.dev2<-function(topology,
   
   message("Optimal regression, estimates + SE")
   print(opt.reg)
-
-  print(coef.names)
   
   if(!is.null(random.cov) & is.null(fixed.fact)){
     ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
-    row.names(ev.reg) <- c("Intercept", names.continuous)
+    row.names(ev.reg) <- c("Intercept", names.fixed.cov, names.random.cov)
     colnames(ev.reg) <- c("Estimate", "Std. Error")
     
     message("Ev regr")

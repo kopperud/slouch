@@ -6,8 +6,6 @@ ols.seed <- function(treepar, modelpar){
   
   ## RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
-  
-  
   if(!is.null(random.cov)){
     n.pred<-length(as.matrix(random.cov)[1,])
     pred<-data.frame(random.cov)
@@ -86,10 +84,6 @@ ols.seed <- function(treepar, modelpar){
   Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
   
   
-  
-  
-  
-  
   ## Define true_var
   if(!is.null(fixed.pred)){
     #Putting in elements in VD for fixed covariates
@@ -110,16 +104,6 @@ ols.seed <- function(treepar, modelpar){
       Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
     }
     
-    # if(model.type=="fReg") {
-    #   Vd<-diag(c(rep(0,N),true_var))
-    # }
-    # if(model.type =="ffANCOVA"){
-    #   Vd<-diag(c(rep(0,n.factor*N), true_var))
-    # }
-    # 
-    # if(model.type =="mmfANCOVA" | model.type =="mfReg"){
-    #   Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
-    # }
   }
   
   
@@ -144,6 +128,8 @@ ols.seed <- function(treepar, modelpar){
   ## ------------------------------------------ ##
   ##               Defining Vu                  ##
   ## ------------------------------------------ ##
+  
+  ## Measurement error in the predictor variable
   
   if(!is.null(random.cov) & !is.null(fixed.fact)){
     if(ultrametric == TRUE){
@@ -183,8 +169,6 @@ ols.seed <- function(treepar, modelpar){
     xx <- NULL
     error_condition <- NULL
   }
-
-  
   
   
   list(n.pred = n.pred,
