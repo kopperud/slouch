@@ -17,26 +17,20 @@ mk.log.det.V <- function(V, N){
   }
 }
 
-# Find beta coef names
-coef.names.factor <- function(modelpar, treepar, seed){
+# Find beta coef names of intercepts + factor variables
+coef.names.factor <- function(fixed.fact, random.cov, fixed.cov, intercept){
   names.intercept <- 
-    if(is.null(modelpar$fixed.fact)){
+    if(is.null(fixed.fact)){
       #if(treepar$ultrametric | is.null(modelpar$random.cov)){
-      if(!is.null(modelpar$intercept)){
+      if(!is.null(intercept)){
         "Intercept"
       }else{
-        c("Intercept", "b0", if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov))"b1Xa" else NULL)
+        c("Intercept", "b0", if (!is.null(random.cov) | !is.null(fixed.cov))"b1Xa" else NULL)
       }
     }else{
-      if(is.null(modelpar$intercept)){
-        c("Ya", levels(modelpar$regime.specs)[unique(modelpar$regime.specs)])
+      if(is.null(intercept)){
+        c("Ya", levels(regime.specs)[unique(factor(fixed.fact))])
       }
-      #levels(modelpar$regime.specs)[unique(modelpar$regime.specs)]
     } 
-  # names.continuous <- c(if(seed$n.fixed.pred==1) deparse(substitute(modelpar$fixed.cov)) else colnames(modelpar$fixed.cov), 
-  #                       if(seed$n.pred == 1) deparse(substitute(modelpar$random.cov)) else colnames(modelpar$random.cov))
-  #c(names.intercept, names.continuous)
   names.intercept
 }
-
-##
