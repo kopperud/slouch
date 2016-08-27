@@ -1,3 +1,10 @@
+## ------------------------------------------ ##
+##              This is the worst             ##
+##         part of the code. 27 aug 2016      ##
+## ------------------------------------------ ##
+
+
+
 ## Function to seed the OLS
 ## outputs; beta1, x.ols, xx, yy, Vu, Vd
 ols.seed <- function(treepar, modelpar){
@@ -42,11 +49,8 @@ ols.seed <- function(treepar, modelpar){
   # FIXED COVARIATES
   if(!is.null(fixed.cov)){
     n.fixed.pred<-length(as.matrix(fixed.cov)[1,])
-    
     fixed.pred<-data.frame(fixed.cov)
     fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred)
-    
-    
   }else{
     n.fixed.pred <- 0
     fixed.pred <- NULL
@@ -59,15 +63,15 @@ ols.seed <- function(treepar, modelpar){
   }
   
   if(is.null(mecov.fixed.cov)){
-    me.fixed.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    mecov.fixed.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
   }else{
-    me.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
+    mecov.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
   }
   
   regime.specs<-as.factor(fixed.fact)
   n.factor<-length(levels(regime.specs))
   
-  if(!is.null(fixed.fact) == TRUE){
+  if(!is.null(fixed.fact)){
     #x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.pred, intercept), pred)
     x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.cov, intercept), pred)
   }else{
@@ -75,10 +79,16 @@ ols.seed <- function(treepar, modelpar){
   }
   beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
   #if(ultrametric == FALSE & !is.null(random.cov)){
-  if(is.null(intercept)){
-    beta1<-rbind(0, 0, beta1) # 2 additional parameter seeds for Ya and Xa
+  if(is.null(intercept) & (!is.null(random.cov) | !is.null(fixed.cov))){
+    beta1<-rbind(0,
+                 0, 
+                 beta1) # 2 additional parameter seeds for Ya and Xa ##### Rather, b0 & b1Xa ?
   }
   
+  
+  ## ------------------------------------------ ##
+  ##               Defining Vd                  ##
+  ## ------------------------------------------ ##
   
   #Defining the dimensionality of Vd ## Might need to change the dimensionality of this matrix for different versions of the model and how that impacts the number of columns in x.ols
   Vd<-matrix(0,ncol=(N*length(beta1[,1])), nrow=(N*length(beta1[,1])))
@@ -101,7 +111,8 @@ ols.seed <- function(treepar, modelpar){
         Vd<-diag(c(rep(0,n.factor*N), true_var))
       }
     }else{
-      Vd[(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1))),(((N* n.factor)+(1)):(((N* n.factor)+(1))+((N*n.fixed.pred)-1)))]<-diag(c(true_var))
+      dim1 <- ((N* n.factor)+1):((N*n.factor)+(N*n.fixed.pred))
+      Vd[dim1,dim1]<-diag(c(true_var))
     }
     
   }
@@ -111,7 +122,7 @@ ols.seed <- function(treepar, modelpar){
   xx<-seq(from=1, to = length(Vd[,1]), by=N)
   yy<-seq(from=N, to = length(Vd[,1]), by=N)
   
-  if(ultrametric == TRUE){
+  if(!is.null(intercept)){
     xx<-xx[-(1:(n.factor+n.fixed.pred))]
     yy<-yy[-(1:(n.factor+n.fixed.pred))]
   }else{
@@ -131,19 +142,20 @@ ols.seed <- function(treepar, modelpar){
   
   ## Measurement error in the predictor variable
   
-  if(!is.null(random.cov) & !is.null(fixed.fact)){
-    if(ultrametric == TRUE){
-      Vu<-diag(c(rep(0,(N*(n.factor))), 
+  if(!is.null(random.cov) & !is.null(fixed.cov)){
+    if(is.null(fixed.fact)) n.factor1 <- 1 else n.factor1 <- n.factor ## Spaghetti introduced here. Please fix.
+    if(!is.null(intercept)){
+      Vu<-diag(c(rep(0,(N*(n.factor1))), 
                  c(as.numeric(na.exclude(me.fixed.pred))),
                  c(as.numeric(na.exclude(me.pred)))))
     }  else{
-      Vu<-diag(c(rep(0,N*(2+ n.factor))), 
+      Vu<-diag(c(rep(0,N*(2+ n.factor1))), 
                c(as.numeric(na.exclude(me.fixed.pred))), 
                c(as.numeric(na.exclude(me.pred))))
     } 
   }
   if(!is.null(random.cov) & is.null(fixed.cov) & is.null(fixed.fact)){
-    if(ultrametric == TRUE) {
+    if(!is.null(intercept)) {
       Vu<-diag(c(rep(0,N), c(as.numeric(na.exclude(me.pred)))))
     } else{
       Vu<-diag(c(rep(0,N*3), c(as.numeric(na.exclude(me.pred)))))
@@ -165,10 +177,13 @@ ols.seed <- function(treepar, modelpar){
   if(!is.null(random.cov) | !is.null(fixed.cov)){
     xx<-seq(from=1, to=length(Vu[,1]), by=N)
     error_condition<-Vu-(Vu%*%pseudoinverse(Vu+Vd)%*%Vu)
-  }else{
+    }else{
     xx <- NULL
     error_condition <- NULL
-  }
+    }
+  
+
+    
   
   
   list(n.pred = n.pred,
