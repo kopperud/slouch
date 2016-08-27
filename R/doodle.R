@@ -1,3 +1,32 @@
+calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg){
+  list2env(modelpar, envir = environment())
+  list2env(treepar, envir = environment())
+  list2env(seed, envir = environment())
+  
+  if(is.opt.reg == TRUE){
+    rho <- (1-(1-exp(-a*T.term))/(a*T.term))
+  }else{
+    rho <- 1
+  }
+  if(!is.null(fixed.fact)){
+    cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), rho*pred)
+  }else{
+    if(!is.null(modelpar$intercept) | (is.null(modelpar$random.cov) & is.null(modelpar$fixed.cov))){
+      K <- 1
+    }else{
+      K <- cbind(exp(-a*T.term),
+                 1-exp(-a*T.term),
+                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
+      )
+    }
+    matrix(cbind(K,
+                 fixed.pred,
+                 rho*pred), 
+           nrow=N)
+  }
+}
+
+
 regression.closures <- function(treepar, modelpar, seed){
   ## bind global variables to this environment
   list2env(treepar, envir = environment())
@@ -7,29 +36,26 @@ regression.closures <- function(treepar, modelpar, seed){
   
   
   ## Establish function to calculate design matrix X
-  if(!is.null(fixed.fact)){
-    calc.X <- function(a, hl){
-      # if (hl == 0)
-      #   cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), pred)
-      # else
-      cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
-    }
-  }else{
-    calc.X <- function(a, hl){
-      if(!is.null(modelpar$intercept)){
-        K <- 1
-      }else{
-        K <- cbind(exp(-a*T.term),
-                   1-exp(-a*T.term),
-                   if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
-                   )
-      }
-      matrix(cbind(K,
-                   fixed.pred, 
-                   (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
-             nrow=N)
-    }
-  }
+  # if(!is.null(fixed.fact)){
+  #   calc.X <- function(a, hl){
+  #     cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
+  #   }
+  # }else{
+  #   calc.X <- function(a, hl){
+  #     if(!is.null(modelpar$intercept)){
+  #       K <- 1
+  #     }else{
+  #       K <- cbind(exp(-a*T.term),
+  #                  1-exp(-a*T.term),
+  #                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
+  #                  )
+  #     }
+  #     matrix(cbind(K,
+  #                  fixed.pred,
+  #                  (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
+  #            nrow=N)
+  #   }
+  # }
   
   ## Function to calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
   ## BROKEN! Same as above. Needs fix.
@@ -43,10 +69,10 @@ regression.closures <- function(treepar, modelpar, seed){
   
   ## Function to calculate covariances between response and instantaneous predictor, to be subtracted in the diagonal of V
   calc.mcov.fixed <- function(a, beta1){
-    if(sum(me.fixed.cov) == 0){
+    if(sum(mecov.fixed.cov) == 0){
       matrix(0, nrow=N, ncol=N)
     }else{
-      diag(rowSums(matrix(data=as.numeric(me.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
+      diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
     }
   }
   
@@ -135,7 +161,8 @@ regression.closures <- function(treepar, modelpar, seed){
         cm2 <- calc.cm2(a)
       }else cm2 <- NULL
     }
-    X <- calc.X(a, hl)
+    #X <- calc.X(a, hl)
+    X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
     
     ## ols.beta1 exists from OLS estimate
     beta1 <- ols.beta1
@@ -187,7 +214,7 @@ regression.closures <- function(treepar, modelpar, seed){
          vy.est = vy)
   }
   
-  all.closures <- list(calc.X = calc.X,
+  all.closures <- list(#calc.X = calc.X,
                        calc.mcov = calc.mcov,
                        calc.mcov.fixed = calc.mcov.fixed,
                        calc.V = calc.V,
