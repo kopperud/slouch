@@ -1006,7 +1006,7 @@ np.regression<-function(response, me.response, predictor, me.predictor, converge
 
 
 
-make.vector.grid <- function(modelpar){
-  cbind(sort(rep(modelpar$half_life_values, length(modelpar$vy_values)), decreasing = TRUE), rep(modelpar$vy_values, length(modelpar$half_life_values)))
-}
+# make.vector.grid <- function(modelpar){
+#   cbind(sort(rep(modelpar$half_life_values, length(modelpar$vy_values)), decreasing = TRUE), rep(modelpar$vy_values, length(modelpar$half_life_values)))
+# }
 
