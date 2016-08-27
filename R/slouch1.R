@@ -109,7 +109,7 @@ model.fit.dev2<-function(topology,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  ultrametric = ultrametric,
+                  #ultrametric = ultrametric,
                   topology = topology,
                   ancestor = ancestor,
                   times = times,
@@ -188,7 +188,8 @@ model.fit.dev2<-function(topology,
   if(!is.null(random.cov) & is.null(fixed.fact)){
     
     
-    X1<-cbind(1, seed$fixed.pred, seed$pred)
+    #X1<-cbind(1, seed$fixed.pred, seed$pred)
+    X1 <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
     ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
     ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
   }else{
@@ -209,7 +210,6 @@ model.fit.dev2<-function(topology,
   aic <- -2*ml+2*(2+n.par)
   aicc <- aic +(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
 
-
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
   row.names(opt.reg) <- coef.names
@@ -222,7 +222,8 @@ model.fit.dev2<-function(topology,
   
   if(!is.null(random.cov) & is.null(fixed.fact)){
     ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
-    row.names(ev.reg) <- c("Intercept", names.fixed.cov, names.random.cov)
+    #row.names(ev.reg) <- c("Intercept", names.fixed.cov, names.random.cov)
+    row.names(ev.reg) <- coef.names
     colnames(ev.reg) <- c("Estimate", "Std. Error")
     
     message("Ev regr")
