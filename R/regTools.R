@@ -19,7 +19,6 @@ mk.log.det.V <- function(V, N){
 
 # Find beta coef names of intercepts + factor variables
 coef.names.factor <- function(fixed.fact, random.cov, fixed.cov, intercept){
-  names.intercept <- 
     if(is.null(fixed.fact)){
       #if(treepar$ultrametric | is.null(modelpar$random.cov)){
       if(!is.null(intercept)){
@@ -31,8 +30,9 @@ coef.names.factor <- function(fixed.fact, random.cov, fixed.cov, intercept){
       }
     }else{
       if(is.null(intercept)){
-        c("Ya", levels(regime.specs)[unique(factor(fixed.fact))])
+        c("Ya", levels(as.factor(fixed.fact))[unique(factor(fixed.fact))])
+      }else{
+        levels(as.factor(fixed.fact))[unique(factor(fixed.fact))]
       }
-    } 
-  names.intercept
+    }
 }

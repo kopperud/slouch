@@ -33,30 +33,6 @@ regression.closures <- function(treepar, modelpar, seed){
   list2env(modelpar, envir = environment())
   list2env(seed, envir = environment())
   
-  
-  
-  ## Establish function to calculate design matrix X
-  # if(!is.null(fixed.fact)){
-  #   calc.X <- function(a, hl){
-  #     cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), (1-(1-exp(-a*T.term))/(a*T.term))*pred)
-  #   }
-  # }else{
-  #   calc.X <- function(a, hl){
-  #     if(!is.null(modelpar$intercept)){
-  #       K <- 1
-  #     }else{
-  #       K <- cbind(exp(-a*T.term),
-  #                  1-exp(-a*T.term),
-  #                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
-  #                  )
-  #     }
-  #     matrix(cbind(K,
-  #                  fixed.pred,
-  #                  (1-(1-exp(-a*T.term))/(a*T.term))*pred), 
-  #            nrow=N)
-  #   }
-  # }
-  
   ## Function to calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
   ## BROKEN! Same as above. Needs fix.
   calc.mcov <- function(a, beta1){
@@ -93,8 +69,22 @@ regression.closures <- function(treepar, modelpar, seed){
         for (j in seq(from=1, to=ncol(x.ols), by=1)) {
           tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
           obs_var_con <- obs_var_con + tmp
+          
+
         }
       }
+    mepredictorf <- function(){
+      obs_var_con <- matrix(0, nrow=N, ncol=N)
+      for (e in seq(from=1, to=ncol(x.ols), by=1)){
+        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
+          tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
+          obs_var_con <- obs_var_con + tmp
+        }
+      }
+    }
+
+    print(microbenchmark(mepredictorf()))
+      
       
       # Covariances
       mcov <- calc.mcov(a, beta1)
@@ -159,10 +149,12 @@ regression.closures <- function(treepar, modelpar, seed){
       a <- log(2)/hl
       if (!is.null(random.cov)){
         cm2 <- calc.cm2(a)
+        #print(microbenchmark(calc.cm2(a)))
       }else cm2 <- NULL
     }
     #X <- calc.X(a, hl)
     X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
+    #print(microbenchmark(calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)))
     
     ## ols.beta1 exists from OLS estimate
     beta1 <- ols.beta1
@@ -170,6 +162,7 @@ regression.closures <- function(treepar, modelpar, seed){
     con.count <- 0
     repeat{
       V <- calc.V(hl, vy, a, cm2, beta1 = beta1)
+      #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
       V.inverse<-solve(V)
       #beta.i.var <- solve(t(X)%*%V.inverse%*%X)
@@ -200,8 +193,11 @@ regression.closures <- function(treepar, modelpar, seed){
     
     ## Log-likelihood
     log.det.V <- mk.log.det.V(V = V, N = N)
+    #print(microbenchmark(mk.log.det.V(V = V, N = N)))
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+    # printmsg <- as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4))
+    # cat(printmsg); cat("\n")
     
     
     list(support = sup1,

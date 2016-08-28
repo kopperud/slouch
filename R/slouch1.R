@@ -48,7 +48,8 @@ model.fit.dev2<-function(topology,
                         intercept= if(ultrametric==TRUE) "root" else NULL, 
                         support = 2, 
                         convergence = 0.000001, 
-                        plot.angle = 30)
+                        plot.angle = 30,
+                        parallel.compute = FALSE)
 {
   stopifnot(intercept == "root" | is.null(intercept))
   ancestor <- topology
@@ -146,8 +147,7 @@ model.fit.dev2<-function(topology,
   
 
   message("GRID SEARCH PARAMETER SUPPORT")
-
-  print(c("hl", "vy", "support", coef.names))
+  cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
   
   all.closures <- regression.closures(treepar, modelpar, seed)
   
@@ -155,12 +155,22 @@ model.fit.dev2<-function(topology,
   #return(all.closures)
   
 
+  #############
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
-  estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+  
+  if(parallel.compute == TRUE){
+    n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
+    cl <- makeCluster(getOption("cl.cores", n.cores))
+    
+    estimates <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
+    
+    stopCluster(cl)
+  }else{
+    estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+  }
   
   sup2 <- sapply(estimates, function(e) e$support)
   gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-  #gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE)
 
   ml <- max(na.exclude(gof))
   gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
@@ -212,6 +222,7 @@ model.fit.dev2<-function(topology,
 
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
+  print(coef.names);print(opt.reg)
   row.names(opt.reg) <- coef.names
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
