@@ -83,7 +83,6 @@ regression.closures <- function(treepar, modelpar, seed){
       }
     }
 
-    print(microbenchmark(mepredictorf()))
       
       
       # Covariances
