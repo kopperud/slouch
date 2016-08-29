@@ -73,15 +73,6 @@ regression.closures <- function(treepar, modelpar, seed){
 
         }
       }
-    mepredictorf <- function(){
-      obs_var_con <- matrix(0, nrow=N, ncol=N)
-      for (e in seq(from=1, to=ncol(x.ols), by=1)){
-        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-          tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
-          obs_var_con <- obs_var_con + tmp
-        }
-      }
-    }
 
       
       
