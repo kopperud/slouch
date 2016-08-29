@@ -1,10 +1,9 @@
-# slouch
-Slouch in development
+---
+output: html_document
+---
+# How to: Install & load devtools
 
-## How to install this package
 Careful, it is in development.
-
-# Install & load devtools
 ```
 install.packages("devtools")
 library(devtools)
@@ -12,10 +11,10 @@ library(devtools)
 
 # Install and load this packaage
 ```
-devtools::install_github("bjornkopperud/slouch")
-library(slouch)
+devtools::install_github("bjornkopperud/slouchexp")
+library(slouchexp)
 ```
 
-Since it is in development, I've changed the name of model.fit command, as to point out that it is in dev, to `model.fit.dev()`.
+Since it is in development, I've changed the name of model.fit command, as to point out that it is in dev, to `model.fit.dev2()`.
 
-Rudimentary helpfiles exist, such as `?model.fit.dev`
+Rudimentary helpfiles exist, such as `?model.fit.dev2`

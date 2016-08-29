@@ -69,8 +69,6 @@ regression.closures <- function(treepar, modelpar, seed){
         for (j in seq(from=1, to=ncol(x.ols), by=1)) {
           tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
           obs_var_con <- obs_var_con + tmp
-          
-
         }
       }
 
