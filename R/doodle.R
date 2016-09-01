@@ -1,4 +1,4 @@
-calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg){
+calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
   list2env(seed, envir = environment())
@@ -34,7 +34,7 @@ regression.closures <- function(treepar, modelpar, seed){
   list2env(seed, envir = environment())
   
   ## Function to calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-  ## BROKEN! Same as above. Needs fix.
+  ## BROKEN!? Needs test.
   calc.mcov <- function(a, beta1){
     if(sum(me.cov) == 0){
       0
@@ -71,8 +71,6 @@ regression.closures <- function(treepar, modelpar, seed){
           obs_var_con <- obs_var_con + tmp
         }
       }
-
-      
       
       # Covariances
       mcov <- calc.mcov(a, beta1)
@@ -101,8 +99,10 @@ regression.closures <- function(treepar, modelpar, seed){
   # Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
   # account for non-ultrametric trees.
   # It looks a little cryptic since it was vectorized from a nested for-loop
+  # Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
   calc.cm2 <- function(a){
-    T.row <- replicate(N,T.term)
+    #T.row <- replicate(N,T.term)
+    T.row <- matrix(rep(T.term, N), nrow=N)
     T.col <- t(T.row)
     num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
     return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
@@ -110,13 +110,17 @@ regression.closures <- function(treepar, modelpar, seed){
   
   ## General test for beta convergence
   test.conv <- function(beta.i, beta1, con.count){
-    if(!is.null(modelpar$intercept) | (is.null(fixed.cov) & is.null(random.cov))){
+    if(!is.null(modelpar$intercept)){
       test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-    }else{
-      #test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
-      test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+    }else if(is.null(modelpar$intercept) & (!is.null(modelpar$fixed.fact)) | (is.null(fixed.cov) & is.null(random.cov))){
+      test <- ifelse(abs(as.numeric(beta.i - beta1))[-1] <= convergence, 0, 1)
+    }
+    else{
+      test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
+      #test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
       ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
     }
+    #print(test)
     
     if(sum(test)==0) return (TRUE)
     if(con.count >= 50)
@@ -137,12 +141,9 @@ regression.closures <- function(treepar, modelpar, seed){
       a <- log(2)/hl
       if (!is.null(random.cov)){
         cm2 <- calc.cm2(a)
-        #print(microbenchmark(calc.cm2(a)))
       }else cm2 <- NULL
     }
-    #X <- calc.X(a, hl)
     X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
-    #print(microbenchmark(calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)))
     
     ## ols.beta1 exists from OLS estimate
     beta1 <- ols.beta1
@@ -163,7 +164,10 @@ regression.closures <- function(treepar, modelpar, seed){
       beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
       
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-      #print(beta.i);print(beta1)
+      
+      ## Defensive & debug conditions
+      if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
+      if(any(is.na(beta.i))) stop("For hl = ", hl," and vy = ", vy," the gls estimate of beta is NA. Consider using different hl or vy.")
       
       ## Check for convergence
       con.count <- con.count + 1
@@ -179,15 +183,13 @@ regression.closures <- function(treepar, modelpar, seed){
     eY<-X%*%beta1
     resid1<-Y-eY
     
-    ## Log-likelihood
     log.det.V <- mk.log.det.V(V = V, N = N)
-    #print(microbenchmark(mk.log.det.V(V = V, N = N)))
+    
+    ## Log-likelihood
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
-    # printmsg <- as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4))
-    # cat(printmsg); cat("\n")
     
-    
+    ## Return a list
     list(support = sup1,
          V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
          beta1 = beta1,
@@ -198,8 +200,7 @@ regression.closures <- function(treepar, modelpar, seed){
          vy.est = vy)
   }
   
-  all.closures <- list(#calc.X = calc.X,
-                       calc.mcov = calc.mcov,
+  all.closures <- list(calc.mcov = calc.mcov,
                        calc.mcov.fixed = calc.mcov.fixed,
                        calc.V = calc.V,
                        slouch.regression = slouch.regression)
