@@ -143,7 +143,7 @@ ols.seed <- function(treepar, modelpar){
   ## Measurement error in the predictor variable
   
   if(!is.null(random.cov) & !is.null(fixed.cov)){
-    if(is.null(fixed.fact)) n.factor1 <- 1 else n.factor1 <- n.factor ## Spaghetti introduced here. Please fix.
+    if(is.null(fixed.fact)) n.factor1 <- 1 else n.factor1 <- n.factor ## Spaghetti introduced here. Please fix. EXTREMELY BAD PRACTICE
     if(!is.null(intercept)){
       Vu<-diag(c(rep(0,(N*(n.factor1))), 
                  c(as.numeric(na.exclude(me.fixed.pred))),
