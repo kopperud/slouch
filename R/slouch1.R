@@ -49,7 +49,8 @@ model.fit.dev2<-function(topology,
                         support = 2, 
                         convergence = 0.000001, 
                         plot.angle = 30,
-                        parallel.compute = FALSE)
+                        parallel.compute = FALSE,
+                        hillclimb = FALSE)
 {
   stopifnot(intercept == "root" | is.null(intercept))
   ancestor <- topology
@@ -157,23 +158,46 @@ model.fit.dev2<-function(topology,
 
   #############
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+  time0 <- Sys.time()
   
-  if(parallel.compute == TRUE){
-    n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
-    cl <- makeCluster(getOption("cl.cores", n.cores))
+  
+  if(hillclimb){
+    hl_vy_est <- optim(c(1,1), 
+                 all.closures$slouch.regression,
+                 gradsearch = TRUE,
+                 lower=0, 
+                 method="L-BFGS-B")
     
-    estimates <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
-    
-    stopCluster(cl)
+    best.estimate <- all.closures$slouch.regression(hl_vy_est$par)
+    ml <- (-1)*hl_vy_est$value
   }else{
-    estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+    if(parallel.compute == TRUE){
+      n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
+      cl <- makeCluster(getOption("cl.cores", n.cores))
+      
+      estimates <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
+      
+      stopCluster(cl)
+    }else{
+      
+      estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+      
+    }
+    print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," seconds."))
+    sup2 <- sapply(estimates, function(e) e$support)
+    
+    gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+    
+    ml <- max(na.exclude(gof))
+    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+    
+    ## Find the regression for which the support value is maximized
+    best.estimate <- estimates[[which.max(sup2)]]
   }
-  
-  sup2 <- sapply(estimates, function(e) e$support)
-  gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
 
-  ml <- max(na.exclude(gof))
-  gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+  
+  
+
   
   
   
@@ -184,8 +208,7 @@ model.fit.dev2<-function(topology,
   ## Very bad: don't add list to env. Todo: Remove this
   list2env(seed, envir = environment())
   
-  ## Find the regression for which the support value is maximized
-  best.estimate <- estimates[[which.max(sup2)]]
+
   V.est <- best.estimate$V; V.inverse <- solve(V.est)
   beta1.est <- beta1 <-  best.estimate$beta1
   beta1.var.est <- beta.i.var <- best.estimate$beta1.var
@@ -263,9 +286,9 @@ model.fit.dev2<-function(topology,
   print(modfit)
   
 
-  
-  # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
-  if(length(half_life_values) > 1 && length(vy_values) > 1){
+  if(!hillclimb){
+    # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
+    if(length(half_life_values) > 1 && length(vy_values) > 1){
       h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values))
       for(i in 1:length(vy_values)){
         h.lives[,i]=rev(gof[,i])
@@ -278,6 +301,7 @@ model.fit.dev2<-function(topology,
       persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
             ltheta = 120, shade = 0.75, ticktype = "detailed",
             xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
+    }
   }
 
   print("debug: model.fit.dev w closures")
