@@ -26,6 +26,22 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   }
 }
 
+# # Part "two" of variance-covariance matrix of residuals in regression, hansen et al. 2008.
+# # It looks a little cryptic since it was vectorized from a nested for-loop
+# # Still has rather slow performance. 01 sept 2016.
+# calc.cm2 <- function(a){
+#   #T.row <- replicate(N,T.term)
+#   T.row <- matrix(rep(T.term, N), nrow=N)
+#   T.col <- t(T.row)
+#   term0 <- (1-exp(-a*T.row))
+#   term1 <- exp(-a*tia)
+#   
+#   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
+#   return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
+#            (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
+#   #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
+# }
+
 
 regression.closures <- function(treepar, modelpar, seed){
   ## bind global variables to this environment
@@ -96,16 +112,20 @@ regression.closures <- function(treepar, modelpar, seed){
     return(V)
   }
   
-  # Part "two" of variance-covariance matrix, hansen et al. 2008. Everything after sigma^2_theta * ta ????? Looks like equation is modified to 
-  # account for non-ultrametric trees.
+  # Part "two" of variance-covariance matrix, hansen et al. 2008.
   # It looks a little cryptic since it was vectorized from a nested for-loop
   # Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
   calc.cm2 <- function(a){
     #T.row <- replicate(N,T.term)
     T.row <- matrix(rep(T.term, N), nrow=N)
     T.col <- t(T.row)
+    term0 <- (1-exp(-a*T.row))
+    term1 <- exp(-a*tia)
+    
     num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-    return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
+    return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
+             (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
+    #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
   }
   
   ## General test for beta convergence
@@ -132,7 +152,7 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   ## Function for regression & grid search
-  slouch.regression <- function(hl_vy){
+  slouch.regression <- function(hl_vy, gradsearch = FALSE){
     hl <- hl_vy[1]; vy <- hl_vy[2]
     
     if(hl == 0){
@@ -188,6 +208,10 @@ regression.closures <- function(treepar, modelpar, seed){
     ## Log-likelihood
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+    
+    if(gradsearch){
+      return((-1)*sup1)
+    }
     
     ## Return a list
     list(support = sup1,
