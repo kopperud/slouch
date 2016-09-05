@@ -183,7 +183,7 @@ model.fit.dev2<-function(topology,
       estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
       
     }
-    print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," seconds."))
+
     sup2 <- sapply(estimates, function(e) e$support)
     
     gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
@@ -194,7 +194,7 @@ model.fit.dev2<-function(topology,
     ## Find the regression for which the support value is maximized
     best.estimate <- estimates[[which.max(sup2)]]
   }
-
+  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," seconds."))
   
   
 
@@ -245,7 +245,7 @@ model.fit.dev2<-function(topology,
 
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
-  print(coef.names);print(opt.reg)
+  #print(coef.names);print(opt.reg)
   row.names(opt.reg) <- coef.names
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
