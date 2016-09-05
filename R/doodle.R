@@ -71,22 +71,21 @@ regression.closures <- function(treepar, modelpar, seed){
   ## Function to calculate V
   calc.V <- function(hl, vy, a, cm2, beta1){
     
-    ## Update measurement error in X
+    ## Update measurement error in X. Ask thomas about this ?
     if (hl == 0 | is.null(random.cov)){
       y <- 1
     }   else {
       y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
     }
     
-    ## measurement error of predictor variables
-    if(!is.null(fixed.cov) | !is.null(random.cov)){
-      obs_var_con <- matrix(0, nrow=N, ncol=N)
-      for (e in seq(from=1, to=ncol(x.ols), by=1)){
-        for (j in seq(from=1, to=ncol(x.ols), by=1)) {
-          tmp <- error_condition[xx[e]:(e*N),xx[j]:(j*N)]*beta1[e]*beta1[j]*y
-          obs_var_con <- obs_var_con + tmp
-        }
+      if(!is.null(fixed.cov) | !is.null(random.cov)){
+      ## Measurement error in predictor - take 2
+      beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
+      obs_var_con2 <- list()
+      for (i in length(beta_continuous)){
+      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
       }
+      obs_var_con2 <- Reduce('+', obs_var_con2)
       
       # Covariances
       mcov <- calc.mcov(a, beta1)
@@ -108,7 +107,7 @@ regression.closures <- function(treepar, modelpar, seed){
         cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
       }
     }
-    V <- cm0 + na.exclude(me.response) + obs_var_con - mcov - mcov.fixed
+    V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
     return(V)
   }
   
