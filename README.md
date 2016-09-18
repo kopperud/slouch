@@ -11,8 +11,8 @@ library(devtools)
 
 # Install and load this packaage
 ```
-devtools::install_github("bjornkopperud/slouchexp")
-library(slouchexp)
+devtools::install_github("kopperud/slouch")
+library(slouch)
 ```
 
 Since it is in development, I've changed the name of model.fit command, as to point out that it is in dev, to `model.fit.dev2()`.

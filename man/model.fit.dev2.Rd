@@ -7,9 +7,10 @@
 model.fit.dev2(topology, times, half_life_values, vy_values, response,
   me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
-  me.random.cov = NULL, mecov.random.cov = NULL, intercept = "root",
-  ultrametric = TRUE, support = NULL, convergence = NULL,
-  plot.angle = 30, parallel.compute = FALSE)
+  me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
+  intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
+  convergence = 1e-06, plot.angle = 30, parallel.compute = FALSE,
+  hillclimb = FALSE)
 }
 \arguments{
 \item{plot.angle}{}
