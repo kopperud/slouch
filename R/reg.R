@@ -228,6 +228,7 @@ regression.closures <- function(treepar, modelpar, seed){
          Y = Y,
          beta1.var = beta.i.var,
          alpha.est = a,
+         hl.est = hl,
          vy.est = vy)
   }
   

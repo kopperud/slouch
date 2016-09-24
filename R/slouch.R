@@ -177,6 +177,15 @@ model.fit.dev2<-function(topology,
     ml <- max(na.exclude(gof))
     gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     
+    ## All hl + vy in the support interval
+    hlsupport <- ifelse(sup2 <= ml - support, NA, sapply(estimates, function(e) e$hl.est))
+    vysupport <- ifelse(sup2 <= ml - support, NA, sapply(estimates, function(e) e$vy.est))
+    
+    hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
+                                   max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
+                                 ncol = 2, nrow = 2,
+                                 dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
+    
     ## Find the regression for which the support value is maximized
     best.estimate <- estimates[[which.max(sup2)]]
   }
@@ -185,10 +194,6 @@ model.fit.dev2<-function(topology,
   
   ############################
   ###### PASTED IN FROM rREG 
-  
-  ## Very bad: don't add list to env. Todo: Remove this
-  #list2env(seed, envir = environment())
-  
 
   V.est <- best.estimate$V
   V.inverse <- solve(V.est)
@@ -218,6 +223,11 @@ model.fit.dev2<-function(topology,
   message("Model parameters")
   oupar <- matrix(c(alpha.est, log(2)/alpha.est, vy.est), ncol=1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance"), "Estimate"))
   print(oupar)
+  
+  if(!hillclimb){
+    message("Interval of parameters in 3d plot")
+    print(hlvy_grid_interval)
+  }
   
   message("Optimal regression, estimates + SE")
   print(opt.reg)
