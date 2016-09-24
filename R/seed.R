@@ -131,16 +131,17 @@ ols.seed <- function(treepar, modelpar){
       Vx <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vu[[i]]
       Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx) %*% Vu[[i]])
     }
+  }else{
+    Vu_given_x = NULL
   }
   
   
-  list(n.pred = n.pred,
-       s.X = s.X,
+  list(s.X = s.X,
        theta.X = theta.X,
        pred = pred,
        me.pred = me.pred,
+       n.pred = n.pred,
        me.cov = me.cov,
-       #n.factor = n.factor,
        fixed.pred = fixed.pred,
        n.fixed.pred = n.fixed.pred,
        me.fixed.pred = me.fixed.pred,

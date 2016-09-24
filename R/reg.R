@@ -1,3 +1,20 @@
+## Calculate determinant of V
+mk.log.det.V <- function(V, N){
+  det.V<-det(V)
+  if(det.V==0){
+    print(paste("Warning: Determinant of V = 0"))
+    #Minimum value of diagonal scaling factor
+    inv.min.diag.V<-1/min(diag(V))
+    V<-V*inv.min.diag.V
+    #Rescale and log determinant
+    log(det(V))+log(min(diag(V)))*N
+  }
+  else {
+    log(det.V)
+  }
+}
+
+## Design matrix
 calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
@@ -9,20 +26,26 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     rho <- 1
   }
   if(!is.null(fixed.fact)){
-    cbind(weight.matrix(a, topology, times, N, regime.specs, fixed.pred, intercept), rho*pred)
+    m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
+    m2 <- matrix(cbind(fixed.pred, rho*pred), dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+    return(cbind(m1,m2))
   }else{
-    if(!is.null(modelpar$intercept) | (is.null(modelpar$random.cov) & is.null(modelpar$fixed.cov))){
+    if(!is.null(modelpar$intercept)){
       K <- 1
+      K.name <- "Intercept"
     }else{
       K <- cbind(exp(-a*T.term),
                  1-exp(-a*T.term),
-                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL
-      )
+                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
+      K.name <- c("Intercept",
+                  "b0",
+                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "b1Xa" else NULL)
     }
     matrix(cbind(K,
                  fixed.pred,
                  rho*pred), 
-           nrow=N)
+           nrow=N,
+           dimnames=list(NULL, c(K.name, names.fixed.cov, names.random.cov)))
   }
 }
 
@@ -41,42 +64,21 @@ calc.cm2 <- function(a, T.term, N, tia, ta){
   #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
 }
 
-
 regression.closures <- function(treepar, modelpar, seed){
   ## bind global variables to this environment
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
   list2env(seed, envir = environment())
-  
-  ## Function to calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-  ## BROKEN!? Needs test.
-  calc.mcov <- function(a, beta1){
-    if(sum(me.cov) == 0){
-      0
-    }else{
-      diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
-    }
-  }
-  
-  ## Function to calculate covariances between response and instantaneous predictor, to be subtracted in the diagonal of V
-  calc.mcov.fixed <- function(a, beta1){
-    if(sum(mecov.fixed.cov) == 0){
-      matrix(0, nrow=N, ncol=N)
-    }else{
-      diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
-    }
-  }
-  
+
   ## Function to calculate V
-  calc.V <- function(hl, vy, a, cm2, beta1){
-    
+  calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov){
+
     ## Update measurement error in X. Ask thomas about this ?
     if (hl == 0 | is.null(random.cov)){
       y <- 1
     }   else {
       y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
     }
-    
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       ## Measurement error in predictor - take 2
       beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
@@ -86,15 +88,26 @@ regression.closures <- function(treepar, modelpar, seed){
       }
       obs_var_con2 <- Reduce('+', obs_var_con2)
       
-      # Covariances
-      mcov <- calc.mcov(a, beta1)
-      mcov.fixed <- calc.mcov.fixed(a, beta1)
+
+      
+      # ## BROKEN!? Needs test.
+      # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
+      if(sum(me.cov) == 0){
+        mcov <- 0
+      }else{
+        mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+      }
+      
+      if(sum(mecov.fixed.cov) == 0){
+        mcov.fixed <- 0
+      }else{
+        mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
+      }
     }else{
       obs_var_con2 <- 0
       mcov <- 0
       mcov.fixed <- 0
     }
-    
     ## Piece together V
     if(hl == 0){
       cm0 <- diag(rep(vy, times=N))
@@ -110,8 +123,6 @@ regression.closures <- function(treepar, modelpar, seed){
     return(V)
   }
   
-
-  
   ## General test for beta convergence
   test.conv <- function(beta.i, beta1, con.count){
     if(!is.null(modelpar$intercept)){
@@ -121,10 +132,8 @@ regression.closures <- function(treepar, modelpar, seed){
     }
     else{
       test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
-      #test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
       ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
     }
-    #print(test)
     
     if(sum(test)==0) return (TRUE)
     if(con.count >= 50)
@@ -138,6 +147,7 @@ regression.closures <- function(treepar, modelpar, seed){
   ## Function for regression & grid search
   slouch.regression <- function(hl_vy, gradsearch = FALSE){
     hl <- hl_vy[1]; vy <- hl_vy[2]
+    
     
     if(hl == 0){
       a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
@@ -155,10 +165,16 @@ regression.closures <- function(treepar, modelpar, seed){
     ##  Error in solve.default(t(X) %*% X) : 
     ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
     beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
+    beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
+                          rep("Instantaneous cov", length(names.fixed.cov)),
+                          rep("Random cov", length(names.random.cov)))
+    which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
+    which.random.cov <- which(beta1.descriptor == "Random cov")
+    
     
     con.count <- 0
     repeat{
-      V <- calc.V(hl, vy, a, cm2, beta1 = beta1)
+      V <- calc.V(hl, vy, a, cm2, beta1 = beta1, which.fixed.cov, which.random.cov)
       #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
       V.inverse<-solve(V)
@@ -173,9 +189,6 @@ regression.closures <- function(treepar, modelpar, seed){
       beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
       
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-      print(microbenchmark(solve(V),
-                           pseudoinverse(t(X)%*%V.inverse%*%X),
-                           beta.i.var%*%(t(X)%*%V.inverse%*%Y)))
       
       ## Defensive & debug conditions
       if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
@@ -210,7 +223,7 @@ regression.closures <- function(treepar, modelpar, seed){
     ## Return a list
     list(support = sup1,
          V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
-         beta1 = beta1,
+         beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
          X = X,
          Y = Y,
          beta1.var = beta.i.var,
@@ -218,10 +231,7 @@ regression.closures <- function(treepar, modelpar, seed){
          vy.est = vy)
   }
   
-  all.closures <- list(calc.mcov = calc.mcov,
-                       calc.mcov.fixed = calc.mcov.fixed,
-                       calc.V = calc.V,
+  all.closures <- list(calc.V = calc.V,
                        slouch.regression = slouch.regression)
   return(all.closures)
 }
-

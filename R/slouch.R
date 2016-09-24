@@ -77,7 +77,7 @@ model.fit.dev2<-function(topology,
   half_life_values<-rev(half_life_values)
   
   ## Establish beta names and descriptor
-  factor.names <- coef.names.factor(fixed.fact, random.cov, fixed.cov, intercept)
+  #factor.names <- coef.names.factor(fixed.fact, random.cov, fixed.cov, intercept)
   
   names.fixed.cov <- if(!is.null(fixed.cov)){
     if(ncol(as.matrix(fixed.cov))==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov)
@@ -91,18 +91,6 @@ model.fit.dev2<-function(topology,
     NULL
   }
   
-  beta.descriptor <- c(rep("intercept", length(factor.names)),
-                       if (!is.null(fixed.cov)) rep("fixed.cov", ncol(as.matrix(fixed.cov))) else NULL,
-                       if (!is.null(random.cov)) rep("random.cov", ncol(as.matrix(random.cov))) else NULL)
-  
-  which.random.cov <- which(beta.descriptor == "random.cov")
-  which.fixed.cov <- which(beta.descriptor == "fixed.cov")
-  
-  ## All coefficient names
-  coef.names <- c(factor.names, names.fixed.cov, names.random.cov)
-  
-
-  
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T.term = T.term,
                   tia = tia,
@@ -111,7 +99,6 @@ model.fit.dev2<-function(topology,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  #ultrametric = ultrametric,
                   topology = topology,
                   ancestor = ancestor,
                   times = times,
@@ -137,13 +124,13 @@ model.fit.dev2<-function(topology,
                    intercept = intercept,
                    regime.specs = as.factor(fixed.fact),
                    factor.exists = !is.null(fixed.fact),
-                   which.random.cov = which.random.cov,
-                   which.fixed.cov = which.fixed.cov)
+                   names.fixed.cov = names.fixed.cov,
+                   names.random.cov = names.random.cov)
   
 
   
   seed <- ols.seed(treepar, modelpar)
-  
+  coef.names <- colnames(calc.X(a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
 
   
 
@@ -152,10 +139,6 @@ model.fit.dev2<-function(topology,
   
   all.closures <- regression.closures(treepar, modelpar, seed)
   
-  ## Debug, commented out
-  #return(all.closures)
-  
-
   #############
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
   time0 <- Sys.time()
@@ -167,6 +150,9 @@ model.fit.dev2<-function(topology,
                  gradsearch = TRUE,
                  lower=0, 
                  method="L-BFGS-B")
+    
+    #print(hl_vy_est)
+    #return(hl_vy_est)
     
     best.estimate <- all.closures$slouch.regression(hl_vy_est$par)
     ml <- (-1)*hl_vy_est$value
@@ -201,22 +187,20 @@ model.fit.dev2<-function(topology,
   ###### PASTED IN FROM rREG 
   
   ## Very bad: don't add list to env. Todo: Remove this
-  list2env(seed, envir = environment())
+  #list2env(seed, envir = environment())
   
 
-  V.est <- best.estimate$V; V.inverse <- solve(V.est)
+  V.est <- best.estimate$V
+  V.inverse <- solve(V.est)
   beta1.est <- beta1 <-  best.estimate$beta1
   beta1.var.est <- beta.i.var <- best.estimate$beta1.var
   X <- best.estimate$X
   alpha.est <- best.estimate$alpha.est
   vy.est <- best.estimate$vy.est
-  Y <- best.estimate$Y
+  #Y <- best.estimate$Y
   
   ## Calculate evolutionary regression coefficients
   if(!is.null(random.cov) & is.null(fixed.fact)){
-    
-    
-    #X1<-cbind(1, seed$fixed.pred, seed$pred)
     X1 <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
     ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
     ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
@@ -225,33 +209,21 @@ model.fit.dev2<-function(topology,
     ev.beta.i <- NULL
   }
 
-  
-  ## Calculate model fit stats
-  pred.mean<-X%*%beta1.est
-  g.mean<-(t(rep(1, times=N))%*%solve(V.est)%*%Y)/sum(solve(V.est))
-  sst<-t(Y-g.mean)%*% solve(V.est)%*%(Y-g.mean)
-  sse<-t(Y-pred.mean)%*%solve(V.est)%*%(Y-pred.mean)
-  r.squared<-(sst-sse)/sst
-  
-  ## Calculate AIC, AICc
-  n.par<-length(beta1)
-  aic <- -2*ml+2*(2+n.par)
-  aicc <- aic +(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
 
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
-  #print(coef.names);print(opt.reg)
   row.names(opt.reg) <- coef.names
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
-  
+  message("Model parameters")
+  oupar <- matrix(c(alpha.est, log(2)/alpha.est, vy.est), ncol=1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance"), "Estimate"))
+  print(oupar)
   
   message("Optimal regression, estimates + SE")
   print(opt.reg)
   
   if(!is.null(random.cov) & is.null(fixed.fact)){
     ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
-    #row.names(ev.reg) <- c("Intercept", names.fixed.cov, names.random.cov)
     row.names(ev.reg) <- coef.names
     colnames(ev.reg) <- c("Estimate", "Std. Error")
     
@@ -260,15 +232,17 @@ model.fit.dev2<-function(topology,
   }
   if(!is.null(random.cov)){
     message("Stochastic predictor")
-    print(matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))))
+    print(matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))))
   }
+
+  # Model fit statistics
+  pred.mean<-X%*%beta1.est
+  g.mean<-(t(rep(1, times=N))%*%solve(V.est)%*%Y)/sum(solve(V.est))
+  sst<-t(Y-g.mean)%*% solve(V.est)%*%(Y-g.mean)
+  sse<-t(Y-pred.mean)%*%solve(V.est)%*%(Y-pred.mean)
+  r.squared<-(sst-sse)/sst
   
-  message("Alpha, hl, vy")
-  print(c(alpha.est, 
-          if(alpha.est == Inf) 0 else log(2)/alpha.est, 
-          vy.est))
-  
-  
+  n.par<-length(beta1)
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
   modfit[1,1]=ml
   modfit[2,1]=-2*ml+2*(2+n.par)
@@ -299,7 +273,5 @@ model.fit.dev2<-function(topology,
     }
   }
 
-  print("debug: model.fit.dev w closures")
+  print("debug: model.fit.dev2 w closures")
 } # END OF MODEL FITTING FUNCTION
-
-
