@@ -26,21 +26,20 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   }
 }
 
-# # Part "two" of variance-covariance matrix of residuals in regression, hansen et al. 2008.
-# # It looks a little cryptic since it was vectorized from a nested for-loop
-# # Still has rather slow performance. 01 sept 2016.
-# calc.cm2 <- function(a){
-#   #T.row <- replicate(N,T.term)
-#   T.row <- matrix(rep(T.term, N), nrow=N)
-#   T.col <- t(T.row)
-#   term0 <- (1-exp(-a*T.row))
-#   term1 <- exp(-a*tia)
-#   
-#   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-#   return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
-#            (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
-#   #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
-# }
+# Part "two" of variance-covariance matrix, hansen et al. 2008.
+# It looks a little cryptic since it was vectorized from a nested for-loop
+# Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
+calc.cm2 <- function(a, T.term, N, tia, ta){
+  T.row <- matrix(rep(T.term, N), nrow=N)
+  T.col <- t(T.row)
+  term0 <- (1-exp(-a*T.row))
+  term1 <- exp(-a*tia)
+  
+  num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
+  return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
+           (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
+  #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
+}
 
 
 regression.closures <- function(treepar, modelpar, seed){
@@ -78,12 +77,12 @@ regression.closures <- function(treepar, modelpar, seed){
       y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
     }
     
-      if(!is.null(fixed.cov) | !is.null(random.cov)){
+    if(!is.null(fixed.cov) | !is.null(random.cov)){
       ## Measurement error in predictor - take 2
       beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
       obs_var_con2 <- list()
       for (i in length(beta_continuous)){
-      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
+        obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
       }
       obs_var_con2 <- Reduce('+', obs_var_con2)
       
@@ -91,7 +90,7 @@ regression.closures <- function(treepar, modelpar, seed){
       mcov <- calc.mcov(a, beta1)
       mcov.fixed <- calc.mcov.fixed(a, beta1)
     }else{
-      obs_var_con <- 0
+      obs_var_con2 <- 0
       mcov <- 0
       mcov.fixed <- 0
     }
@@ -111,21 +110,7 @@ regression.closures <- function(treepar, modelpar, seed){
     return(V)
   }
   
-  # Part "two" of variance-covariance matrix, hansen et al. 2008.
-  # It looks a little cryptic since it was vectorized from a nested for-loop
-  # Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
-  calc.cm2 <- function(a){
-    #T.row <- replicate(N,T.term)
-    T.row <- matrix(rep(T.term, N), nrow=N)
-    T.col <- t(T.row)
-    term0 <- (1-exp(-a*T.row))
-    term1 <- exp(-a*tia)
-    
-    num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-    return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
-             (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
-    #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
-  }
+
   
   ## General test for beta convergence
   test.conv <- function(beta.i, beta1, con.count){
@@ -159,13 +144,17 @@ regression.closures <- function(treepar, modelpar, seed){
     }else{
       a <- log(2)/hl
       if (!is.null(random.cov)){
-        cm2 <- calc.cm2(a)
+        cm2 <- calc.cm2(a, T.term, N, tia, ta)
       }else cm2 <- NULL
     }
     X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
     
     ## ols.beta1 exists from OLS estimate
-    beta1 <- ols.beta1
+    #beta1 <- ols.beta1
+    #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## ASK THOMAS: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
+    ##  Error in solve.default(t(X) %*% X) : 
+    ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
+    beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
     
     con.count <- 0
     repeat{
@@ -173,6 +162,7 @@ regression.closures <- function(treepar, modelpar, seed){
       #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
       V.inverse<-solve(V)
+      
       #beta.i.var <- solve(t(X)%*%V.inverse%*%X)
       beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
       
@@ -183,10 +173,15 @@ regression.closures <- function(treepar, modelpar, seed){
       beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
       
       beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      print(microbenchmark(solve(V),
+                           pseudoinverse(t(X)%*%V.inverse%*%X),
+                           beta.i.var%*%(t(X)%*%V.inverse%*%Y)))
       
       ## Defensive & debug conditions
       if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
-      if(any(is.na(beta.i))) stop("For hl = ", hl," and vy = ", vy," the gls estimate of beta is NA. Consider using different hl or vy.")
+      if(any(is.na(beta.i))) {
+        stop("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
+      } 
       
       ## Check for convergence
       con.count <- con.count + 1

@@ -20,12 +20,10 @@ mk.log.det.V <- function(V, N){
 # Find beta coef names of intercepts + factor variables
 coef.names.factor <- function(fixed.fact, random.cov, fixed.cov, intercept){
     if(is.null(fixed.fact)){
-      #if(treepar$ultrametric | is.null(modelpar$random.cov)){
       if(!is.null(intercept)){
         "Intercept"
       }else{
-        c("Intercept", 
-          #if (!is.null(random.cov) | !is.null(fixed.cov)) "b0" else NULL, 
+        c("Intercept",
           if (!is.null(random.cov) | !is.null(fixed.cov))c("b0", "b1Xa") else NULL)
       }
     }else{

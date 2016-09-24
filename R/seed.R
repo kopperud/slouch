@@ -71,7 +71,9 @@ ols.seed <- function(treepar, modelpar){
   }
   
   regime.specs<-as.factor(fixed.fact)
-  n.factor<-length(levels(regime.specs))
+  #n.factor<-length(levels(regime.specs))
+  
+  ############# Consider delete all of the x.ols, ols.beta
   
   if(!is.null(fixed.fact)){
     x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.cov, intercept), pred)
@@ -85,6 +87,7 @@ ols.seed <- function(treepar, modelpar){
                  beta1) # 2 additional parameter seeds for Ya and Xa ##### Rather, b0 & b1Xa ?
   }
   
+  ############# Consider delete above. Ask thomas
 
   ## ------------------------------------------------------- ##
   ##                                                         ##
@@ -129,8 +132,6 @@ ols.seed <- function(treepar, modelpar){
       Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx) %*% Vu[[i]])
     }
   }
-
-  
   
   
   list(n.pred = n.pred,
@@ -139,13 +140,12 @@ ols.seed <- function(treepar, modelpar){
        pred = pred,
        me.pred = me.pred,
        me.cov = me.cov,
-       n.factor = n.factor,
+       #n.factor = n.factor,
        fixed.pred = fixed.pred,
        n.fixed.pred = n.fixed.pred,
        me.fixed.pred = me.fixed.pred,
        me.fixed.cov = me.fixed.cov,
        x.ols = x.ols,
        ols.beta1 = beta1,
-       Y = Y,
        Vu_given_x = Vu_given_x)
 }

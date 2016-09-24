@@ -194,12 +194,7 @@ model.fit.dev2<-function(topology,
     ## Find the regression for which the support value is maximized
     best.estimate <- estimates[[which.max(sup2)]]
   }
-  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," seconds."))
-  
-  
-
-  
-  
+  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   
   
   ############################
