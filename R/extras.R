@@ -858,8 +858,12 @@ weight.matrix<-function(alpha,
                         fixed.cov, 
                         intercept, 
                         term = terminal.twigs(topology), 
-                        weight.m.regimes = regimes(topology, times, regime.specs, term))
+                        weight.m.regimes = regimes(topology, times, regime.specs, term),
+                        ep = epochs(topology, times, term))
 {
+  # print(microbenchmark(terminal.twigs(topology),
+  #                      regimes(topology, times, regime.specs, term),
+  #                      epochs(topology, times, term)))
   if (alpha == Inf) alpha<-10000000000000000000
   #N <- N
   reg <- set.of.regimes(topology, regime.specs)
@@ -867,7 +871,7 @@ weight.matrix<-function(alpha,
   R <- length(reg)
   #term <- terminal.twigs(topology)
   T <- times[term]
-  ep <- epochs(topology, times, term)
+  #ep <- epochs(topology, times, term)
   #weight.m.regimes <- regimes(topology, times, regime.specs, term)
   W <- matrix(data = 0, nrow = N, ncol = R + 1, dimnames = list(c(), c("Ya", as.character(reg))))
   W[, 1] <- exp(-alpha * T)

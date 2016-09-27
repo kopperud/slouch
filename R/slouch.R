@@ -50,9 +50,11 @@ model.fit.dev2<-function(topology,
                         convergence = 0.000001, 
                         plot.angle = 30,
                         parallel.compute = FALSE,
-                        hillclimb = FALSE)
+                        hillclimb = FALSE,
+                        hillclimb_start = runif(2,0,1))
 {
   stopifnot(intercept == "root" | is.null(intercept))
+  stopifnot(is.numeric(hillclimb_start) & length(hillclimb_start) == 2)
   ancestor <- topology
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -91,6 +93,15 @@ model.fit.dev2<-function(topology,
     NULL
   }
   
+  if(!is.null(fixed.fact)){
+    regime.specs <- as.factor(fixed.fact)
+    regimes1 <- regimes(ancestor, times, regime.specs, term)
+    epochs1 <- epochs(ancestor, times, term)
+  }else{
+    regimes1 <- NULL
+    epochs1 <- NULL
+  }
+  
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T.term = T.term,
                   tia = tia,
@@ -102,7 +113,9 @@ model.fit.dev2<-function(topology,
                   topology = topology,
                   ancestor = ancestor,
                   times = times,
-                  species = species)
+                  species = species,
+                  regimes1 = regimes1,
+                  epochs1 = epochs1)
   
   ## Cluster parameters concerning the type of model being run
   modelpar <- list(response = response,
@@ -145,7 +158,8 @@ model.fit.dev2<-function(topology,
   
   
   if(hillclimb){
-    hl_vy_est <- optim(c(1,1), 
+    hl_vy_est <- optim(#c(1,1), 
+                 hillclimb_start,
                  all.closures$slouch.regression,
                  gradsearch = TRUE,
                  lower=0, 

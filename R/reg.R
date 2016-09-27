@@ -26,7 +26,9 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     rho <- 1
   }
   if(!is.null(fixed.fact)){
-    m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
+    #m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
+    m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
+    #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
     m2 <- matrix(cbind(fixed.pred, rho*pred), dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
     return(cbind(m1,m2))
   }else{
@@ -193,7 +195,12 @@ regression.closures <- function(treepar, modelpar, seed){
       ## Defensive & debug conditions
       if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
       if(any(is.na(beta.i))) {
-        stop("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
+        warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
+        if (gradsearch){
+          return(1e200)
+        }else{
+          return(NA)
+        }
       } 
       
       ## Check for convergence
