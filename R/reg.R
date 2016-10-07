@@ -85,7 +85,7 @@ regression.closures <- function(treepar, modelpar, seed){
       ## Measurement error in predictor - take 2
       beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
       obs_var_con2 <- list()
-      for (i in length(beta_continuous)){
+      for (i in 1:length(beta_continuous)){
         obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
       }
       obs_var_con2 <- Reduce('+', obs_var_con2)
