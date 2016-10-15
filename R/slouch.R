@@ -205,7 +205,6 @@ model.fit.dev2<-function(topology,
   
   ############################
   ###### PASTED IN FROM rREG 
-
   V.est <- best.estimate$V
   V.inverse <- solve(V.est)
   beta1.est <- beta1 <-  best.estimate$beta1
@@ -224,8 +223,6 @@ model.fit.dev2<-function(topology,
     ev.beta.i.var <- NULL
     ev.beta.i <- NULL
   }
-
-
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
   row.names(opt.reg) <- coef.names

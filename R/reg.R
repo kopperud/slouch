@@ -62,7 +62,9 @@ calc.cm2 <- function(a, T.term, N, tia, ta){
   
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
   return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
-           (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
+            (term1*(1-exp(-a*T.col))/(a*T.col) + t(term1)*term0/(a*T.row))*num.prob)
+  #return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
+  #         (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
   #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
 }
 
@@ -163,7 +165,7 @@ regression.closures <- function(treepar, modelpar, seed){
     
     ## ols.beta1 exists from OLS estimate
     #beta1 <- ols.beta1
-    #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## ASK THOMAS: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
+    #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
     ##  Error in solve.default(t(X) %*% X) : 
     ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
     beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
@@ -182,40 +184,44 @@ regression.closures <- function(treepar, modelpar, seed){
       V.inverse<-solve(V)
      #V.inverse <- pseudoinverse(V)
       
-      #beta.i.var <- solve(t(X)%*%V.inverse%*%X)
-      # beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
-      # 
-      # #### Ask Thomas about this one.
-      # if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
-      # beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
-      # if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
-      # beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
-      # 
-      # beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-      
-      ## Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition
-      print(eigen(V)$values)
-      print(isSymmetric(V))
-      cholinv <- solve(chol(V))
-      #cholinv <- pseudoinverse(chol(V))
-      Y2 <- matrix(Y%*%cholinv, ncol=1)
-      X2 <- apply(X,  2, function(e) e%*%cholinv)
-      beta.i <- matrix(qr.solve(qr(X2), Y2), ncol=1)
-      #print(beta.i)
-      #beta.i <- fit$coefficients
+      if(TRUE){
+        beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+        beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+        
+        #### Ask Thomas about this one.
+        if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
+        beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
+        if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
+        beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
+        
+        beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      }else{
+        ## Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
+        if(any(Re(eigen(V)$values) < 0)){
+          print(eigen(V)$values)
+          stop("V contains negative eigenvalues.")
+        }
+        cholinv <- solve(chol(V))
+        Y2 <- matrix(cholinv%*%Y, ncol=1)
+        X2 <- cholinv%*%X
+        fit <- lm.fit(X2, Y2)
+        beta.i <- fit$coefficients
+      }
+
       
       ## Defensive & debug conditions
       if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
       if(any(is.na(beta.i))) {
         warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
+        print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
         if (gridsearch){
-          return(list(support = 1e-200,
+          return(list(support = NA,
                       hl_vy = hl_vy))
         }else{
           return(list(support = NA,
                       hl_vy = hl_vy))
         }
-      } 
+      }
       
       ## Check for convergence
       con.count <- con.count + 1
