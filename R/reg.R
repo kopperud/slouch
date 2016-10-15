@@ -147,7 +147,7 @@ regression.closures <- function(treepar, modelpar, seed){
   }
   
   ## Function for regression & grid search
-  slouch.regression <- function(hl_vy, gradsearch = FALSE){
+  slouch.regression <- function(hl_vy, gridsearch = TRUE){
     hl <- hl_vy[1]; vy <- hl_vy[2]
     
     
@@ -180,26 +180,40 @@ regression.closures <- function(treepar, modelpar, seed){
       #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
       V.inverse<-solve(V)
+     #V.inverse <- pseudoinverse(V)
       
       #beta.i.var <- solve(t(X)%*%V.inverse%*%X)
-      beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+      # beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+      # 
+      # #### Ask Thomas about this one.
+      # if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
+      # beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
+      # if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
+      # beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
+      # 
+      # beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
       
-      #### Ask Thomas about this one.
-      if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
-      beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
-      if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
-      beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
-      
-      beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      ## Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition
+      print(eigen(V)$values)
+      print(isSymmetric(V))
+      cholinv <- solve(chol(V))
+      #cholinv <- pseudoinverse(chol(V))
+      Y2 <- matrix(Y%*%cholinv, ncol=1)
+      X2 <- apply(X,  2, function(e) e%*%cholinv)
+      beta.i <- matrix(qr.solve(qr(X2), Y2), ncol=1)
+      #print(beta.i)
+      #beta.i <- fit$coefficients
       
       ## Defensive & debug conditions
       if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
       if(any(is.na(beta.i))) {
         warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
-        if (gradsearch){
-          return(1e200)
+        if (gridsearch){
+          return(list(support = 1e-200,
+                      hl_vy = hl_vy))
         }else{
-          return(NA)
+          return(list(support = NA,
+                      hl_vy = hl_vy))
         }
       } 
       
@@ -223,20 +237,23 @@ regression.closures <- function(treepar, modelpar, seed){
     sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
     
-    if(gradsearch){
-      return((-1)*sup1)
+    if(gridsearch){
+      return(list(support = sup1,
+                  hl_vy = hl_vy))
+    }else{
+      beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+      
+      return(list(support = sup1,
+                  V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
+                  beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
+                  X = X,
+                  Y = Y,
+                  beta1.var = beta.i.var,
+                  alpha.est = a,
+                  hl_vy = hl_vy))
     }
     
-    ## Return a list
-    list(support = sup1,
-         V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
-         beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
-         X = X,
-         Y = Y,
-         beta1.var = beta.i.var,
-         alpha.est = a,
-         hl.est = hl,
-         vy.est = vy)
+
   }
   
   all.closures <- list(calc.V = calc.V,

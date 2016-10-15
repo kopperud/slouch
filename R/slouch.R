@@ -160,31 +160,25 @@ model.fit.dev2<-function(topology,
   if(hillclimb){
     hl_vy_est <- optim(#c(1,1), 
                  hillclimb_start,
-                 all.closures$slouch.regression,
-                 gradsearch = TRUE,
+                 function(e, ...) (-1)*all.closures$slouch.regression(e, ...)$support,
+                 gridsearch = TRUE,
                  lower=0, 
                  method="L-BFGS-B")
-    
-    #print(hl_vy_est)
-    #return(hl_vy_est)
-    
-    best.estimate <- all.closures$slouch.regression(hl_vy_est$par)
-    ml <- (-1)*hl_vy_est$value
+    besthl_vy <- hl_vy_est$par
+    ml <- hl_vy_est$value
   }else{
     if(parallel.compute == TRUE){
       n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
       cl <- makeCluster(getOption("cl.cores", n.cores))
-      
-      estimates <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
-      
+      grid_support <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
       stopCluster(cl)
     }else{
       
-      estimates <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+      grid_support <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
       
     }
 
-    sup2 <- sapply(estimates, function(e) e$support)
+    sup2 <- sapply(grid_support, function(e) e$support)
     
     gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
     
@@ -192,8 +186,8 @@ model.fit.dev2<-function(topology,
     gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     
     ## All hl + vy in the support interval
-    hlsupport <- ifelse(sup2 <= ml - support, NA, sapply(estimates, function(e) e$hl.est))
-    vysupport <- ifelse(sup2 <= ml - support, NA, sapply(estimates, function(e) e$vy.est))
+    hlsupport <- ifelse(sup2 <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
+    vysupport <- ifelse(sup2 <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
     
     hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
                                    max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
@@ -201,10 +195,13 @@ model.fit.dev2<-function(topology,
                                  dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
     
     ## Find the regression for which the support value is maximized
-    best.estimate <- estimates[[which.max(sup2)]]
+    besthl_vy = vector_hl_vy[which.max(sup2),]
   }
+  best.estimate <- all.closures$slouch.regression(besthl_vy, gridsearch=FALSE)
+  
   print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   
+
   
   ############################
   ###### PASTED IN FROM rREG 
@@ -215,7 +212,7 @@ model.fit.dev2<-function(topology,
   beta1.var.est <- beta.i.var <- best.estimate$beta1.var
   X <- best.estimate$X
   alpha.est <- best.estimate$alpha.est
-  vy.est <- best.estimate$vy.est
+  vy.est <- best.estimate$hl_vy[2]
   #Y <- best.estimate$Y
   
   ## Calculate evolutionary regression coefficients
