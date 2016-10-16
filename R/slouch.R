@@ -7,30 +7,34 @@
 
 #' Title
 #'
-#' @param topology
-#' @param times
-#' @param half_life_values
-#' @param vy_values
-#' @param response
-#' @param me.response
-#' @param fixed.fact
-#' @param fixed.cov
-#' @param me.fixed.cov
-#' @param mecov.fixed.cov
-#' @param random.cov
-#' @param me.random.cov
-#' @param mecov.random.cov
-#' @param intercept
-#' @param ultrametric
-#' @param support
-#' @param convergence
-#' @param plot.angle
+#' @param topology 
+#' @param times 
+#' @param half_life_values 
+#' @param vy_values 
+#' @param response 
+#' @param me.response 
+#' @param fixed.fact 
+#' @param fixed.cov 
+#' @param me.fixed.cov 
+#' @param mecov.fixed.cov 
+#' @param random.cov 
+#' @param me.random.cov 
+#' @param mecov.random.cov 
+#' @param ultrametric 
+#' @param intercept 
+#' @param support 
+#' @param convergence 
+#' @param plot.angle 
+#' @param parallel.compute 
+#' @param hillclimb 
+#' @param hillclimb_start 
 #'
 #' @return
-#' @examples
 #' @export
 #'
-
+#' @examples
+#' 
+#' 
 model.fit.dev2<-function(topology, 
                         times, 
                         half_life_values, 
@@ -74,7 +78,7 @@ model.fit.dev2<-function(topology,
   pt<-parse.tree(topology, times)
   ta<-pt$bt
   tij<-pt$dm
-  
+
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
   
@@ -169,9 +173,9 @@ model.fit.dev2<-function(topology,
   }else{
     if(parallel.compute == TRUE){
       n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
-      cl <- makeCluster(getOption("cl.cores", n.cores))
-      grid_support <- parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
-      stopCluster(cl)
+      cl <- parallel::makeCluster(getOption("cl.cores", n.cores))
+      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
+      parallel::stopCluster(cl)
     }else{
       
       grid_support <- apply(vector_hl_vy, 1, all.closures$slouch.regression)

@@ -68,6 +68,58 @@ calc.cm2 <- function(a, T.term, N, tia, ta){
   #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
 }
 
+calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
+  
+  ## Update measurement error in X. Ask thomas about this ?
+  if (hl == 0 | is.null(random.cov)){
+    y <- 1
+  }   else {
+    y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
+  }
+  if(!is.null(fixed.cov) | !is.null(random.cov)){
+    ## Measurement error in predictor - take 2
+    beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
+    obs_var_con2 <- list()
+    for (i in 1:length(beta_continuous)){
+      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
+    }
+    obs_var_con2 <- Reduce('+', obs_var_con2)
+    
+    
+    
+    # ## BROKEN!? Needs test.
+    # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
+    if(sum(me.cov) == 0){
+      mcov <- 0
+    }else{
+      mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+    }
+    
+    if(sum(mecov.fixed.cov) == 0){
+      mcov.fixed <- 0
+    }else{
+      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
+    }
+  }else{
+    obs_var_con2 <- 0
+    mcov <- 0
+    mcov.fixed <- 0
+  }
+  ## Piece together V
+  if(hl == 0){
+    cm0 <- diag(rep(vy, times=N))
+  }else{
+    if(!is.null(random.cov)){
+      s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))
+      cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
+    }else{
+      cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
+    }
+  }
+  V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
+  return(V)
+}
+
 regression.closures <- function(treepar, modelpar, seed){
   ## bind global variables to this environment
   list2env(treepar, envir = environment())
@@ -75,57 +127,7 @@ regression.closures <- function(treepar, modelpar, seed){
   list2env(seed, envir = environment())
 
   ## Function to calculate V
-  calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov){
 
-    ## Update measurement error in X. Ask thomas about this ?
-    if (hl == 0 | is.null(random.cov)){
-      y <- 1
-    }   else {
-      y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
-    }
-    if(!is.null(fixed.cov) | !is.null(random.cov)){
-      ## Measurement error in predictor - take 2
-      beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
-      obs_var_con2 <- list()
-      for (i in 1:length(beta_continuous)){
-        obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
-      }
-      obs_var_con2 <- Reduce('+', obs_var_con2)
-      
-
-      
-      # ## BROKEN!? Needs test.
-      # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-      if(sum(me.cov) == 0){
-        mcov <- 0
-      }else{
-        mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
-      }
-      
-      if(sum(mecov.fixed.cov) == 0){
-        mcov.fixed <- 0
-      }else{
-        mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
-      }
-    }else{
-      obs_var_con2 <- 0
-      mcov <- 0
-      mcov.fixed <- 0
-    }
-    ## Piece together V
-    if(hl == 0){
-      cm0 <- diag(rep(vy, times=N))
-    }else{
-      if(!is.null(random.cov)){
-        s1 <- as.numeric(s.X%*%((beta1[which.random.cov,])^2))
-        cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
-      }else{
-        cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
-      }
-    }
-    V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
-    return(V)
-  }
   
   ## General test for beta convergence
   test.conv <- function(beta.i, beta1, con.count){
@@ -175,16 +177,15 @@ regression.closures <- function(treepar, modelpar, seed){
     which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
     which.random.cov <- which(beta1.descriptor == "Random cov")
     
-    
     con.count <- 0
     repeat{
-      V <- calc.V(hl, vy, a, cm2, beta1 = beta1, which.fixed.cov, which.random.cov)
+      V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
       #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
       V.inverse<-solve(V)
      #V.inverse <- pseudoinverse(V)
       
-      if(TRUE){
+      if(FALSE){
         beta.i.var <- solve(t(X)%*%V.inverse%*%X)
         beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
         
@@ -196,16 +197,25 @@ regression.closures <- function(treepar, modelpar, seed){
         
         beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
       }else{
-        ## Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
-        if(any(Re(eigen(V)$values) < 0)){
-          print(eigen(V)$values)
-          stop("V contains negative eigenvalues.")
-        }
+        # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
+        # if(any(Re(eigen(V)$values) < 0)){
+        #   print(eigen(V)$values)
+        #   stop("V contains negative eigenvalues.")
+        # }
         cholinv <- solve(chol(V))
         Y2 <- matrix(cholinv%*%Y, ncol=1)
         X2 <- cholinv%*%X
         fit <- lm.fit(X2, Y2)
-        beta.i <- fit$coefficients
+        beta.i <- matrix(fit$coefficients, ncol=1)
+        
+        # print(microbenchmark(qr.solve(chol(V)),
+        #                      chol(V),
+        #                      chol2inv(V),
+        #                      matrix(cholinv%*%Y, ncol=1),
+        #                      cholinv%*%X,
+        #                      lm.fit(X2, Y2),
+        #                      matrix(fit$coefficients, ncol=1),
+        #                      any(Re(eigen(V)$values) < 0)))
       }
 
       
@@ -262,7 +272,6 @@ regression.closures <- function(treepar, modelpar, seed){
 
   }
   
-  all.closures <- list(calc.V = calc.V,
-                       slouch.regression = slouch.regression)
+  all.closures <- list(slouch.regression = slouch.regression)
   return(all.closures)
 }

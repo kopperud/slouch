@@ -10,12 +10,56 @@ model.fit.dev2(topology, times, half_life_values, vy_values, response,
   me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
   intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
   convergence = 1e-06, plot.angle = 30, parallel.compute = FALSE,
-  hillclimb = FALSE)
+  hillclimb = FALSE, hillclimb_start = runif(2, 0, 1))
 }
 \arguments{
+\item{topology}{}
+
+\item{times}{}
+
+\item{half_life_values}{}
+
+\item{vy_values}{}
+
+\item{response}{}
+
+\item{me.response}{}
+
+\item{fixed.fact}{}
+
+\item{fixed.cov}{}
+
+\item{me.fixed.cov}{}
+
+\item{mecov.fixed.cov}{}
+
+\item{random.cov}{}
+
+\item{me.random.cov}{}
+
+\item{mecov.random.cov}{}
+
+\item{ultrametric}{}
+
+\item{intercept}{}
+
+\item{support}{}
+
+\item{convergence}{}
+
 \item{plot.angle}{}
+
+\item{parallel.compute}{}
+
+\item{hillclimb}{}
+
+\item{hillclimb_start}{}
 }
 \description{
 Title
+}
+\examples{
+
+
 }
 

@@ -13,7 +13,6 @@ RoxygenNote: 5.0.1
 Imports:
   parallel
 Suggests:
-  R (>= 3.2.5),
     knitr,
     rmarkdown,
     ape,
