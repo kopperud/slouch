@@ -29,7 +29,11 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     #m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
     m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
     #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
-    m2 <- matrix(cbind(fixed.pred, rho*pred), dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+    if(!is.null(fixed.cov) | !is.null(random.cov)){
+      m2 <- matrix(cbind(fixed.pred, rho*pred), dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+    }else{
+      m2 <- NULL
+    }
     return(cbind(m1,m2))
   }else{
     if(!is.null(modelpar$intercept)){
@@ -182,10 +186,11 @@ regression.closures <- function(treepar, modelpar, seed){
       V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
       #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
       
-      V.inverse<-solve(V)
+      
      #V.inverse <- pseudoinverse(V)
       
       if(FALSE){
+        V.inverse <- solve(V)
         beta.i.var <- solve(t(X)%*%V.inverse%*%X)
         beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
         
@@ -196,13 +201,14 @@ regression.closures <- function(treepar, modelpar, seed){
         beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
         
         beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+        #if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
       }else{
         # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
         # if(any(Re(eigen(V)$values) < 0)){
         #   print(eigen(V)$values)
         #   stop("V contains negative eigenvalues.")
         # }
-        cholinv <- solve(chol(V))
+        cholinv <- solve(t(chol(V)))
         Y2 <- matrix(cholinv%*%Y, ncol=1)
         X2 <- cholinv%*%X
         fit <- lm.fit(X2, Y2)
@@ -220,7 +226,6 @@ regression.closures <- function(treepar, modelpar, seed){
 
       
       ## Defensive & debug conditions
-      if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
       if(any(is.na(beta.i))) {
         warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
         print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
@@ -244,8 +249,9 @@ regression.closures <- function(treepar, modelpar, seed){
     }
     
     ## Compute residuals
-    eY<-X%*%beta1
-    resid1<-Y-eY
+    eY <- X%*%beta1
+    resid1 <- Y-eY
+    V.inverse <- solve(V)
     
     log.det.V <- mk.log.det.V(V = V, N = N)
     
