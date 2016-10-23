@@ -110,7 +110,7 @@ ols.seed <- function(treepar, modelpar){
   if(!is.null(random.cov)){
     
     for (i in seq(from = 1, to = nrow(s.X), by=1)){
-      #true_var_random_cov <- lapply(s.X, function(x) pt$bt*x). Ask thomas. Which is correct? This or the below. Seems to have nearly equivalent outcome, perhaps rounding error.
+      #true_var_random_cov <- lapply(s.X, function(x) pt$bt*x). Ask thomas. Which is correct? This or the below. Seems to have nearly equivalent outcome, perhaps float "rounding" error, +- 1e-14 or 1e-15 each entry.
     }
     true_var_random_cov <- list()
     for (i in 1:n.pred){
@@ -120,7 +120,6 @@ ols.seed <- function(treepar, modelpar){
   }else{
     true_var_random_cov <- NULL
   }
-  
   
   ## All variances
   Vu <- c(true_var_matrix, true_var_random_cov)
@@ -134,7 +133,6 @@ ols.seed <- function(treepar, modelpar){
   }else{
     Vu_given_x = NULL
   }
-  
   
   list(s.X = s.X,
        theta.X = theta.X,
