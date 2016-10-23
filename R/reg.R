@@ -74,22 +74,22 @@ calc.cm2 <- function(a, T.term, N, tia, ta){
 
 calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
   
-  ## Update measurement error in X. Ask thomas about this ?
+  
   if (hl == 0 | is.null(random.cov)){
-    y <- 1
+    rho2 <- 1
   }   else {
-    y <- ((1-(1-exp(-a*T.term))/(a*T.term))*(1-(1-exp(-a*T.term))/(a*T.term)))
+    rho2 <- (1-(1-exp(-a*T.term))/(a*T.term))^2
   }
   if(!is.null(fixed.cov) | !is.null(random.cov)){
+    
+    ## Update measurement error in X.
     ## Measurement error in predictor - take 2
     beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
     obs_var_con2 <- list()
     for (i in 1:length(beta_continuous)){
-      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*y
+      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*rho2
     }
     obs_var_con2 <- Reduce('+', obs_var_con2)
-    
-    
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
@@ -124,160 +124,160 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
   return(V)
 }
 
-regression.closures <- function(treepar, modelpar, seed){
-  ## bind global variables to this environment
+
+test.conv <- function(beta.i, beta1, con.count, convergence){
+  # if(!is.null(modelpar$intercept)){
+  #   test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+  # }else if(is.null(modelpar$intercept) & (!is.null(modelpar$fixed.fact)) | (is.null(fixed.cov) & is.null(random.cov))){
+  #   test <- ifelse(abs(as.numeric(beta.i - beta1))[-1] <= convergence, 0, 1)
+  # }
+  # else{
+  #   test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
+  #   ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
+  # }
+  beta.i <- beta.i[!is.na(beta.i),]
+  beta1 <- beta1[!is.na(beta1), ]
+  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
+  
+  if(sum(test)==0) return (TRUE)
+  if(con.count >= 50)
+  {
+    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+    return(TRUE)
+  }
+  return(FALSE)
+}
+
+reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
   list2env(seed, envir = environment())
-
-  ## Function to calculate V
-
   
-  ## General test for beta convergence
-  test.conv <- function(beta.i, beta1, con.count){
-    if(!is.null(modelpar$intercept)){
-      test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-    }else if(is.null(modelpar$intercept) & (!is.null(modelpar$fixed.fact)) | (is.null(fixed.cov) & is.null(random.cov))){
-      test <- ifelse(abs(as.numeric(beta.i - beta1))[-1] <= convergence, 0, 1)
-    }
-    else{
-      test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
-      ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
-    }
-    
-    if(sum(test)==0) return (TRUE)
-    if(con.count >= 50)
-    {
-      message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-      return(TRUE)
-    }
-    return(FALSE)
+  hl <- hl_vy[1]; vy <- hl_vy[2]
+  
+  if(hl == 0){
+    a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
+  }else{
+    a <- log(2)/hl
+    if (!is.null(random.cov)){
+      cm2 <- calc.cm2(a, T.term, N, tia, ta)
+    }else cm2 <- NULL
   }
+  X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
   
-  ## Function for regression & grid search
-  slouch.regression <- function(hl_vy, gridsearch = TRUE){
-    hl <- hl_vy[1]; vy <- hl_vy[2]
+  ## ols.beta1 exists from OLS estimate
+  #beta1 <- ols.beta1
+  #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
+  ##  Error in solve.default(t(X) %*% X) : 
+  ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
+  beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
+  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
+                        rep("Instantaneous cov", length(names.fixed.cov)),
+                        rep("Random cov", length(names.random.cov)))
+  which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
+  which.random.cov <- which(beta1.descriptor == "Random cov")
+  
+  con.count <- 0
+  repeat{
+    V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
+    #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
     
     
-    if(hl == 0){
-      a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
-    }else{
-      a <- log(2)/hl
-      if (!is.null(random.cov)){
-        cm2 <- calc.cm2(a, T.term, N, tia, ta)
-      }else cm2 <- NULL
-    }
-    X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
+    #V.inverse <- pseudoinverse(V)
     
-    ## ols.beta1 exists from OLS estimate
-    #beta1 <- ols.beta1
-    #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
-    ##  Error in solve.default(t(X) %*% X) : 
-    ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
-    beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
-    beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
-                          rep("Instantaneous cov", length(names.fixed.cov)),
-                          rep("Random cov", length(names.random.cov)))
-    which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
-    which.random.cov <- which(beta1.descriptor == "Random cov")
-    
-    con.count <- 0
-    repeat{
-      V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
-      #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
-      
-      
-     #V.inverse <- pseudoinverse(V)
-      
-      if(FALSE){
-        V.inverse <- solve(V)
-        beta.i.var <- solve(t(X)%*%V.inverse%*%X)
-        beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
-        
-        #### Ask Thomas about this one.
-        if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
-        beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
-        if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
-        beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
-        
-        beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-        #if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
-      }else{
-        # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
-        # if(any(Re(eigen(V)$values) < 0)){
-        #   print(eigen(V)$values)
-        #   stop("V contains negative eigenvalues.")
-        # }
-        cholinv <- solve(t(chol(V)))
-        Y2 <- matrix(cholinv%*%Y, ncol=1)
-        X2 <- cholinv%*%X
-        fit <- lm.fit(X2, Y2)
-        beta.i <- matrix(fit$coefficients, ncol=1)
-        
-        # print(microbenchmark(qr.solve(chol(V)),
-        #                      chol(V),
-        #                      chol2inv(V),
-        #                      matrix(cholinv%*%Y, ncol=1),
-        #                      cholinv%*%X,
-        #                      lm.fit(X2, Y2),
-        #                      matrix(fit$coefficients, ncol=1),
-        #                      any(Re(eigen(V)$values) < 0)))
-      }
-
-      
-      ## Defensive & debug conditions
-      if(any(is.na(beta.i))) {
-        warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
-        print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
-        if (gridsearch){
-          return(list(support = NA,
-                      hl_vy = hl_vy))
-        }else{
-          return(list(support = NA,
-                      hl_vy = hl_vy))
-        }
-      }
-      
-      ## Check for convergence
-      con.count <- con.count + 1
-      if (test.conv(beta.i, beta1, con.count)) {
-        beta1<-beta.i
-        break
-      }else{
-        beta1<-beta.i
-      }
-    }
-    
-    ## Compute residuals
-    eY <- X%*%beta1
-    resid1 <- Y-eY
-    V.inverse <- solve(V)
-    
-    log.det.V <- mk.log.det.V(V = V, N = N)
-    
-    ## Log-likelihood
-    sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
-    print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
-    
-    if(gridsearch){
-      return(list(support = sup1,
-                  hl_vy = hl_vy))
-    }else{
+    if(FALSE){
+      V.inverse <- solve(V)
       beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+      beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
       
-      return(list(support = sup1,
-                  V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
-                  beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
-                  X = X,
-                  Y = Y,
-                  beta1.var = beta.i.var,
-                  alpha.est = a,
-                  hl_vy = hl_vy))
+      #### Ask Thomas about this one.
+      if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
+      beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
+      if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
+      beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
+      
+      beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
+      #if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
+    }else{
+      # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
+      # Is this method ok to use? Seems to avoid some bugs (see below). R's lm.fit() does not throw
+      # error when X is singular, but returns NA in the coefficients.
+      # Problem with this transform is, does not work when matrix V is not positive semi-definite (Should this be possible? happens w dummy dataset on random.cov)
+      #
+      #  Error in solve.default(t(X) %*% V.inverse %*% X) : 
+      #  system is computationally singular: reciprocal condition number = 2.28389e-22
+      #
+      # if(any(Re(eigen(V)$values) < 0)){
+      #   print(eigen(V)$values)
+      #   stop("V contains negative eigenvalues.")
+      # }
+      
+      cholinv <- solve(t(chol(V)))
+      Y2 <- matrix(cholinv%*%Y, ncol=1)
+      X2 <- cholinv%*%X
+      fit <- lm.fit(X2, Y2)
+      beta.i <- matrix(fit$coefficients, ncol=1)
+      
+      # print(microbenchmark(qr.solve(chol(V)),
+      #                      chol(V),
+      #                      chol2inv(V),
+      #                      matrix(cholinv%*%Y, ncol=1),
+      #                      cholinv%*%X,
+      #                      lm.fit(X2, Y2),
+      #                      matrix(fit$coefficients, ncol=1),
+      #                      any(Re(eigen(V)$values) < 0)))
     }
     
-
+    
+    ## Defensive & debug conditions
+    if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov),]))) {
+      print(beta.i)
+      print("HELLO")
+      warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
+      print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
+      if (gridsearch){
+        return(list(support = NA,
+                    hl_vy = hl_vy))
+      }else{
+        return(list(support = NA,
+                    hl_vy = hl_vy))
+      }
+    }
+    
+    ## Check for convergence
+    con.count <- con.count + 1
+    if (test.conv(beta.i, beta1, con.count, convergence)) {
+      beta1<-beta.i
+      break
+    }else{
+      beta1<-beta.i
+    }
   }
   
-  all.closures <- list(slouch.regression = slouch.regression)
-  return(all.closures)
+  ## Compute residuals
+  eY <- X%*%beta1
+  resid1 <- Y-eY
+  V.inverse <- solve(V)
+  
+  log.det.V <- mk.log.det.V(V = V, N = N)
+  
+  ## Log-likelihood
+  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
+  print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+  
+  if(gridsearch){
+    return(list(support = sup1,
+                hl_vy = hl_vy))
+  }else{
+    beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+    
+    return(list(support = sup1,
+                V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
+                beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
+                X = X,
+                beta1.var = beta.i.var,
+                alpha.est = a,
+                hl_vy = hl_vy,
+                residuals = resid1))
+  }
 }

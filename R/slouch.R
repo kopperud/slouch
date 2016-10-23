@@ -53,7 +53,8 @@ model.fit.dev2<-function(topology,
                         support = 2, 
                         convergence = 0.000001, 
                         plot.angle = 30,
-                        parallel.compute = FALSE,
+                        multicore = FALSE,
+                        ncores = NULL,
                         hillclimb = FALSE,
                         hillclimb_start = runif(2,0,1))
 {
@@ -154,31 +155,51 @@ model.fit.dev2<-function(topology,
   message("GRID SEARCH PARAMETER SUPPORT")
   cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
   
-  all.closures <- regression.closures(treepar, modelpar, seed)
-  
   #############
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
   time0 <- Sys.time()
   
   
   if(hillclimb){
+    hcenv <- environment()
+    hcenv$k <- 0
+    climblog <- list()
     hl_vy_est <- optim(#c(1,1), 
                  hillclimb_start,
-                 function(e, ...) (-1)*all.closures$slouch.regression(e, ...)$support,
+                 function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
                  gridsearch = TRUE,
                  lower=0, 
                  method="L-BFGS-B")
     besthl_vy <- hl_vy_est$par
-    ml <- hl_vy_est$value
+    ml <- (-1)*hl_vy_est$value
+    
+    ## Plot the route of hillclimber
+    climblog_matrix <- data.frame(index = 1:length(climblog), hl = sapply(climblog, function(e) e$hl_vy[[1]]), vy = sapply(climblog, function(e) e$hl_vy[2]), loglik = sapply(climblog, function(e) e$support))
+    plot(climblog_matrix$hl, climblog_matrix$vy, 
+         main ="Path of hillclimber", 
+         col=gray.colors(length(climblog_matrix$index), 
+                         start = 0.8, end=0.05, gamma = 1)[climblog_matrix$index], 
+         pch=19, ylim = c(0, max(climblog_matrix$vy)),
+         xlim = c(0, max(climblog_matrix$hl)),
+         xlab = "Phylogenetic half-life",
+         ylab = "Stationary variance")
+    text(climblog_matrix$hl[1], climblog_matrix$vy[1], "Start")
+    text(climblog_matrix$hl[length(climblog_matrix$hl)], climblog_matrix$vy[length(climblog_matrix$vy)], "End")
+    
   }else{
-    if(parallel.compute == TRUE){
-      n.cores <- detectCores(all.tests = FALSE, logical = TRUE)
-      cl <- parallel::makeCluster(getOption("cl.cores", n.cores))
-      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, all.closures$slouch.regression)
+    if(multicore == TRUE){
+      if(!"package:parallel" %in% search()){
+        stop("For multicore, please load package with library(parallel)")
+      }
+      if(is.null(ncores)){
+        nncores <- detectCores(all.tests = FALSE, logical = TRUE)
+      }
+      cl <- parallel::makeCluster(getOption("cl.cores", ncores))
+      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, reg, modelpar, treepar, seed)
       parallel::stopCluster(cl)
     }else{
       
-      grid_support <- apply(vector_hl_vy, 1, all.closures$slouch.regression)
+      grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
       
     }
 
@@ -201,7 +222,7 @@ model.fit.dev2<-function(topology,
     ## Find the regression for which the support value is maximized
     besthl_vy = vector_hl_vy[which.max(sup2),]
   }
-  best.estimate <- all.closures$slouch.regression(besthl_vy, gridsearch=FALSE)
+  best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
   
   print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   
@@ -216,7 +237,6 @@ model.fit.dev2<-function(topology,
   X <- best.estimate$X
   alpha.est <- best.estimate$alpha.est
   vy.est <- best.estimate$hl_vy[2]
-  #Y <- best.estimate$Y
   
   ## Calculate evolutionary regression coefficients
   if(!is.null(random.cov) & is.null(fixed.fact)){
@@ -233,7 +253,12 @@ model.fit.dev2<-function(topology,
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
   message("Model parameters")
-  oupar <- matrix(c(alpha.est, log(2)/alpha.est, vy.est), ncol=1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance"), "Estimate"))
+  oupar <- matrix(c(alpha.est, 
+                    log(2)/alpha.est, 
+                    vy.est, 
+                    mean((1-(1-exp(-alpha.est*T.term))/(alpha.est*T.term)))), 
+                  ncol=1, 
+                  dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
   print(oupar)
   
   if(!hillclimb){
@@ -295,5 +320,5 @@ model.fit.dev2<-function(topology,
     }
   }
 
-  print("debug: model.fit.dev2 w closures")
+  print("debug: model.fit.dev2 - slouch in development, use at own risk")
 } # END OF MODEL FITTING FUNCTION
