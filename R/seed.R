@@ -123,12 +123,17 @@ ols.seed <- function(treepar, modelpar){
   
   ## All variances
   Vu <- c(true_var_matrix, true_var_random_cov)
+  #Vx <- c(true_var_matrix, true_var_random_cov)
+  
   
   if(!is.null(random.cov) | !is.null(fixed.cov)){
     Vu_given_x <- list()
+    Vx <- list()
+    #Vu <- list()
     for (i in 1:length(Vu)){
-      Vx <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vu[[i]]
-      Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx) %*% Vu[[i]])
+      Vx[[i]] <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vu[[i]]
+      #Vu[[i]] <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vx[[i]]
+      Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx[[i]]) %*% Vu[[i]])
     }
   }else{
     Vu_given_x = NULL
@@ -146,5 +151,7 @@ ols.seed <- function(treepar, modelpar){
        me.fixed.cov = me.fixed.cov,
        x.ols = x.ols,
        ols.beta1 = beta1,
-       Vu_given_x = Vu_given_x)
+       Vu_given_x = Vu_given_x,
+       Vu = Vu,
+       Vx = Vx)
 }

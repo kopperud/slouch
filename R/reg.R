@@ -188,7 +188,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     if(FALSE){
       V.inverse <- solve(V)
       beta.i.var <- solve(t(X)%*%V.inverse%*%X)
-      beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
+      #beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
       
       #### Ask Thomas about this one.
       if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
@@ -270,6 +270,55 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                 hl_vy = hl_vy))
   }else{
     beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+    
+    # ## Bias correction
+    # adj <- apply(X, 2, function(e) rep(mean(e), N))
+    # print(adj)
+    # 
+    # foo <- function(e){
+    #   return(diag(c(rep(0, N), diag(e))))
+    # }
+    # 
+    # 
+    # Vraw <- diag(c(na.exclude(cbind(me.fixed.cov, me.random.cov))))
+    # tmp <- foo(Vraw)%*%pseudoinverse(foo(Vx[[1]]))%*%(c(X) - c(adj))
+    # correction <- matrix(tmp, ncol=ncol(X), nrow=nrow(X), byrow=F)
+    # print(correction)
+    # bias_corr<-beta.i.var%*%t(X)%*%V.inverse%*%correction
+    # 
+    # m<-length(beta1)
+    # corrected_betas<-solve(diag(1,m,m)-bias_corr)%*%beta1
+    # 
+    # print(corrected_betas)
+    # 
+    # ######## LISTVERSION
+    # column2list <- function(e){
+    #   e <- matrix(e, nrow = N, byrow=F)
+    #   if(ncol(e) > 1){
+    #     #tapply(e, rep(1:ncol(e), each=nrow(e)), function(i) matrix(i, ncol=1))
+    #     return(split(e, rep(1:ncol(e), each = nrow(e))))
+    #   }else{
+    #     return(list(e))
+    #   }
+    # }
+    # #print(column2list(X[,c(which.fixed.cov, which.random.cov)]))
+    # Vraw <- column2list(na.exclude(cbind(me.fixed.cov, me.random.cov)))
+    # #print(Vraw)
+    # # tmp = mapply(function(Vraw1, Vx1, X_cov1, adj1){diag(Vraw1)%*%pseudoinverse(Vx1)%*%(c(X_cov1 - adj1))}, 
+    # #                     Vraw, 
+    # #                     Vx, 
+    # #                     column2list(X[,c(which.fixed.cov, which.random.cov)]), 
+    # #                     column2list(adj[,c(which.fixed.cov, which.random.cov)]))
+    # X_cov = X[,c(which.fixed.cov, which.random.cov)]
+    # tmp = diag(Vraw[[1]])%*%pseudoinverse(diag(Vx[[1]]))%*%(c(X_cov - adj[,2]))
+    # print(tmp)
+    # correction <- cbind(X[,-c(which.fixed.cov, which.random.cov)], tmp)
+    # #print(correction)
+    # 
+    # 
+    # 
+    # Vraw <- diag(na.exclude(cbind(me.fixed.cov, me.random.cov)))
+    
     
     return(list(support = sup1,
                 V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
