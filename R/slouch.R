@@ -192,7 +192,7 @@ model.fit.dev2<-function(topology,
         stop("For multicore, please load package with library(parallel)")
       }
       if(is.null(ncores)){
-        nncores <- detectCores(all.tests = FALSE, logical = TRUE)
+        ncores <- detectCores(all.tests = FALSE, logical = TRUE)
       }
       cl <- parallel::makeCluster(getOption("cl.cores", ncores))
       grid_support <- parallel::parApply(cl, vector_hl_vy, 1, reg, modelpar, treepar, seed)
