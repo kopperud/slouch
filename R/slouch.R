@@ -200,7 +200,7 @@ model.fit.dev2<-function(topology,
         grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
         #print(grid_support)
       }else{
-        cl <- parallel::makeCluster(getOption("cl.cores", ncores), type = "FORK")
+        cl <- parallel::makeCluster(getOption("cl.cores", ncores))
         parallel::setDefaultCluster(cl)
         #grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
         parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
