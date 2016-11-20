@@ -194,9 +194,19 @@ model.fit.dev2<-function(topology,
       if(is.null(ncores)){
         ncores <- detectCores(all.tests = FALSE, logical = TRUE)
       }
-      cl <- parallel::makeCluster(getOption("cl.cores", ncores))
-      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, reg, modelpar, treepar, seed)
-      parallel::stopCluster(cl)
+      if(.Platform$OS.type == "unix"){
+        stop("Parallel computing parameter search is not supported on unix-based systems. To be fixed.")
+        list_hl_vy <- unname(split(vector_hl_vy, rep(1:nrow(vector_hl_vy), each = ncol(vector_hl_vy))))
+        grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
+        #print(grid_support)
+      }else{
+        cl <- parallel::makeCluster(getOption("cl.cores", ncores), type = "FORK")
+        parallel::setDefaultCluster(cl)
+        #grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
+        parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
+        grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
+        parallel::stopCluster(cl)
+      }
     }else{
       
       grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
