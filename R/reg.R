@@ -30,7 +30,7 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
     #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
     if(!is.null(fixed.cov) | !is.null(random.cov)){
-      m2 <- matrix(cbind(fixed.pred, rho*pred), dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+      m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
     }else{
       m2 <- NULL
     }
