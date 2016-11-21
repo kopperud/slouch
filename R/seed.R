@@ -137,6 +137,7 @@ ols.seed <- function(treepar, modelpar){
     }
   }else{
     Vu_given_x = NULL
+    Vx <- NULL
   }
   
   list(s.X = s.X,
