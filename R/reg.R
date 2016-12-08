@@ -58,18 +58,14 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
 # Part "two" of variance-covariance matrix, hansen et al. 2008.
 # It looks a little cryptic since it was vectorized from a nested for-loop
 # Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
-calc.cm2 <- function(a, T.term, N, tia, ta){
-  T.row <- matrix(rep(T.term, N), nrow=N)
-  T.col <- t(T.row)
-  term0 <- (1-exp(-a*T.row))
-  term1 <- exp(-a*tia)
+calc.cm2 <- function(a, T.term, N, tia, tja, ta){
+  ti <- matrix(rep(T.term, N), nrow=N)
+  tj <- t(ti)
+  term0 <- (1-exp(-a*ti))
   
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
-            (term1*(1-exp(-a*T.col))/(a*T.col) + t(term1)*term0/(a*T.row))*num.prob)
-  #return((term0/(a*T.row))*(t(term0)/(a*T.col)) - 
-  #         (term1*term0/(a*T.col) + term1*term0/(a*T.row))*num.prob)
-  #return(((1-exp(-a*T.row))/(a*T.row))*((1-exp(-a*T.col))/(a*T.col)) - (exp(-a*tia)*(1-exp(-a*T.row))/(a*T.col) + exp(-a*tja)*(1-exp(-a*T.row))/(a*T.row))*num.prob)
+  return((term0/(a*ti))*(t(term0)/(a*tj)) - 
+           (exp(-a*tia)*t(term0)/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
 }
 
 calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
@@ -160,7 +156,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   }else{
     a <- log(2)/hl
     if (!is.null(random.cov)){
-      cm2 <- calc.cm2(a, T.term, N, tia, ta)
+      cm2 <- calc.cm2(a, T.term, N, tia, tja, ta)
     }else cm2 <- NULL
   }
   X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
@@ -217,22 +213,12 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       X2 <- cholinv%*%X
       fit <- lm.fit(X2, Y2)
       beta.i <- matrix(fit$coefficients, ncol=1)
-      
-      # print(microbenchmark(qr.solve(chol(V)),
-      #                      chol(V),
-      #                      chol2inv(V),
-      #                      matrix(cholinv%*%Y, ncol=1),
-      #                      cholinv%*%X,
-      #                      lm.fit(X2, Y2),
-      #                      matrix(fit$coefficients, ncol=1),
-      #                      any(Re(eigen(V)$values) < 0)))
     }
     
     
     ## Defensive & debug conditions
     if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov),]))) {
       print(beta.i)
-      print("HELLO")
       warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
       print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
       if (gridsearch){
@@ -267,7 +253,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   
   if(gridsearch){
     return(list(support = sup1,
-                hl_vy = hl_vy))
+                hl_vy = hl_vy,
+                V = V # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
+                ))
   }else{
     beta.i.var <- solve(t(X)%*%V.inverse%*%X)
     
@@ -321,7 +309,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     
     return(list(support = sup1,
-                V = V, # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
+                V = V, 
                 beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
                 X = X,
                 beta1.var = beta.i.var,
