@@ -64,8 +64,10 @@ calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   term0 <- (1-exp(-a*ti))
   
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  return((term0/(a*ti))*(t(term0)/(a*tj)) - 
+  return((term0/(a*ti))*(t(term0)/(a*tj)) -
            (exp(-a*tia)*t(term0)/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
+  # return((term0/(a*ti))*(t(term0)/(a*tj)) -  ##### INTENTIONALLY WRONG
+  #          (exp(-a*tia)*(1 - exp(-a*ti))/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
 }
 
 calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
