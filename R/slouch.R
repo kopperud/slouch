@@ -73,8 +73,9 @@ model.fit.dev2<-function(topology,
   Y <- response[!is.na(response)]
   N <- length(Y)
   T.term <- times[terminal.twigs(topology)]
-  tia<-tsia(ancestor, time)
-  tja<-tsja(ancestor, time)
+  tia<-tsia(ancestor, times)
+  tja<-tsja(ancestor, times)
+  
   term<-terminal.twigs(topology)
   pt<-parse.tree(topology, times)
   ta<-pt$bt
@@ -214,10 +215,10 @@ model.fit.dev2<-function(topology,
     }
 
     sup2 <- sapply(grid_support, function(e) e$support)
+    ml <- max(na.exclude(sup2))
     
     gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
     
-    ml <- max(na.exclude(gof))
     gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     
     ## All hl + vy in the support interval
@@ -259,7 +260,7 @@ model.fit.dev2<-function(topology,
   }
   
   opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
-  row.names(opt.reg) <- coef.names
+  #row.names(opt.reg) <- coef.names
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
   message("Model parameters")
@@ -310,25 +311,35 @@ model.fit.dev2<-function(topology,
   modfit[7,1]=sse
   
   print(modfit)
-  
 
+  #print(gof)
   if(!hillclimb){
-    # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
     if(length(half_life_values) > 1 && length(vy_values) > 1){
-      h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values))
-      for(i in 1:length(vy_values)){
-        h.lives[,i]=rev(gof[,i])
+      if(!(all(is.na(gof) | is.infinite(gof)))){
+        
+        # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
+        h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values))
+        for(i in 1:length(vy_values)){
+          h.lives[,i]=rev(gof[,i])
+        }
+        z<-h.lives
+        x<-rev(half_life_values)
+        y<-vy_values
+        op <- par(bg = "white")
+        
+        persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
+              ltheta = 120, shade = 0.75, ticktype = "detailed",
+              xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
+      }else{
+        warning("All support values in grid either NA or +/-Inf - Can't plot.")
       }
-      z<-h.lives
-      x<-rev(half_life_values)
-      y<-vy_values
-      op <- par(bg = "white")
-      
-      persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
-            ltheta = 120, shade = 0.75, ticktype = "detailed",
-            xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
     }
   }
 
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
+  # return(list(grid_support = grid_support,
+  #             tia = tia,
+  #             tja = tja,
+  #             tij = tij,
+  #             ta = ta))
 } # END OF MODEL FITTING FUNCTION
