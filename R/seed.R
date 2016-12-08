@@ -150,6 +150,7 @@ ols.seed <- function(treepar, modelpar){
        n.fixed.pred = n.fixed.pred,
        me.fixed.pred = me.fixed.pred,
        me.fixed.cov = me.fixed.cov,
+       mecov.fixed.cov = mecov.fixed.cov,
        x.ols = x.ols,
        ols.beta1 = beta1,
        Vu_given_x = Vu_given_x,
