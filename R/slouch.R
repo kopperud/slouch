@@ -56,7 +56,7 @@ model.fit.dev2<-function(topology,
                         multicore = FALSE,
                         ncores = NULL,
                         hillclimb = FALSE,
-                        hillclimb_start = runif(2,0,1))
+                        hillclimb_start = c(runif(1, 0, max(times)), runif(1, 0, var(na.exclude(response))))) # runif(2,0,1)
 {
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot(is.numeric(hillclimb_start) & length(hillclimb_start) == 2)
@@ -337,9 +337,9 @@ model.fit.dev2<-function(topology,
   }
 
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
-  # return(list(grid_support = grid_support,
-  #             tia = tia,
-  #             tja = tja,
-  #             tij = tij,
-  #             ta = ta))
+  return(list(grid_support =  if (!hillclimb) grid_support else climblog,
+              tia = tia,
+              tja = tja,
+              tij = tij,
+              ta = ta))
 } # END OF MODEL FITTING FUNCTION
