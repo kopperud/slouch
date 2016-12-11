@@ -1,5 +1,8 @@
 ## Methods
 
+
+
+
 #' Title
 #'
 #' @param x 
@@ -38,6 +41,14 @@ print.slouch <- function(x){
   }
 }
 
+print <- function(x){
+  UseMethod("print", x)
+}
+
+plot <- function(x){
+  UseMethod("plot", x)
+}
+
 #' Title
 #'
 #' @param e 
@@ -46,7 +57,7 @@ print.slouch <- function(x){
 #' @export
 #'
 #' @examples
-plot.slouch <- function(e, theta = 30, ...){
+plot.slouch <- function(e, theta = 30){
   if (is.null(e$supportplot)){
     stop("Support grid not included.")
   }
@@ -57,5 +68,21 @@ plot.slouch <- function(e, theta = 30, ...){
   
   persp(x, y, z, theta = theta, phi = 30, expand = 0.5, col = "NA",
         ltheta = 120, shade = 0.75, ticktype = "detailed",
-        xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood", ...)
+        xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood")
+}
+
+logLik <- function(x){
+  UseMethod("logLik", x)
+}
+
+#' Title
+#'
+#' @param x 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+logLik.slouch <- function(x){
+  return(structure(x$modfit[1,1], df = x$n.par, class = "logLik"))
 }

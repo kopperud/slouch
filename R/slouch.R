@@ -287,12 +287,12 @@ model.fit.dev2<-function(ancestor,
   sse<-t(Y-pred.mean)%*%solve(V.est)%*%(Y-pred.mean)
   r.squared<-(sst-sse)/sst
   
-  n.par<-length(beta1)
+  n.par <- length(beta1) + 2
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
   modfit[1,1]=ml
-  modfit[2,1]=-2*ml+2*(2+n.par)
-  modfit[3,1]=modfit[2,1]+(2*(2+n.par)*((2+n.par)+1))/(N-(2+n.par)-1)
-  modfit[4,1]=-2*ml+log(N)*(2+n.par)
+  modfit[2,1]=-2*ml+2*n.par
+  modfit[3,1]=modfit[2,1]+(2*n.par*(n.par+1))/(N-n.par-1)
+  modfit[4,1]=-2*ml+log(N)*n.par
   modfit[5,1]=r.squared*100
   modfit[6,1]=sst
   modfit[7,1]=sse
@@ -323,7 +323,6 @@ model.fit.dev2<-function(ancestor,
       }
     }
   }
-
   
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
   
@@ -338,8 +337,8 @@ model.fit.dev2<-function(ancestor,
                  opt.reg = opt.reg,
                  ev.reg = ev.reg,
                  oupar = oupar,
-                 hlvy_grid_interval = hlvy_grid_interval)
+                 hlvy_grid_interval = hlvy_grid_interval,
+                 n.par = n.par)
   class(result) <- c("slouch", class(result))
-  #class(result) <- c(class(result), "slouch")
   return(result)
-} # END OF MODEL FITTING FUNCTION
+}
