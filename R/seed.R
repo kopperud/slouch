@@ -28,8 +28,8 @@ ols.seed <- function(treepar, modelpar){
     theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
     for(i in 1:n.pred)
     {
-      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[2])
-      theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], topology, times)[1])
+      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[2])
+      theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[1])
     }
   }else{
     n.pred <- 0
@@ -76,7 +76,7 @@ ols.seed <- function(treepar, modelpar){
   ############# Consider delete all of the x.ols, ols.beta
   
   if(!is.null(fixed.fact)){
-    x.ols<-cbind(weight.matrix(10, topology, times, N, regime.specs, fixed.cov, intercept), pred)
+    x.ols<-cbind(weight.matrix(10, ancestor, times, N, regime.specs, fixed.cov, intercept), pred)
   }else{
     x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
   }
