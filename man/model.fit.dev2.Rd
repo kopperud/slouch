@@ -4,16 +4,17 @@
 \alias{model.fit.dev2}
 \title{Title}
 \usage{
-model.fit.dev2(topology, times, half_life_values, vy_values, response,
+model.fit.dev2(ancestor, times, half_life_values, vy_values, response,
   me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
   intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
-  convergence = 1e-06, plot.angle = 30, parallel.compute = FALSE,
-  hillclimb = FALSE, hillclimb_start = runif(2, 0, 1))
+  convergence = 1e-06, multicore = FALSE, ncores = NULL,
+  hillclimb = FALSE, hillclimb_start = c(runif(1, 0, max(times)), runif(1,
+  0, var(na.exclude(response)))))
 }
 \arguments{
-\item{topology}{}
+\item{ancestor}{}
 
 \item{times}{}
 
@@ -47,13 +48,11 @@ model.fit.dev2(topology, times, half_life_values, vy_values, response,
 
 \item{convergence}{}
 
-\item{plot.angle}{}
-
-\item{parallel.compute}{}
-
 \item{hillclimb}{}
 
 \item{hillclimb_start}{}
+
+\item{parallel.compute}{}
 }
 \description{
 Title

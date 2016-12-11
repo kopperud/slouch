@@ -7,7 +7,7 @@
 
 #' Title
 #'
-#' @param topology 
+#' @param ancestor 
 #' @param times 
 #' @param half_life_values 
 #' @param vy_values 
@@ -24,7 +24,6 @@
 #' @param intercept 
 #' @param support 
 #' @param convergence 
-#' @param plot.angle 
 #' @param parallel.compute 
 #' @param hillclimb 
 #' @param hillclimb_start 
@@ -35,7 +34,7 @@
 #' @examples
 #' 
 #' 
-model.fit.dev2<-function(topology, 
+model.fit.dev2<-function(ancestor, 
                         times, 
                         half_life_values, 
                         vy_values, 
@@ -51,8 +50,7 @@ model.fit.dev2<-function(topology,
                         ultrametric=TRUE, 
                         intercept= if(ultrametric==TRUE) "root" else NULL, 
                         support = 2, 
-                        convergence = 0.000001, 
-                        plot.angle = 30,
+                        convergence = 0.000001,
                         multicore = FALSE,
                         ncores = NULL,
                         hillclimb = FALSE,
@@ -60,7 +58,7 @@ model.fit.dev2<-function(topology,
 {
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot(is.numeric(hillclimb_start) & length(hillclimb_start) == 2)
-  ancestor <- topology
+  ancestor <- ancestor
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
     me.response<-diag(rep(0, times=length(response[!is.na(response)])))
@@ -72,12 +70,12 @@ model.fit.dev2<-function(topology,
   
   Y <- response[!is.na(response)]
   N <- length(Y)
-  T.term <- times[terminal.twigs(topology)]
+  T.term <- times[terminal.twigs(ancestor)]
   tia<-tsia(ancestor, times)
   tja<-tsja(ancestor, times)
   
-  term<-terminal.twigs(topology)
-  pt<-parse.tree(topology, times)
+  term<-terminal.twigs(ancestor)
+  pt<-parse.tree(ancestor, times)
   ta<-pt$bt
   tij<-pt$dm
 
@@ -116,7 +114,7 @@ model.fit.dev2<-function(topology,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  topology = topology,
+                  #ancestor = ancestor,
                   ancestor = ancestor,
                   times = times,
                   species = species,
@@ -186,6 +184,7 @@ model.fit.dev2<-function(topology,
          ylab = "Stationary variance")
     text(climblog_matrix$hl[1], climblog_matrix$vy[1], "Start")
     text(climblog_matrix$hl[length(climblog_matrix$hl)], climblog_matrix$vy[length(climblog_matrix$vy)], "End")
+    hlvy_grid_interval <- NULL
     
   }else{
     if(multicore == TRUE){
@@ -250,7 +249,8 @@ model.fit.dev2<-function(topology,
   vy.est <- best.estimate$hl_vy[2]
   
   ## Calculate evolutionary regression coefficients
-  if(!is.null(random.cov) & is.null(fixed.fact)){
+  #if(!is.null(random.cov) & is.null(fixed.fact)){
+  if(!is.null(random.cov)){
     X1 <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
     ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
     ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
@@ -263,34 +263,21 @@ model.fit.dev2<-function(topology,
   #row.names(opt.reg) <- coef.names
   colnames(opt.reg) <- c("Estimate", "Std. Error")
 
-  message("Model parameters")
   oupar <- matrix(c(alpha.est, 
                     log(2)/alpha.est, 
                     vy.est, 
                     mean((1-(1-exp(-alpha.est*T.term))/(alpha.est*T.term)))), 
                   ncol=1, 
                   dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
-  print(oupar)
-  
-  if(!hillclimb){
-    message("Interval of parameters in 3d plot")
-    print(hlvy_grid_interval)
-  }
-  
-  message("Optimal regression, estimates + SE")
-  print(opt.reg)
-  
-  if(!is.null(random.cov) & is.null(fixed.fact)){
+
+  if(!is.null(random.cov)){
     ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
     row.names(ev.reg) <- coef.names
     colnames(ev.reg) <- c("Estimate", "Std. Error")
-    
-    message("Ev regr")
-    print(ev.reg)
-  }
-  if(!is.null(random.cov)){
-    message("Stochastic predictor")
-    print(matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov))))
+    brownian_predictors <- matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov)))
+  }else{
+    brownian_predictors <- NULL
+    ev.reg <- NULL
   }
 
   # Model fit statistics
@@ -309,10 +296,8 @@ model.fit.dev2<-function(topology,
   modfit[5,1]=r.squared*100
   modfit[6,1]=sst
   modfit[7,1]=sse
-  
-  print(modfit)
 
-  #print(gof)
+  supportplot <- NULL
   if(!hillclimb){
     if(length(half_life_values) > 1 && length(vy_values) > 1){
       if(!(all(is.na(gof) | is.infinite(gof)))){
@@ -327,19 +312,34 @@ model.fit.dev2<-function(topology,
         y<-vy_values
         op <- par(bg = "white")
         
-        persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
-              ltheta = 120, shade = 0.75, ticktype = "detailed",
-              xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
+        # persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
+        #       ltheta = 120, shade = 0.75, ticktype = "detailed",
+        #       xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
+        supportplot = list(x = x,
+                           y = y,
+                           z = z)
       }else{
         warning("All support values in grid either NA or +/-Inf - Can't plot.")
       }
     }
   }
 
+  
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
-  return(list(grid_support =  if (!hillclimb) grid_support else climblog,
-              tia = tia,
-              tja = tja,
-              tij = tij,
-              ta = ta))
+  
+  result <- list(grid_support =  if (!hillclimb) grid_support else climblog,
+                 tia = tia,
+                 tja = tja,
+                 tij = tij,
+                 ta = ta,
+                 modfit = modfit,
+                 supportplot = supportplot,
+                 brownian_predictors = brownian_predictors,
+                 opt.reg = opt.reg,
+                 ev.reg = ev.reg,
+                 oupar = oupar,
+                 hlvy_grid_interval = hlvy_grid_interval)
+  class(result) <- c("slouch", class(result))
+  #class(result) <- c(class(result), "slouch")
+  return(result)
 } # END OF MODEL FITTING FUNCTION
