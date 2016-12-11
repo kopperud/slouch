@@ -10,6 +10,9 @@ License: What license is it under?
 LazyData: TRUE
 ByteCompile: FALSE
 RoxygenNote: 5.0.1
+Depends:
+  base,
+  stats
 Imports:
   parallel
 Suggests:
