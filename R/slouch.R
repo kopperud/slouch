@@ -172,21 +172,13 @@ model.fit.dev2<-function(ancestor,
     besthl_vy <- hl_vy_est$par
     ml <- (-1)*hl_vy_est$value
     
-    ## Plot the route of hillclimber
+    ## Matrix for plotting the route of hillclimber
     climblog_matrix <- data.frame(index = 1:length(climblog), hl = sapply(climblog, function(e) e$hl_vy[[1]]), vy = sapply(climblog, function(e) e$hl_vy[2]), loglik = sapply(climblog, function(e) e$support))
-    plot(climblog_matrix$hl, climblog_matrix$vy, 
-         main ="Path of hillclimber", 
-         col=gray.colors(length(climblog_matrix$index), 
-                         start = 0.8, end=0.05, gamma = 1)[climblog_matrix$index], 
-         pch=19, ylim = c(0, max(climblog_matrix$vy)),
-         xlim = c(0, max(climblog_matrix$hl)),
-         xlab = "Phylogenetic half-life",
-         ylab = "Stationary variance")
-    text(climblog_matrix$hl[1], climblog_matrix$vy[1], "Start")
-    text(climblog_matrix$hl[length(climblog_matrix$hl)], climblog_matrix$vy[length(climblog_matrix$vy)], "End")
     hlvy_grid_interval <- NULL
     
   }else{
+    climblog_matrix <- NULL
+    
     if(multicore == TRUE){
       if(!"package:parallel" %in% search()){
         stop("For multicore, please load package with library(parallel)")
@@ -333,6 +325,7 @@ model.fit.dev2<-function(ancestor,
                  ta = ta,
                  modfit = modfit,
                  supportplot = supportplot,
+                 climblog_matrix = climblog_matrix,
                  brownian_predictors = brownian_predictors,
                  opt.reg = opt.reg,
                  ev.reg = ev.reg,

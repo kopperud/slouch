@@ -2,7 +2,6 @@
 
 
 
-
 #' Title
 #'
 #' @param x 
@@ -12,6 +11,8 @@
 #'
 #' @examples
 print.slouch <- function(x){
+  message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid before evaluating model fit & results. If the likelihood search space does not contain the true maximum likelihood, the model outputs will reflect this.")
+  message("")
   message("Model parameters")
   print(x$oupar)
   
@@ -36,17 +37,7 @@ print.slouch <- function(x){
   message("Model fit")
   print(x$modfit)
   
-  if(!is.null(x$supportplot)){
-    plot(x)
-  }
-}
-
-print <- function(x){
-  UseMethod("print", x)
-}
-
-plot <- function(x){
-  UseMethod("plot", x)
+  plot(x)
 }
 
 #' Title
@@ -58,22 +49,40 @@ plot <- function(x){
 #'
 #' @examples
 plot.slouch <- function(e, theta = 30){
-  if (is.null(e$supportplot)){
-    stop("Support grid not included.")
+  if (!is.null(e$supportplot)){
+    #stop("Support grid not included.")
+    x <- e[["supportplot"]][["x"]]
+    y <- e[["supportplot"]][["y"]]
+    z <- e[["supportplot"]][["z"]]
+    
+    persp(x, y, z, theta = theta, phi = 30, expand = 0.5, col = "NA",
+          ltheta = 120, shade = 0.75, ticktype = "detailed",
+          xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood")
   }
   
-  x <- e[["supportplot"]][["x"]]
-  y <- e[["supportplot"]][["y"]]
-  z <- e[["supportplot"]][["z"]]
+
   
-  persp(x, y, z, theta = theta, phi = 30, expand = 0.5, col = "NA",
-        ltheta = 120, shade = 0.75, ticktype = "detailed",
-        xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood")
+  if (!is.null(e$climblog_matrix)){
+    hl <- e[["climblog_matrix"]][["hl"]]
+    vy <- e[["climblog_matrix"]][["vy"]]
+    index <- e[["climblog_matrix"]][["index"]]
+    
+    plot(x = hl, 
+         y = vy, 
+         main ="Path of hillclimber",
+         col = grDevices::gray.colors(length(index),
+                                      start = 0.8, end=0.05, gamma = 1)[index],
+         pch = 19,
+         ylim = c(0, max(vy)),
+         xlim = c(0, max(hl)),
+         xlab = "Phylogenetic half-life",
+         ylab = "Stationary variance")
+    text(hl[1], vy[1], "Start")
+    text(hl[length(hl)], vy[length(vy)], "End")
+  }
+
 }
 
-logLik <- function(x){
-  UseMethod("logLik", x)
-}
 
 #' Title
 #'
