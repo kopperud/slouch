@@ -53,23 +53,23 @@ print.slouch <- function(x, ...){
 #'
 #' @examples
 plot.slouch <- function(x, ...){
-  if (!is.null(e$supportplot)){
+  if (!is.null(x$supportplot)){
     #stop("Support grid not included.")
-    x <- e[["supportplot"]][["x"]]
-    y <- e[["supportplot"]][["y"]]
-    z <- e[["supportplot"]][["z"]]
+    x1 <- x[["supportplot"]][["x"]]
+    y1 <- x[["supportplot"]][["y"]]
+    z1 <- x[["supportplot"]][["z"]]
     
-    persp(x, y, z, theta = 30, phi = 30, expand = 0.5, col = "NA",
+    persp(x1, y1, z1, theta = 30, phi = 30, expand = 0.5, col = "NA",
           ltheta = 120, shade = 0.75, ticktype = "detailed",
           xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood", ...)
   }
   
 
   
-  if (!is.null(e$climblog_matrix)){
-    hl <- e[["climblog_matrix"]][["hl"]]
-    vy <- e[["climblog_matrix"]][["vy"]]
-    index <- e[["climblog_matrix"]][["index"]]
+  if (!is.null(x$climblog_matrix)){
+    hl <- x[["climblog_matrix"]][["hl"]]
+    vy <- x[["climblog_matrix"]][["vy"]]
+    index <- x[["climblog_matrix"]][["index"]]
     
     plot(x = hl, 
          y = vy, 
@@ -98,5 +98,5 @@ plot.slouch <- function(x, ...){
 #'
 #' @examples
 logLik.slouch <- function(object, ...){
-  return(structure(x$modfit[1,1], df = x$n.par, class = "logLik"))
+  return(structure(object$modfit[1,1], df = object$n.par, class = "logLik"))
 }
