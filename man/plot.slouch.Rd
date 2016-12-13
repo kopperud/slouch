@@ -4,10 +4,12 @@
 \alias{plot.slouch}
 \title{Title}
 \usage{
-\method{plot}{slouch}(e, theta = 30)
+\method{plot}{slouch}(x, ...)
 }
 \arguments{
-\item{e}{}
+\item{x}{}
+
+\item{...}{}
 }
 \description{
 Title

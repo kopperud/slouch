@@ -5,6 +5,7 @@
 
 
 
+
 #' Title
 #'
 #' @param ancestor 
@@ -24,7 +25,8 @@
 #' @param intercept 
 #' @param support 
 #' @param convergence 
-#' @param parallel.compute 
+#' @param multicore 
+#' @param ncores 
 #' @param hillclimb 
 #' @param hillclimb_start 
 #'
@@ -32,8 +34,6 @@
 #' @export
 #'
 #' @examples
-#' 
-#' 
 model.fit.dev2<-function(ancestor, 
                         times, 
                         half_life_values, 

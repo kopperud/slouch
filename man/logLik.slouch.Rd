@@ -4,10 +4,12 @@
 \alias{logLik.slouch}
 \title{Title}
 \usage{
-\method{logLik}{slouch}(x)
+\method{logLik}{slouch}(object, ...)
 }
 \arguments{
-\item{x}{}
+\item{object}{}
+
+\item{...}{}
 }
 \description{
 Title

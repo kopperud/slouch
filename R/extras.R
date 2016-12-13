@@ -566,13 +566,6 @@ n.ambig<-function(pars.states)
     return(tmp)
   }
 
-#' Parse tree function
-#'
-#' @param topology
-#' @param times
-#'
-#' @return
-#' @export
 `parse.tree` <-
   function(topology, times){
     term<-terminal.twigs(topology);
@@ -682,16 +675,18 @@ sigma.X.estimate <-
 
 #' Title
 #'
-#' @param topology
-#' @param times
-#' @param names
-#' @param regimes
-#' @param cex
-#' @param lwd
-#' @param reg.col
+#' @param topology 
+#' @param times 
+#' @param names 
+#' @param regimes 
+#' @param cex 
+#' @param lwd 
+#' @param reg.col 
 #'
 #' @return
 #' @export
+#'
+#' @examples
 slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex = NULL, lwd=NULL, reg.col=NULL) {
   if(is.null(cex)) cex<-1;
   if(is.null(lwd)) lwd<-1;
@@ -738,12 +733,6 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
 }
 
 
-#' Title
-#'
-#' @param topology
-#'
-#' @return
-#' @export
 `terminal.twigs` <-
   function(topology){
     n<-length(topology);
@@ -756,13 +745,6 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
     return(arrange.tree(root,topology));
   }
 
-#' Title
-#'
-#' @param topology
-#' @param times
-#'
-#' @return
-#' @export
 `tsia` <-
   function (topology, times) {
     term <- terminal.twigs(topology);
@@ -783,13 +765,7 @@ slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex =
     return(t.ia);
   }
 
-#' Title
-#'
-#' @param topology
-#' @param times
-#'
-#' @return
-#' @export
+
 `tsja` <-
   function (topology, times) {
     term <- terminal.twigs(topology);
@@ -933,16 +909,6 @@ weight.matrix<-function(alpha,
 
 
 
-#' Title
-#'
-#' @param response 
-#' @param me.response 
-#' @param predictor 
-#' @param me.predictor 
-#' @param convergence 
-#'
-#' @return
-#' @export
 np.regression<-function(response, me.response, predictor, me.predictor, convergence=NULL){
   if(is.null(convergence)) convergence=0.000001
   Y <- response[!is.na(response)];
@@ -1007,10 +973,4 @@ np.regression<-function(response, me.response, predictor, me.predictor, converge
   print(modfit); message("");
   message("==================================================");
 }
-
-
-
-# make.vector.grid <- function(modelpar){
-#   cbind(sort(rep(modelpar$half_life_values, length(modelpar$vy_values)), decreasing = TRUE), rep(modelpar$vy_values, length(modelpar$half_life_values)))
-# }
 

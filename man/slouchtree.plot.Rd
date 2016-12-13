@@ -8,6 +8,18 @@ slouchtree.plot(topology, times, names = NULL, regimes = NULL, cex = NULL,
   lwd = NULL, reg.col = NULL)
 }
 \arguments{
+\item{topology}{}
+
+\item{times}{}
+
+\item{names}{}
+
+\item{regimes}{}
+
+\item{cex}{}
+
+\item{lwd}{}
+
 \item{reg.col}{}
 }
 \description{

@@ -2,15 +2,17 @@
 
 
 
+
 #' Title
 #'
 #' @param x 
+#' @param ... 
 #'
 #' @return
 #' @export
 #'
 #' @examples
-print.slouch <- function(x){
+print.slouch <- function(x, ...){
   message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid before evaluating model fit & results. If the likelihood search space does not contain the true maximum likelihood, the model outputs will reflect this.")
   message("")
   message("Model parameters")
@@ -40,24 +42,26 @@ print.slouch <- function(x){
   plot(x)
 }
 
+
 #' Title
 #'
-#' @param e 
+#' @param x 
+#' @param ... 
 #'
 #' @return
 #' @export
 #'
 #' @examples
-plot.slouch <- function(e, theta = 30){
+plot.slouch <- function(x, ...){
   if (!is.null(e$supportplot)){
     #stop("Support grid not included.")
     x <- e[["supportplot"]][["x"]]
     y <- e[["supportplot"]][["y"]]
     z <- e[["supportplot"]][["z"]]
     
-    persp(x, y, z, theta = theta, phi = 30, expand = 0.5, col = "NA",
+    persp(x, y, z, theta = 30, phi = 30, expand = 0.5, col = "NA",
           ltheta = 120, shade = 0.75, ticktype = "detailed",
-          xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood")
+          xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood", ...)
   }
   
 
@@ -78,7 +82,7 @@ plot.slouch <- function(e, theta = 30){
          xlab = "Phylogenetic half-life",
          ylab = "Stationary variance")
     text(hl[1], vy[1], "Start")
-    text(hl[length(hl)], vy[length(vy)], "End")
+    text(hl[length(hl)], vy[length(vy)], "End", ...)
   }
 
 }
@@ -86,12 +90,13 @@ plot.slouch <- function(e, theta = 30){
 
 #' Title
 #'
-#' @param x 
+#' @param object 
+#' @param ... 
 #'
 #' @return
 #' @export
 #'
 #' @examples
-logLik.slouch <- function(x){
+logLik.slouch <- function(object, ...){
   return(structure(x$modfit[1,1], df = x$n.par, class = "logLik"))
 }

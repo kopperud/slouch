@@ -48,17 +48,15 @@ model.fit.dev2(ancestor, times, half_life_values, vy_values, response,
 
 \item{convergence}{}
 
+\item{multicore}{}
+
+\item{ncores}{}
+
 \item{hillclimb}{}
 
 \item{hillclimb_start}{}
-
-\item{parallel.compute}{}
 }
 \description{
 Title
-}
-\examples{
-
-
 }
 

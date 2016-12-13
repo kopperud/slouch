@@ -4,10 +4,12 @@
 \alias{print.slouch}
 \title{Title}
 \usage{
-\method{print}{slouch}(x)
+\method{print}{slouch}(x, ...)
 }
 \arguments{
 \item{x}{}
+
+\item{...}{}
 }
 \description{
 Title
