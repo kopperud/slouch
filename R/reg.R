@@ -267,25 +267,35 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     Vu <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.pred), na.exclude(me.pred))))
     Vd <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
     
-    adj<-matrix(data=0, ncol=ncol(X), nrow=N)  #PREDICTOR THETA
-    for(i in 1:length(adj[1,]))
-    {
-      adj[,i] <- mean(X[,i]);
+    ## Center each column in X on its respective mean
+    X0_intercept <- matrix(0, nrow=N, ncol=length(beta1[-c(which.fixed.cov, which.random.cov),]))
+    
+    if(!is.null(fixed.cov)){
+      X0_fixed <- apply(X[,which.fixed.cov], 2, function(e) e - mean(e))
+    }else{
+      X0_fixed <- NULL
     }
-    # print("Check adj")
-    # print((X - adj) == apply(X, 2, function(x) x - mean(x)))
-    # print(X - adj)
-    correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
-    bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
+    
+    if(!is.null(random.cov)){
+      X0_random <- matrix(s.X, ncol=length(s.X), nrow=N)
+    }else{
+      X0_random <- NULL
+    }
+    
+    X0 <- cbind(X0_intercept, X0_fixed, X0_random)
+    
+    correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
+    bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
     m<-length(beta1)
-    corrected_betas<-solve(diag(1,m,m)-bias_corr)%*%beta1
+    K <- solve(diag(1,m,m)-bias_corr)
+    corrected_betas <- K%*%beta1
+    
     
     
     print(corrected_betas)
     
-    var_corrected_betas <- solve(t(X)%*%V.inverse%*%X)
-    print(var_corrected_betas)
-    #print(solve(diag(1,m,m) - bias_corr)%*%sqrt(diag(beta.i.var)))
+    var_corrected_betas <- solve(K)%*%beta.i.var%*%t(pseudoinverse(K))
+    print(sqrt(abs(var_corrected_betas)))
     
     return(list(support = sup1,
                 V = V, 
