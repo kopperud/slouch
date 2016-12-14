@@ -45,7 +45,7 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
       K.name <- c("Intercept",
                   "b0",
-                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "b1Xa" else NULL)
+                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "Xa" else NULL)
     }
     matrix(cbind(K,
                  fixed.pred,
@@ -118,6 +118,8 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
       cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
     }
   }
+  #print(na.exclude(me.response))
+  #stop()
   V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
   return(V)
 }
@@ -183,7 +185,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     #V.inverse <- pseudoinverse(V)
     
-    if(FALSE){
+    if(TRUE){
       V.inverse <- solve(V)
       beta.i.var <- solve(t(X)%*%V.inverse%*%X)
       #beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
@@ -262,53 +264,28 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     beta.i.var <- solve(t(X)%*%V.inverse%*%X)
     
     # ## Bias correction
-    # adj <- apply(X, 2, function(e) rep(mean(e), N))
-    # print(adj)
-    # 
-    # foo <- function(e){
-    #   return(diag(c(rep(0, N), diag(e))))
-    # }
-    # 
-    # 
-    # Vraw <- diag(c(na.exclude(cbind(me.fixed.cov, me.random.cov))))
-    # tmp <- foo(Vraw)%*%pseudoinverse(foo(Vx[[1]]))%*%(c(X) - c(adj))
-    # correction <- matrix(tmp, ncol=ncol(X), nrow=nrow(X), byrow=F)
-    # print(correction)
-    # bias_corr<-beta.i.var%*%t(X)%*%V.inverse%*%correction
-    # 
-    # m<-length(beta1)
-    # corrected_betas<-solve(diag(1,m,m)-bias_corr)%*%beta1
-    # 
-    # print(corrected_betas)
-    # 
-    # ######## LISTVERSION
-    # column2list <- function(e){
-    #   e <- matrix(e, nrow = N, byrow=F)
-    #   if(ncol(e) > 1){
-    #     #tapply(e, rep(1:ncol(e), each=nrow(e)), function(i) matrix(i, ncol=1))
-    #     return(split(e, rep(1:ncol(e), each = nrow(e))))
-    #   }else{
-    #     return(list(e))
-    #   }
-    # }
-    # #print(column2list(X[,c(which.fixed.cov, which.random.cov)]))
-    # Vraw <- column2list(na.exclude(cbind(me.fixed.cov, me.random.cov)))
-    # #print(Vraw)
-    # # tmp = mapply(function(Vraw1, Vx1, X_cov1, adj1){diag(Vraw1)%*%pseudoinverse(Vx1)%*%(c(X_cov1 - adj1))}, 
-    # #                     Vraw, 
-    # #                     Vx, 
-    # #                     column2list(X[,c(which.fixed.cov, which.random.cov)]), 
-    # #                     column2list(adj[,c(which.fixed.cov, which.random.cov)]))
-    # X_cov = X[,c(which.fixed.cov, which.random.cov)]
-    # tmp = diag(Vraw[[1]])%*%pseudoinverse(diag(Vx[[1]]))%*%(c(X_cov - adj[,2]))
-    # print(tmp)
-    # correction <- cbind(X[,-c(which.fixed.cov, which.random.cov)], tmp)
-    # #print(correction)
-    # 
-    # 
-    # 
-    # Vraw <- diag(na.exclude(cbind(me.fixed.cov, me.random.cov)))
+    Vu <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.pred), na.exclude(me.pred))))
+    Vd <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
     
+    adj<-matrix(data=0, ncol=ncol(X), nrow=N)  #PREDICTOR THETA
+    for(i in 1:length(adj[1,]))
+    {
+      adj[,i] <- mean(X[,i]);
+    }
+    # print("Check adj")
+    # print((X - adj) == apply(X, 2, function(x) x - mean(x)))
+    # print(X - adj)
+    correction<-matrix(Vu%*%pseudoinverse(Vd+Vu)%*%(c(X)-c(adj)),  ncol=ncol(X), nrow=nrow(X), byrow=F)
+    bias_corr<-pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
+    m<-length(beta1)
+    corrected_betas<-solve(diag(1,m,m)-bias_corr)%*%beta1
+    
+    
+    print(corrected_betas)
+    
+    var_corrected_betas <- solve(t(X)%*%V.inverse%*%X)
+    print(var_corrected_betas)
+    #print(solve(diag(1,m,m) - bias_corr)%*%sqrt(diag(beta.i.var)))
     
     return(list(support = sup1,
                 V = V, 

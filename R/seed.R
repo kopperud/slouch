@@ -28,7 +28,7 @@ ols.seed <- function(treepar, modelpar){
     theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
     for(i in 1:n.pred)
     {
-      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[2])
+      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[2]) ## Change var name to squared, variance. Not SE.
       theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[1])
     }
   }else{
@@ -71,68 +71,50 @@ ols.seed <- function(treepar, modelpar){
   }
   
   regime.specs<-as.factor(fixed.fact)
-  #n.factor<-length(levels(regime.specs))
-  
-  ############# Consider delete all of the x.ols, ols.beta
-  
-  if(!is.null(fixed.fact)){
-    x.ols<-cbind(weight.matrix(10, ancestor, times, N, regime.specs, fixed.cov, intercept), pred)
-  }else{
-    x.ols<-matrix(cbind(1, fixed.pred, pred), nrow=N)
-  }
-  beta1<-solve(t(x.ols)%*%x.ols)%*%(t(x.ols)%*%Y)
-  if(is.null(intercept) & (!is.null(random.cov) | !is.null(fixed.cov))){
-    beta1<-rbind(0,
-                 0, 
-                 beta1) # 2 additional parameter seeds for Ya and Xa ##### Rather, b0 & b1Xa ?
-  }
-  
-  ############# Consider delete above. Ask thomas
 
   ## ------------------------------------------------------- ##
   ##                                                         ##
-  ##                      Defining Vu                        ##
+  ##                Defining Vu, Vd, Vx, Vu|x                ##
   ##     See equation (10) in Hansen & Bartoszek 2012        ##
   ##                                                         ##
   ## ------------------------------------------------------- ##
-  
 
   if(!is.null(fixed.pred)){
-    true_var_matrix <- list()
+    Vd_fixed <- list()
+    Vu_fixed <- list()
     for (i in 1:n.fixed.pred)
     {
-      true_var_matrix[[i]] <- diag(var(na.exclude(fixed.pred[,i]))-as.numeric(na.exclude(me.fixed.pred[,i])))
+      Vu_fixed[[i]] <- diag(na.exclude(me.fixed.pred[,i]))
+      Vd_fixed[[i]] <- diag(rep(var(na.exclude(fixed.pred[,i])), N)) - Vu_fixed[[i]]
+      if(any(Vd_fixed[[i]] < 0)){
+        Vd_fixed[[i]][Vd_fixed[[i]] < 0] <- 0
+        warning("Vd contains negative variances, scaled up to 0. Do any of the predictor variables have a larger measurement error than their trait variance?")
+      }
     }
   }else{
-    true_var_matrix <- NULL
+    Vd_fixed <- NULL
+    Vu_fixed <- NULL
   }
   
   if(!is.null(random.cov)){
-    
+    Vu_random <- list()
+    Vd_random <- lapply(s.X, function(e) pt$bt*e)
     for (i in seq(from = 1, to = nrow(s.X), by=1)){
-      #true_var_random_cov <- lapply(s.X, function(x) pt$bt*x). Ask thomas. Which is correct? This or the below. Seems to have nearly equivalent outcome, perhaps float "rounding" error, +- 1e-14 or 1e-15 each entry.
-    }
-    true_var_random_cov <- list()
-    for (i in 1:n.pred){
-      true_var_random_cov[[i]] <- diag(var(na.exclude(pred[,i]))-as.numeric(na.exclude(me.pred[,i])))
-      
+      Vu_random[[i]] <- diag(na.exclude(me.pred[,i]))
     }
   }else{
-    true_var_random_cov <- NULL
+    Vd_random <- NULL
+    Vu_random <- NULL
   }
   
-  ## All variances
-  Vu <- c(true_var_matrix, true_var_random_cov)
-  #Vx <- c(true_var_matrix, true_var_random_cov)
-  
+  Vu <- c(Vu_fixed, Vu_random)
+  Vd <- c(Vd_fixed, Vd_random)
   
   if(!is.null(random.cov) | !is.null(fixed.cov)){
     Vu_given_x <- list()
     Vx <- list()
-    #Vu <- list()
-    for (i in 1:length(Vu)){
-      Vx[[i]] <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vu[[i]]
-      #Vu[[i]] <- diag(cbind(me.fixed.pred, me.pred)[,i]) + Vx[[i]]
+    for (i in 1:length(Vd)){
+      Vx[[i]] <- Vd[[i]] + Vu[[i]]
       Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx[[i]]) %*% Vu[[i]])
     }
   }else{
@@ -151,9 +133,8 @@ ols.seed <- function(treepar, modelpar){
        me.fixed.pred = me.fixed.pred,
        me.fixed.cov = me.fixed.cov,
        mecov.fixed.cov = mecov.fixed.cov,
-       x.ols = x.ols,
-       ols.beta1 = beta1,
        Vu_given_x = Vu_given_x,
        Vu = Vu,
-       Vx = Vx)
+       Vx = Vx,
+       Vd = Vd)
 }
