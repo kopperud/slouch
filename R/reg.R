@@ -257,53 +257,83 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   
   if(gridsearch){
     return(list(support = sup1,
-                hl_vy = hl_vy,
-                V = V # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
+                hl_vy = hl_vy
+                #V = V # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
                 ))
   }else{
-    beta.i.var <- solve(t(X)%*%V.inverse%*%X)
+    beta1.var <- solve(t(X)%*%V.inverse%*%X)
     
-    # ## Bias correction
-    Vu <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.pred), na.exclude(me.pred))))
-    Vd <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
     
-    ## Center each column in X on its respective mean
-    X0_intercept <- matrix(0, nrow=N, ncol=length(beta1[-c(which.fixed.cov, which.random.cov),]))
-    
-    if(!is.null(fixed.cov)){
-      X0_fixed <- apply(X[,which.fixed.cov], 2, function(e) e - mean(e))
-    }else{
-      X0_fixed <- NULL
+    if(!is.null(fixed.cov) | !is.null(random.cov)){
+      # ## Bias correction
+      Vu <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.pred), na.exclude(me.pred))))
+      Vd <- diag(c(rep(0, N*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
+      
+      ## Center each column in X on its respective mean
+      X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=N), 2, function(e) e - mean(e))
+      
+      if(!is.null(fixed.cov)){
+        X0_fixed <- apply(matrix(X[,which.fixed.cov], nrow=N), 2, function(e) e - mean(e))
+      }else{
+        X0_fixed <- NULL
+      }
+      
+      if(!is.null(random.cov)){
+        X0_random <- matrix(s.X, ncol=length(s.X), nrow=N)
+      }else{
+        X0_random <- NULL
+      }
+      
+      X0 <- cbind(X0_intercept, X0_fixed, X0_random)
+      
+      correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
+      bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
+      m<-length(beta1)
+      K <- solve(diag(1,m,m)-bias_corr)
+      
+      beta1_bias_corr <- K%*%beta1
+      beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))
     }
+
     
+    ## 
     if(!is.null(random.cov)){
-      X0_random <- matrix(s.X, ncol=length(s.X), nrow=N)
+      X.ev <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
+      ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
+      ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
+      ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), nrow=ncol(X.ev), dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
+                     X = X.ev,
+                     residuals = Y - (X.ev %*% ev.beta1))
     }else{
-      X0_random <- NULL
+      ev.beta1.var <- NULL
+      ev.beta1 <- NULL
+      ev.reg <- NULL
+    }
+    opt.reg <- list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), nrow=ncol(X), dimnames = list(colnames(X), c("Estimates", "Std. error"))),
+                    X = X,
+                    residuals = Y - (X %*% beta1))
+    
+    if(!is.null(fixed.cov) | !is.null(random.cov)){
+      opt.reg$coefficients_bias_corr = matrix(cbind(beta1_bias_corr, sqrt(diag(beta1_bias_corr_var))), nrow=ncol(X), dimnames = list(colnames(X), c("Bias-corrected estimates", "Std. error")))
+      opt.reg$residuals_bias_corr = Y - (X %*% beta1_bias_corr)
+    }else{
+      opt.reg$coefficients_bias_corr <- NULL
+      opt.reg$residuals_bias_corr <- NULL
     }
     
-    X0 <- cbind(X0_intercept, X0_fixed, X0_random)
-    
-    correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
-    bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
-    m<-length(beta1)
-    K <- solve(diag(1,m,m)-bias_corr)
-    corrected_betas <- K%*%beta1
-    
-    
-    
-    print(corrected_betas)
-    
-    var_corrected_betas <- solve(K)%*%beta.i.var%*%t(pseudoinverse(K))
-    print(sqrt(abs(var_corrected_betas)))
+    pred.mean <- X%*%beta1
+    g.mean <- (t(rep(1, times=N))%*%solve(V)%*%Y)/sum(solve(V))
+    sst<-t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
+    sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
+    r.squared<-(sst-sse)/sst
     
     return(list(support = sup1,
                 V = V, 
-                beta1 = matrix(beta1, dimnames=list(colnames(X), NULL)),
-                X = X,
-                beta1.var = beta.i.var,
-                alpha.est = a,
+                opt.reg = opt.reg,
+                ev.reg = ev.reg,
                 hl_vy = hl_vy,
-                residuals = resid1))
+                sst = sst,
+                sse = sse,
+                r.squared = r.squared))
   }
 }

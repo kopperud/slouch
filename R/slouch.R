@@ -232,28 +232,14 @@ model.fit.dev2<-function(ancestor,
   
   ############################
   ###### PASTED IN FROM rREG 
-  V.est <- best.estimate$V
-  V.inverse <- solve(V.est)
-  beta1.est <- beta1 <-  best.estimate$beta1
-  beta1.var.est <- beta.i.var <- best.estimate$beta1.var
-  X <- best.estimate$X
-  alpha.est <- best.estimate$alpha.est
+  V <- best.estimate$V
+  ev.reg <- best.estimate$ev.reg
+  opt.reg <- best.estimate$opt.reg
+  r.squared <- best.estimate$r.squared
+  sse <- best.estimate$sse
+  sst <- best.estimate$sst
+  alpha.est <- log(2) / best.estimate$hl_vy[1]
   vy.est <- best.estimate$hl_vy[2]
-  
-  ## Calculate evolutionary regression coefficients
-  #if(!is.null(random.cov) & is.null(fixed.fact)){
-  if(!is.null(random.cov)){
-    X1 <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
-    ev.beta.i.var<-pseudoinverse(t(X1)%*%V.inverse%*%X1)
-    ev.beta.i<-ev.beta.i.var%*%(t(X1)%*%V.inverse%*%Y)
-  }else{
-    ev.beta.i.var <- NULL
-    ev.beta.i <- NULL
-  }
-  
-  opt.reg <- data.frame(cbind(beta1.est, sqrt(diag(beta1.var.est))))
-  #row.names(opt.reg) <- coef.names
-  colnames(opt.reg) <- c("Estimate", "Std. Error")
 
   oupar <- matrix(c(alpha.est, 
                     log(2)/alpha.est, 
@@ -263,23 +249,12 @@ model.fit.dev2<-function(ancestor,
                   dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
 
   if(!is.null(random.cov)){
-    ev.reg <- data.frame(cbind(ev.beta.i, sqrt(diag(ev.beta.i.var))))
-    row.names(ev.reg) <- coef.names
-    colnames(ev.reg) <- c("Estimate", "Std. Error")
     brownian_predictors <- matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov)))
   }else{
     brownian_predictors <- NULL
-    ev.reg <- NULL
   }
 
-  # Model fit statistics
-  pred.mean<-X%*%beta1.est
-  g.mean<-(t(rep(1, times=N))%*%solve(V.est)%*%Y)/sum(solve(V.est))
-  sst<-t(Y-g.mean)%*% solve(V.est)%*%(Y-g.mean)
-  sse<-t(Y-pred.mean)%*%solve(V.est)%*%(Y-pred.mean)
-  r.squared<-(sst-sse)/sst
-  
-  n.par <- length(beta1) + 2
+  n.par <- length(opt.reg$coefficients[,1]) + 2
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
   modfit[1,1]=ml
   modfit[2,1]=-2*ml+2*n.par
@@ -319,10 +294,10 @@ model.fit.dev2<-function(ancestor,
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
   
   result <- list(grid_support =  if (!hillclimb) grid_support else climblog,
-                 tia = tia,
-                 tja = tja,
-                 tij = tij,
-                 ta = ta,
+                 tree = list(tia = tia,
+                             tja = tja,
+                             tij = tij,
+                             ta = ta),
                  modfit = modfit,
                  supportplot = supportplot,
                  climblog_matrix = climblog_matrix,
@@ -331,7 +306,8 @@ model.fit.dev2<-function(ancestor,
                  ev.reg = ev.reg,
                  oupar = oupar,
                  hlvy_grid_interval = hlvy_grid_interval,
-                 n.par = n.par)
+                 n.par = n.par,
+                 V = V)
   class(result) <- c("slouch", class(result))
   return(result)
 }

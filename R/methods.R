@@ -24,11 +24,14 @@ print.slouch <- function(x, ...){
   }
   
   message("Optimal regression")
-  print(x$opt.reg)
+  print(x$opt.reg$coefficients)
+  
+  message("Optimal regression - bias-corrected")
+  print(x$opt.reg$coefficients_bias_corr)
   
   if(!is.null(x$ev.reg)){
     message("Evolutionary regression")
-    print(x$ev.reg)
+    print(x$ev.reg$coefficients)
   }
   
   if(!is.null(x$brownian_predictors)){
