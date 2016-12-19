@@ -1,5 +1,17 @@
 ## Extra functions
 
+#' Title
+#'
+#' @param tree.data 
+#' @param niche 
+#' @param deltran 
+#' @param acctran 
+#' @param root 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 fitch<-function(tree.data, niche, deltran=FALSE, acctran=FALSE, root=NULL){
   niche<-as.factor(niche)
   anc.char<-as.character(tree.data$ancestor)

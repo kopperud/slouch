@@ -4,7 +4,7 @@
 \alias{plot.slouch}
 \title{Title}
 \usage{
-\method{plot}{slouch}(x, ...)
+plot.slouch(x, ...)
 }
 \arguments{
 \item{x}{}

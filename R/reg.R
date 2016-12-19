@@ -43,9 +43,9 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
       K <- cbind(exp(-a*T.term),
                  1-exp(-a*T.term),
                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
-      K.name <- c("Intercept",
+      K.name <- c("Ya",
                   "b0",
-                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "Xa" else NULL)
+                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "X_anc" else NULL)
     }
     matrix(cbind(K,
                  fixed.pred,
@@ -185,7 +185,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     #V.inverse <- pseudoinverse(V)
     
-    if(TRUE){
+    if(FALSE){
       V.inverse <- solve(V)
       beta.i.var <- solve(t(X)%*%V.inverse%*%X)
       #beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
@@ -262,6 +262,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                 ))
   }else{
     beta1.var <- solve(t(X)%*%V.inverse%*%X)
+    print(beta1.var == solve(t(X2) %*% X2))
     
     
     if(!is.null(fixed.cov) | !is.null(random.cov)){
@@ -298,7 +299,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     ## 
     if(!is.null(random.cov)){
-      X.ev <- calc.X(a = alpha.est, hl = log(2)/alpha.est, treepar, modelpar, seed, is.opt.reg = FALSE)
+      X.ev <- calc.X(a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
       ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), nrow=ncol(X.ev), dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
