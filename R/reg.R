@@ -118,8 +118,6 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
       cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
     }
   }
-  #print(na.exclude(me.response))
-  #stop()
   V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
   return(V)
 }
@@ -262,7 +260,6 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                 ))
   }else{
     beta1.var <- solve(t(X)%*%V.inverse%*%X)
-    print(beta1.var == solve(t(X2) %*% X2))
     
     
     if(!is.null(fixed.cov) | !is.null(random.cov)){
