@@ -307,7 +307,9 @@ model.fit.dev2<-function(ancestor,
                  oupar = oupar,
                  hlvy_grid_interval = hlvy_grid_interval,
                  n.par = n.par,
-                 V = V)
+                 V = V,
+                 epochs1 = epochs1,
+                 regimes1 = regimes1)
   class(result) <- c("slouch", class(result))
   return(result)
 }

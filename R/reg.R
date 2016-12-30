@@ -28,7 +28,7 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   if(!is.null(fixed.fact)){
     #m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
     m1 <- weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
-    #print(microbenchmark(weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
+    #print(microbenchmark(weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
     }else{
@@ -113,12 +113,12 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
   }else{
     if(!is.null(random.cov)){
       s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))
-      cm0 <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
+      Vt <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
     }else{
-      cm0 <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
+      Vt <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
     }
   }
-  V <- cm0 + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
+  V <- Vt + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
   return(V)
 }
 
@@ -234,11 +234,18 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     ## Check for convergence
     con.count <- con.count + 1
-    if (test.conv(beta.i, beta1, con.count, convergence)) {
+    #if (test.conv(beta.i, beta1, con.count, convergence)) {
+    if(all(beta1[!is.na(beta1) - beta.i[!is.na(beta.i)]  < convergence])) {
       beta1<-beta.i
       break
     }else{
       beta1<-beta.i
+      
+      if(con.count >= 50)
+      {
+        message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
+        break
+      }
     }
   }
   
