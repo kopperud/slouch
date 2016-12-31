@@ -7,8 +7,6 @@
 \method{print}{slouch}(x, ...)
 }
 \arguments{
-\item{x}{}
-
 \item{...}{}
 }
 \description{

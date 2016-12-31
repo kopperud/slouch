@@ -109,7 +109,7 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
   }
   ## Piece together V
   if(hl == 0){
-    cm0 <- diag(rep(vy, times=N))
+    Vt <- diag(rep(vy, times=N))
   }else{
     if(!is.null(random.cov)){
       s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))

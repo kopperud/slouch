@@ -4,14 +4,12 @@
 
 
 #' Title
-#'
-#' @param x 
-#' @param ... 
-#'
+#' 
+#' @param x
+#' @param ...
+#' 
 #' @return
 #' @export
-#'
-#' @examples
 print.slouch <- function(x, ...){
   message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid before evaluating model fit & results. If the likelihood search space does not contain the true maximum likelihood, the model outputs will reflect this.")
   message("")
@@ -47,22 +45,21 @@ print.slouch <- function(x, ...){
 
 
 #' Title
+#' @description Graphical plot of parameter space traversed in order to find ML-estimate of the model.
 #'
-#' @param x 
-#' @param ... 
+#' @param x An object of class 'slouch'
+#' @param ... Additional parameters passed to persp()
 #'
-#' @return
 #' @export
-#'
-#' @examples
 plot.slouch <- function(x, ...){
+  plotpars <- par()
+  if (!is.null(x$supportplot) & !is.null(x$climblog_matrix)){
+    par(mfrow=c(1,2))
+  }
+  
   if (!is.null(x$supportplot)){
     #stop("Support grid not included.")
-    x1 <- x[["supportplot"]][["x"]]
-    y1 <- x[["supportplot"]][["y"]]
-    z1 <- x[["supportplot"]][["z"]]
-    
-    persp(x1, y1, z1, theta = 30, phi = 30, expand = 0.5, col = "NA",
+    persp(x$supportplot$z, theta = 30, phi = 30, expand = 0.5, col = "NA",
           ltheta = 120, shade = 0.75, ticktype = "detailed",
           xlab = "Phylogenetic half-life", ylab = "Stationary variance", zlab = "Log-likelihood", ...)
   }
@@ -85,9 +82,10 @@ plot.slouch <- function(x, ...){
          xlab = "Phylogenetic half-life",
          ylab = "Stationary variance")
     text(hl[1], vy[1], "Start")
-    text(hl[length(hl)], vy[length(vy)], "End", ...)
+    text(hl[length(hl)], vy[length(vy)], "End")
   }
-
+  
+  par(mfrow = plotpars$mfrow)
 }
 
 
@@ -98,8 +96,6 @@ plot.slouch <- function(x, ...){
 #'
 #' @return
 #' @export
-#'
-#' @examples
 logLik.slouch <- function(object, ...){
   return(structure(object$modfit[1,1], df = object$n.par, class = "logLik"))
 }

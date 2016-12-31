@@ -159,25 +159,7 @@ model.fit.dev2<-function(ancestor,
   time0 <- Sys.time()
   
   
-  if(hillclimb){
-    hcenv <- environment()
-    hcenv$k <- 0
-    climblog <- list()
-    hl_vy_est <- optim(#c(1,1), 
-                 hillclimb_start,
-                 function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
-                 gridsearch = TRUE,
-                 lower=0, 
-                 method="L-BFGS-B")
-    besthl_vy <- hl_vy_est$par
-    ml <- (-1)*hl_vy_est$value
-    
-    ## Matrix for plotting the route of hillclimber
-    climblog_matrix <- data.frame(index = 1:length(climblog), hl = sapply(climblog, function(e) e$hl_vy[[1]]), vy = sapply(climblog, function(e) e$hl_vy[2]), loglik = sapply(climblog, function(e) e$support))
-    hlvy_grid_interval <- NULL
-    
-  }else{
-    climblog_matrix <- NULL
+  if(TRUE){
     
     if(multicore == TRUE){
       if(!"package:parallel" %in% search()){
@@ -190,31 +172,57 @@ model.fit.dev2<-function(ancestor,
         stop("Parallel computing parameter search is not supported on unix-based systems. To be fixed.")
         list_hl_vy <- unname(split(vector_hl_vy, rep(1:nrow(vector_hl_vy), each = ncol(vector_hl_vy))))
         grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
-        #print(grid_support)
       }else{
         cl <- parallel::makeCluster(getOption("cl.cores", ncores))
         parallel::setDefaultCluster(cl)
-        #grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
         parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
         grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
         parallel::stopCluster(cl)
       }
     }else{
-      
       grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
-      
     }
 
-    sup2 <- sapply(grid_support, function(e) e$support)
-    ml <- max(na.exclude(sup2))
+    sup2_grid <- sapply(grid_support, function(e) e$support)
+    ml_grid <- max(na.exclude(sup2_grid))
     
-    gof <- matrix(sup2, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+    if(hillclimb){
+      #print(vector_hl_vy[which.max(sup2),])
+      #stop()
+      hcenv <- environment()
+      hcenv$k <- 0
+      climblog <- list()
+      hl_vy_est <- optim(#c(1,1), 
+        #hillclimb_start,
+        vector_hl_vy[which.max(sup2_grid),],
+        function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
+        gridsearch = TRUE,
+        lower=0, 
+        method="L-BFGS-B")
+      besthl_vy <- hl_vy_est$par
+      ml <- (-1)*hl_vy_est$value
+      
+      ## Matrix for plotting the route of hillclimber
+      climblog_matrix <- data.frame(index = 1:length(climblog), hl = sapply(climblog, function(e) e$hl_vy[[1]]), vy = sapply(climblog, function(e) e$hl_vy[2]), loglik = sapply(climblog, function(e) e$support))
+      #hlvy_grid_interval <- NULL
+      parameter_space <- c(grid_support, climblog)
+      sup2 <- sapply(parameter_space, function(e) e$support)
+      ml <- max(na.exclude(sup2))
+    }else{
+      climblog_matrix <- NULL
+      ml <- ml_grid
+      sup2 <- sup2_grid
+    }
     
+
+    gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+    
+
     gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
     
     ## All hl + vy in the support interval
-    hlsupport <- ifelse(sup2 <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
-    vysupport <- ifelse(sup2 <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
+    hlsupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
+    vysupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
     
     hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
                                    max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
@@ -222,7 +230,8 @@ model.fit.dev2<-function(ancestor,
                                  dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
     
     ## Find the regression for which the support value is maximized
-    besthl_vy = vector_hl_vy[which.max(sup2),]
+    #besthl_vy = vector_hl_vy[which.max(sup2_grid),]
+    besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
   }
   best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
   
@@ -264,36 +273,29 @@ model.fit.dev2<-function(ancestor,
   modfit[6,1]=sst
   modfit[7,1]=sse
 
-  supportplot <- NULL
-  if(!hillclimb){
+
     if(length(half_life_values) > 1 && length(vy_values) > 1){
       if(!(all(is.na(gof) | is.infinite(gof)))){
         
         # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
-        h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values))
+        h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
         for(i in 1:length(vy_values)){
           h.lives[,i]=rev(gof[,i])
         }
-        z<-h.lives
-        x<-rev(half_life_values)
-        y<-vy_values
-        op <- par(bg = "white")
-        
-        # persp(x, y, z, theta = plot.angle, phi = 30, expand = 0.5, col = "NA",
-        #       ltheta = 120, shade = 0.75, ticktype = "detailed",
-        #       xlab = "half-life", ylab = "vy", zlab = "log-likelihood")
-        supportplot = list(x = x,
-                           y = y,
-                           z = z)
+
+        supportplot = list(hl = rev(half_life_values),
+                           vy = vy_values,
+                           z = h.lives)
       }else{
         warning("All support values in grid either NA or +/-Inf - Can't plot.")
       }
+    }else{
+      supportplot <- NULL
     }
-  }
   
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
   
-  result <- list(grid_support =  if (!hillclimb) grid_support else climblog,
+  result <- list(parameter_space = parameter_space,
                  tree = list(tia = tia,
                              tja = tja,
                              tij = tij,
@@ -307,9 +309,7 @@ model.fit.dev2<-function(ancestor,
                  oupar = oupar,
                  hlvy_grid_interval = hlvy_grid_interval,
                  n.par = n.par,
-                 V = V,
-                 epochs1 = epochs1,
-                 regimes1 = regimes1)
+                 V = V)
   class(result) <- c("slouch", class(result))
   return(result)
 }

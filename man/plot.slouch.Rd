@@ -4,14 +4,14 @@
 \alias{plot.slouch}
 \title{Title}
 \usage{
-plot.slouch(x, ...)
+\method{plot}{slouch}(x, ...)
 }
 \arguments{
-\item{x}{}
+\item{x}{An object of class 'slouch'}
 
-\item{...}{}
+\item{...}{Additional parameters passed to persp()}
 }
 \description{
-Title
+Graphical plot of parameter space traversed in order to find ML-estimate of the model.
 }
 
