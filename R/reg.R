@@ -235,7 +235,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     ## Check for convergence
     con.count <- con.count + 1
     #if (test.conv(beta.i, beta1, con.count, convergence)) {
-    if(all(beta1[!is.na(beta1) - beta.i[!is.na(beta.i)]  < convergence])) {
+    if(all(abs(beta1[!is.na(beta1)] - beta.i[!is.na(beta.i)]) < convergence)) {
       beta1<-beta.i
       break
     }else{

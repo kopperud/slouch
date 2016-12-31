@@ -1,6 +1,9 @@
 ---
 output: html_document
 ---
+
+[![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch)
+
 # How to: Install & load devtools
 
 Careful, it is in development.

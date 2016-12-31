@@ -35,29 +35,29 @@
 #'
 #' @examples
 model.fit.dev2<-function(ancestor, 
-                        times, 
-                        half_life_values, 
-                        vy_values, 
-                        response, 
-                        me.response=NULL, 
-                        fixed.fact=NULL,
-                        fixed.cov=NULL, 
-                        me.fixed.cov=NULL, 
-                        mecov.fixed.cov=NULL, 
-                        random.cov=NULL, 
-                        me.random.cov=NULL, 
-                        mecov.random.cov=NULL,  
-                        ultrametric=TRUE, 
-                        intercept= if(ultrametric==TRUE) "root" else NULL, 
-                        support = 2, 
-                        convergence = 0.000001,
-                        multicore = FALSE,
-                        ncores = NULL,
-                        hillclimb = FALSE,
-                        hillclimb_start = c(runif(1, 0, max(times)), runif(1, 0, var(na.exclude(response))))) # runif(2,0,1)
+                         times, 
+                         half_life_values = NULL, 
+                         vy_values = NULL, 
+                         response, 
+                         me.response=NULL, 
+                         fixed.fact=NULL,
+                         fixed.cov=NULL, 
+                         me.fixed.cov=NULL, 
+                         mecov.fixed.cov=NULL, 
+                         random.cov=NULL, 
+                         me.random.cov=NULL, 
+                         mecov.random.cov=NULL,  
+                         ultrametric=TRUE, 
+                         intercept= if(ultrametric==TRUE) "root" else NULL, 
+                         support = 2, 
+                         convergence = 0.000001,
+                         multicore = FALSE,
+                         ncores = NULL,
+                         hillclimb = FALSE,
+                         hillclimb_start = NULL)
 {
   stopifnot(intercept == "root" | is.null(intercept))
-  stopifnot(is.numeric(hillclimb_start) & length(hillclimb_start) == 2)
+  stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
   ancestor <- ancestor
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -65,7 +65,7 @@ model.fit.dev2<-function(ancestor,
   }else{
     me.response<-diag(me.response[!is.na(me.response)])
   }
-
+  
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
   
   Y <- response[!is.na(response)]
@@ -78,7 +78,7 @@ model.fit.dev2<-function(ancestor,
   pt<-parse.tree(ancestor, times)
   ta<-pt$bt
   tij<-pt$dm
-
+  
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
   
@@ -114,10 +114,9 @@ model.fit.dev2<-function(ancestor,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  #ancestor = ancestor,
                   ancestor = ancestor,
                   times = times,
-                  species = species,
+                  #species = species,
                   regimes1 = regimes1,
                   epochs1 = epochs1)
   
@@ -144,13 +143,19 @@ model.fit.dev2<-function(ancestor,
                    names.fixed.cov = names.fixed.cov,
                    names.random.cov = names.random.cov)
   
-
+  
   
   seed <- ols.seed(treepar, modelpar)
   coef.names <- colnames(calc.X(a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
+  
+  if (is.null(half_life_values)){
+    half_life_values <- runif(1, 0, max(times))
+  }
+  if (is.null(vy_values)){
+    vy_values <- runif(1, 0, var(na.exclude(response)))
+  }
 
   
-
   message("GRID SEARCH PARAMETER SUPPORT")
   cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
   
@@ -158,86 +163,71 @@ model.fit.dev2<-function(ancestor,
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
   time0 <- Sys.time()
   
-  
-  if(TRUE){
-    
-    if(multicore == TRUE){
-      if(!"package:parallel" %in% search()){
-        stop("For multicore, please load package with library(parallel)")
-      }
-      if(is.null(ncores)){
-        ncores <- detectCores(all.tests = FALSE, logical = TRUE)
-      }
-      if(.Platform$OS.type == "unix"){
-        stop("Parallel computing parameter search is not supported on unix-based systems. To be fixed.")
-        list_hl_vy <- unname(split(vector_hl_vy, rep(1:nrow(vector_hl_vy), each = ncol(vector_hl_vy))))
-        grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
-      }else{
-        cl <- parallel::makeCluster(getOption("cl.cores", ncores))
-        parallel::setDefaultCluster(cl)
-        parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
-        grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
-        parallel::stopCluster(cl)
-      }
-    }else{
-      grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
+  if(multicore == TRUE){
+    if(!"package:parallel" %in% search()){
+      stop("For multicore, please load package with library(parallel)")
     }
-
-    sup2_grid <- sapply(grid_support, function(e) e$support)
-    ml_grid <- max(na.exclude(sup2_grid))
-    
-    if(hillclimb){
-      #print(vector_hl_vy[which.max(sup2),])
-      #stop()
-      hcenv <- environment()
-      hcenv$k <- 0
-      climblog <- list()
-      hl_vy_est <- optim(#c(1,1), 
-        #hillclimb_start,
-        vector_hl_vy[which.max(sup2_grid),],
-        function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
-        gridsearch = TRUE,
-        lower=0, 
-        method="L-BFGS-B")
-      besthl_vy <- hl_vy_est$par
-      ml <- (-1)*hl_vy_est$value
-      
-      ## Matrix for plotting the route of hillclimber
-      climblog_matrix <- data.frame(index = 1:length(climblog), hl = sapply(climblog, function(e) e$hl_vy[[1]]), vy = sapply(climblog, function(e) e$hl_vy[2]), loglik = sapply(climblog, function(e) e$support))
-      #hlvy_grid_interval <- NULL
-      parameter_space <- c(grid_support, climblog)
-      sup2 <- sapply(parameter_space, function(e) e$support)
-      ml <- max(na.exclude(sup2))
-    }else{
-      climblog_matrix <- NULL
-      ml <- ml_grid
-      sup2 <- sup2_grid
+    if(is.null(ncores)){
+      ncores <- detectCores(all.tests = FALSE, logical = TRUE)
     }
-    
-
-    gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
-    
-
-    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
-    
-    ## All hl + vy in the support interval
-    hlsupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
-    vysupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
-    
-    hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
-                                   max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
-                                 ncol = 2, nrow = 2,
-                                 dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
-    
-    ## Find the regression for which the support value is maximized
-    #besthl_vy = vector_hl_vy[which.max(sup2_grid),]
-    besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
+    if(.Platform$OS.type == "unix"){
+      stop("Parallel computing parameter search is not supported on unix-based systems. To be fixed.")
+      list_hl_vy <- unname(split(vector_hl_vy, rep(1:nrow(vector_hl_vy), each = ncol(vector_hl_vy))))
+      grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
+    }else{
+      cl <- parallel::makeCluster(getOption("cl.cores", ncores))
+      parallel::setDefaultCluster(cl)
+      parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
+      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
+      parallel::stopCluster(cl)
+    }
+  }else{
+    grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
   }
-  best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
   
-  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
+  sup2_grid <- sapply(grid_support, function(e) e$support)
+  ml_grid <- max(na.exclude(sup2_grid))
+  
+  if(hillclimb){
+    Sys.sleep(0.2)
+    cat("\n")
+    print("Start hillclimb parameter estimation routine, method L-BFGS-B")
+    cat("\n")
+    
+    hcenv <- environment()
+    hcenv$k <- 0
+    climblog <- list()
+    if(is.null(hillclimb_start)){
+      hillclimb_start <- vector_hl_vy[which.max(sup2_grid),]
+    }
+    hl_vy_est <- optim(
+      par = hillclimb_start,
+      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
+      gridsearch = TRUE,
+      lower=0, 
+      method="L-BFGS-B")
+    
+    ## Matrix for plotting the route of hillclimber
+    climblog_matrix <- data.frame(index = 1:length(climblog), 
+                                  hl = sapply(climblog, function(e) e$hl_vy[[1]]), 
+                                  vy = sapply(climblog, function(e) e$hl_vy[2]), 
+                                  loglik = sapply(climblog, function(e) e$support))
+  }else{
+    climblog_matrix <- NULL
+    climblog <- NULL
+  }
+  parameter_space <- c(grid_support, climblog)
+  sup2 <- sapply(parameter_space, function(e) e$support)
+  ml <- max(na.exclude(sup2))
+  
+  gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+  gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
   
 
+  ## Find the regression for which the support value is maximized
+  besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
+  best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
+  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   
   ############################
   ###### PASTED IN FROM rREG 
@@ -249,20 +239,20 @@ model.fit.dev2<-function(ancestor,
   sst <- best.estimate$sst
   alpha.est <- log(2) / best.estimate$hl_vy[1]
   vy.est <- best.estimate$hl_vy[2]
-
+  
   oupar <- matrix(c(alpha.est, 
                     log(2)/alpha.est, 
                     vy.est, 
                     mean((1-(1-exp(-alpha.est*T.term))/(alpha.est*T.term)))), 
                   ncol=1, 
                   dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
-
+  
   if(!is.null(random.cov)){
     brownian_predictors <- matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov)))
   }else{
     brownian_predictors <- NULL
   }
-
+  
   n.par <- length(opt.reg$coefficients[,1]) + 2
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
   modfit[1,1]=ml
@@ -272,26 +262,37 @@ model.fit.dev2<-function(ancestor,
   modfit[5,1]=r.squared*100
   modfit[6,1]=sst
   modfit[7,1]=sse
-
-
-    if(length(half_life_values) > 1 && length(vy_values) > 1){
-      if(!(all(is.na(gof) | is.infinite(gof)))){
-        
-        # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
-        h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
-        for(i in 1:length(vy_values)){
-          h.lives[,i]=rev(gof[,i])
-        }
-
-        supportplot = list(hl = rev(half_life_values),
-                           vy = vy_values,
-                           z = h.lives)
-      }else{
-        warning("All support values in grid either NA or +/-Inf - Can't plot.")
+  
+  
+  if(length(half_life_values) > 1 && length(vy_values) > 1){
+    ## All hl + vy in the support interval
+    hlsupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
+    vysupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
+    
+    hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
+                                   max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
+                                 ncol = 2, nrow = 2,
+                                 dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
+    
+    
+    if(!(all(is.na(gof) | is.infinite(gof)))){
+      
+      # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
+      h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
+      for(i in 1:length(vy_values)){
+        h.lives[,i]=rev(gof[,i])
       }
+      
+      supportplot = list(hl = rev(half_life_values),
+                         vy = vy_values,
+                         z = h.lives)
     }else{
-      supportplot <- NULL
+      warning("All support values in grid either NA or +/-Inf - Can't plot.")
     }
+  }else{
+    supportplot <- NULL
+    hlvy_grid_interval <- NULL
+  }
   
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
   
