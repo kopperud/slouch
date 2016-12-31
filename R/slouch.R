@@ -6,34 +6,33 @@
 
 
 
+
 #' Title
 #'
-#' @param ancestor 
-#' @param times 
-#' @param half_life_values 
-#' @param vy_values 
-#' @param response 
-#' @param me.response 
-#' @param fixed.fact 
-#' @param fixed.cov 
-#' @param me.fixed.cov 
-#' @param mecov.fixed.cov 
-#' @param random.cov 
-#' @param me.random.cov 
-#' @param mecov.random.cov 
-#' @param ultrametric 
-#' @param intercept 
-#' @param support 
-#' @param convergence 
-#' @param multicore 
-#' @param ncores 
-#' @param hillclimb 
-#' @param hillclimb_start 
+#' @param ancestor Vector of ancestors for each given node in tree
+#' @param times A numeric vector; time from root to given node
+#' @param half_life_values A vector of candidate phylogenetic half-life values to be evaluated in grid search.
+#' @param vy_values A vector of candidate stationary variances for the response trait, to be evaluated in grid search.
+#' @param response A numeric vector of a trait to be treated as response variable
+#' @param me.response Numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.
+#' @param fixed.fact Factor
+#' @param fixed.cov Direct effect independent variables
+#' @param me.fixed.cov Observational variances for direct effect independent variables
+#' @param mecov.fixed.cov .
+#' @param random.cov Independent variables each modeled as a brownian motion
+#' @param me.random.cov Observational variances for the brownian covariates
+#' @param mecov.random.cov .
+#' @param ultrametric Deprecated
+#' @param intercept NULL or "root". If NULL, model matrix is expanded with Ya for categorical models, or b0 + bXa for models without categorical variables.
+#' @param support A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
+#' @param convergence Threshold of iterative GLS estimation, when beta is considered converged.
+#' @param multicore Use of multiple CPU cores. Using multicore, prints are silenced during parameter search.
+#' @param ncores Number of CPU cores to be used, optional.
+#' @param hillclimb TRUE/FALSE whether to use hillclimb parameter estimation routine.
+#' @param hillclimb_start Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.
 #'
-#' @return
+#' @return An object of class 'slouch'
 #' @export
-#'
-#' @examples
 model.fit.dev2<-function(ancestor, 
                          times, 
                          half_life_values = NULL, 

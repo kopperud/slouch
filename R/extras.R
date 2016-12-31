@@ -2,16 +2,14 @@
 
 #' Title
 #'
-#' @param tree.data 
-#' @param niche 
-#' @param deltran 
-#' @param acctran 
-#' @param root 
+#' @param tree.data A data.frame including columns "ancestor", "nodes".
+#' @param niche Factor variable to be used in ancestral reconstruction.
+#' @param deltran .
+#' @param acctran .
+#' @param root A priori specification of root niche.
 #'
-#' @return
+#' @return data.frame
 #' @export
-#'
-#' @examples
 fitch<-function(tree.data, niche, deltran=FALSE, acctran=FALSE, root=NULL){
   niche<-as.factor(niche)
   anc.char<-as.character(tree.data$ancestor)
@@ -545,9 +543,9 @@ n.ambig<-function(pars.states)
 
 #' Title
 #'
-#' @param tree
+#' @param tree An object of class 'ouchtree'
 #'
-#' @return
+#' @return A 'slouchtree', a data.frame with columns "nodes", "ancestor", "times" and "species".
 #' @export
 `ouch2slouch` <-
   function(tree)
@@ -687,18 +685,15 @@ sigma.X.estimate <-
 
 #' Title
 #'
-#' @param topology 
-#' @param times 
-#' @param names 
-#' @param regimes 
-#' @param cex 
-#' @param lwd 
-#' @param reg.col 
+#' @param topology Ancestor vector
+#' @param times Time from root to node
+#' @param names A vector of names for each node to be labelled. Optional
+#' @param regimes A vector of regimes to be painted on the tree. Optional
+#' @param cex Font size
+#' @param lwd Line width
+#' @param reg.col Colour
 #'
-#' @return
 #' @export
-#'
-#' @examples
 slouchtree.plot <-function (topology, times, names = NULL, regimes = NULL, cex = NULL, lwd=NULL, reg.col=NULL) {
   if(is.null(cex)) cex<-1;
   if(is.null(lwd)) lwd<-1;

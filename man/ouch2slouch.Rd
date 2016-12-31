@@ -7,7 +7,10 @@
 ouch2slouch(tree)
 }
 \arguments{
-\item{tree}{}
+\item{tree}{An object of class 'ouchtree'}
+}
+\value{
+A 'slouchtree', a data.frame with columns "nodes", "ancestor", "times" and "species".
 }
 \description{
 Title

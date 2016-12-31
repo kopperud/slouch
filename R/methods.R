@@ -5,10 +5,9 @@
 
 #' Title
 #' 
-#' @param x
-#' @param ...
+#' @param x An object of class 'slouch'
+#' @param ... Additional arguments, unused.
 #' 
-#' @return
 #' @export
 print.slouch <- function(x, ...){
   message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid 
@@ -54,13 +53,13 @@ print.slouch <- function(x, ...){
 #'
 #' @export
 plot.slouch <- function(x, ...){
-  plotpars <- par()
+  plotpars <- graphics::par()
   if (!is.null(x$supportplot) & !is.null(x$climblog_matrix)){
-    par(mfrow=c(1,2))
+    graphics::par(mfrow=c(1,2))
   }
   
   if (!is.null(x$supportplot)){
-    persp(x$supportplot$hl,
+    graphics::persp(x$supportplot$hl,
           x$supportplot$vy,
           x$supportplot$z, 
           theta = 30, 
@@ -83,7 +82,7 @@ plot.slouch <- function(x, ...){
     vy <- x[["climblog_matrix"]][["vy"]]
     index <- x[["climblog_matrix"]][["index"]]
     
-    plot(x = hl, 
+    graphics::plot(x = hl, 
          y = vy, 
          main ="Path of hillclimber",
          col = grDevices::gray.colors(length(index),
@@ -97,16 +96,16 @@ plot.slouch <- function(x, ...){
     text(hl[length(hl)], vy[length(vy)], "End")
   }
   
-  par(mfrow = plotpars$mfrow)
+  graphics::par(mfrow = plotpars$mfrow)
 }
 
 
 #' Title
 #'
-#' @param object 
-#' @param ... 
+#' @param object An object of class 'slouch'
+#' @param ... Additional arguments.
 #'
-#' @return
+#' @return An object of class 'logLik'
 #' @export
 logLik.slouch <- function(object, ...){
   return(structure(object$modfit[1,1], df = object$n.par, class = "logLik"))

@@ -7,15 +7,18 @@
 fitch(tree.data, niche, deltran = FALSE, acctran = FALSE, root = NULL)
 }
 \arguments{
-\item{tree.data}{}
+\item{tree.data}{A data.frame including columns "ancestor", "nodes".}
 
-\item{niche}{}
+\item{niche}{Factor variable to be used in ancestral reconstruction.}
 
-\item{deltran}{}
+\item{deltran}{.}
 
-\item{acctran}{}
+\item{acctran}{.}
 
-\item{root}{}
+\item{root}{A priori specification of root niche.}
+}
+\value{
+data.frame
 }
 \description{
 Title

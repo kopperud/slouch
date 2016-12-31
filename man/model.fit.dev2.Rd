@@ -4,57 +4,59 @@
 \alias{model.fit.dev2}
 \title{Title}
 \usage{
-model.fit.dev2(ancestor, times, half_life_values, vy_values, response,
-  me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
+model.fit.dev2(ancestor, times, half_life_values = NULL, vy_values = NULL,
+  response, me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
   intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
   convergence = 1e-06, multicore = FALSE, ncores = NULL,
-  hillclimb = FALSE, hillclimb_start = c(runif(1, 0, max(times)), runif(1,
-  0, var(na.exclude(response)))))
+  hillclimb = FALSE, hillclimb_start = NULL)
 }
 \arguments{
-\item{ancestor}{}
+\item{ancestor}{Vector of ancestors for each given node in tree}
 
-\item{times}{}
+\item{times}{A numeric vector; time from root to given node}
 
-\item{half_life_values}{}
+\item{half_life_values}{A vector of candidate phylogenetic half-life values to be evaluated in grid search.}
 
-\item{vy_values}{}
+\item{vy_values}{A vector of candidate stationary variances for the response trait, to be evaluated in grid search.}
 
-\item{response}{}
+\item{response}{A numeric vector of a trait to be treated as response variable}
 
-\item{me.response}{}
+\item{me.response}{Numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.}
 
-\item{fixed.fact}{}
+\item{fixed.fact}{Factor}
 
-\item{fixed.cov}{}
+\item{fixed.cov}{Direct effect independent variables}
 
-\item{me.fixed.cov}{}
+\item{me.fixed.cov}{Observational variances for direct effect independent variables}
 
-\item{mecov.fixed.cov}{}
+\item{mecov.fixed.cov}{.}
 
-\item{random.cov}{}
+\item{random.cov}{Independent variables each modeled as a brownian motion}
 
-\item{me.random.cov}{}
+\item{me.random.cov}{Observational variances for the brownian covariates}
 
-\item{mecov.random.cov}{}
+\item{mecov.random.cov}{.}
 
-\item{ultrametric}{}
+\item{ultrametric}{Deprecated}
 
-\item{intercept}{}
+\item{intercept}{NULL or "root". If NULL, model matrix is expanded with Ya for categorical models, or b0 + bXa for models without categorical variables.}
 
-\item{support}{}
+\item{support}{A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.}
 
-\item{convergence}{}
+\item{convergence}{Threshold of iterative GLS estimation, when beta is considered converged.}
 
-\item{multicore}{}
+\item{multicore}{Use of multiple CPU cores. Using multicore, prints are silenced during parameter search.}
 
-\item{ncores}{}
+\item{ncores}{Number of CPU cores to be used, optional.}
 
-\item{hillclimb}{}
+\item{hillclimb}{TRUE/FALSE whether to use hillclimb parameter estimation routine.}
 
-\item{hillclimb_start}{}
+\item{hillclimb_start}{Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.}
+}
+\value{
+An object of class 'slouch'
 }
 \description{
 Title

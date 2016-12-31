@@ -7,7 +7,9 @@
 \method{print}{slouch}(x, ...)
 }
 \arguments{
-\item{...}{}
+\item{x}{An object of class 'slouch'}
+
+\item{...}{Additional arguments, unused.}
 }
 \description{
 Title

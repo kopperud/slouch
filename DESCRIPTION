@@ -14,7 +14,8 @@ Depends:
   base,
   stats
 Imports:
-  parallel
+  parallel,
+  methods
 Suggests:
     knitr,
     rmarkdown,

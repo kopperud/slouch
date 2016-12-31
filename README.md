@@ -1,18 +1,14 @@
----
-output: html_document
----
-
 [![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch)
 
-# How to: Install & load devtools
+# Install and load devtools
 
-Careful, it is in development.
+Devtools makes it much easier to install R packages straight from github
 ```
 install.packages("devtools")
 library(devtools)
 ```
 
-# Install and load this packaage
+# Install and load slouch
 ```
 devtools::install_github("kopperud/slouch")
 library(slouch)

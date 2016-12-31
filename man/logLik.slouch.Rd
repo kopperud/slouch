@@ -7,9 +7,12 @@
 \method{logLik}{slouch}(object, ...)
 }
 \arguments{
-\item{object}{}
+\item{object}{An object of class 'slouch'}
 
-\item{...}{}
+\item{...}{Additional arguments.}
+}
+\value{
+An object of class 'logLik'
 }
 \description{
 Title

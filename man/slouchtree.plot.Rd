@@ -8,19 +8,19 @@ slouchtree.plot(topology, times, names = NULL, regimes = NULL, cex = NULL,
   lwd = NULL, reg.col = NULL)
 }
 \arguments{
-\item{topology}{}
+\item{topology}{Ancestor vector}
 
-\item{times}{}
+\item{times}{Time from root to node}
 
-\item{names}{}
+\item{names}{A vector of names for each node to be labelled. Optional}
 
-\item{regimes}{}
+\item{regimes}{A vector of regimes to be painted on the tree. Optional}
 
-\item{cex}{}
+\item{cex}{Font size}
 
-\item{lwd}{}
+\item{lwd}{Line width}
 
-\item{reg.col}{}
+\item{reg.col}{Colour}
 }
 \description{
 Title
