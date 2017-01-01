@@ -10,7 +10,7 @@ model.fit.dev2(ancestor, times, half_life_values = NULL, vy_values = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
   intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
   convergence = 1e-06, multicore = FALSE, ncores = NULL,
-  hillclimb = FALSE, hillclimb_start = NULL)
+  hillclimb = FALSE, hillclimb_start = NULL, verbose = FALSE)
 }
 \arguments{
 \item{ancestor}{Vector of ancestors for each given node in tree}
@@ -54,6 +54,8 @@ model.fit.dev2(ancestor, times, half_life_values = NULL, vy_values = NULL,
 \item{hillclimb}{TRUE/FALSE whether to use hillclimb parameter estimation routine.}
 
 \item{hillclimb_start}{Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.}
+
+\item{verbose}{if TRUE, prints each iteration of parameter search. Default FALSE.}
 }
 \value{
 An object of class 'slouch'

@@ -70,7 +70,7 @@ calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   #          (exp(-a*tia)*(1 - exp(-a*ti))/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
 }
 
-calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
+vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
   
   
   if (hl == 0 | is.null(random.cov)){
@@ -81,13 +81,14 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
   if(!is.null(fixed.cov) | !is.null(random.cov)){
     
     ## Update measurement error in X.
-    ## Measurement error in predictor - take 2
-    beta_continuous <- beta1[c(which.fixed.cov, which.random.cov)]
-    obs_var_con2 <- list()
-    for (i in 1:length(beta_continuous)){
-      obs_var_con2[[i]] <- Vu_given_x[[i]]*(beta_continuous[i]^2)*rho2
-    }
-    obs_var_con2 <- Reduce('+', obs_var_con2)
+    ## Measurement error in predictor - take 2]
+    beta2_Vu_given_x_list <-  mapply(function(a, b, c) {a * b^2 * c} , 
+                           Vu_given_x, 
+                           beta1[c(which.fixed.cov, which.random.cov),], 
+                           c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
+                             lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
+                   SIMPLIFY = FALSE)
+    beta2_Vu_given_x <- Reduce('+', beta2_Vu_given_x_list)
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
@@ -103,7 +104,7 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
       mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
     }
   }else{
-    obs_var_con2 <- 0
+    beta2_Vu_given_x <- 0
     mcov <- 0
     mcov.fixed <- 0
   }
@@ -118,7 +119,7 @@ calc.V <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, ran
       Vt <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
     }
   }
-  V <- Vt + na.exclude(me.response) + obs_var_con2 - mcov - mcov.fixed
+  V <- Vt + na.exclude(me.response) + beta2_Vu_given_x - mcov - mcov.fixed
   return(V)
 }
 
@@ -162,7 +163,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     }else cm2 <- NULL
   }
   X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
-  
+  #print(microbenchmark(calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)))
   ## ols.beta1 exists from OLS estimate
   #beta1 <- ols.beta1
   #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
@@ -177,7 +178,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   
   con.count <- 0
   repeat{
-    V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
+    V <- vcv_residual(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
     #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
     #print(microbenchmark(V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)))
     
@@ -230,7 +231,6 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                     hl_vy = hl_vy))
       }
     }
-    
     ## Check for convergence
     con.count <- con.count + 1
     #if (test.conv(beta.i, beta1, con.count, convergence)) {
@@ -252,13 +252,14 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   #eY <- X%*%beta1
   #resid1 <- Y-eY
   #V.inverse <- solve(V)
-  
   log.det.V <- mk.log.det.V(V = V, N = N)
   
   ## Log-likelihood
   #sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
-  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*crossprod(fit$residuals)
-  print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+  sup1 <- - N/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
+  if(verbose){
+    print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+  }
   
   if(gridsearch){
     return(list(support = sup1,
@@ -285,7 +286,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       }
       
       if(!is.null(random.cov)){
-        X0_random <- matrix(s.X, ncol=length(s.X), nrow=N)
+        X0_random <- matrix(s.X, ncol=length(s.X), nrow=N, byrow = TRUE)
       }else{
         X0_random <- NULL
       }
