@@ -231,26 +231,21 @@ model.fit.dev2<-function(ancestor,
 
   ## Find the regression for which the support value is maximized
   besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
-  best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
+  
+  ## Repeat regression at a, vy for which logLik is maximized
+  fit <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   }
   
   ############################
-  ###### PASTED IN FROM rREG 
-  V <- best.estimate$V
-  ev.reg <- best.estimate$ev.reg
-  opt.reg <- best.estimate$opt.reg
-  r.squared <- best.estimate$r.squared
-  sse <- best.estimate$sse
-  sst <- best.estimate$sst
-  alpha.est <- log(2) / best.estimate$hl_vy[1]
-  vy.est <- best.estimate$hl_vy[2]
   
-  oupar <- matrix(c(alpha.est, 
-                    log(2)/alpha.est, 
-                    vy.est, 
-                    mean((1-(1-exp(-alpha.est*T.term))/(alpha.est*T.term)))), 
+  alpha <- log(2) / fit$hl_vy[1]
+  
+  oupar <- matrix(c(log(2) / fit$hl_vy[1], 
+                    fit$hl_vy[1], 
+                    fit$hl_vy[2], 
+                    mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))), 
                   ncol=1, 
                   dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
   
@@ -260,15 +255,15 @@ model.fit.dev2<-function(ancestor,
     brownian_predictors <- NULL
   }
   
-  n.par <- length(opt.reg$coefficients[,1]) + 2
+  n.par <- length(fit$opt.reg$coefficients[,1]) + 2
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
-  modfit[1,1]=ml
-  modfit[2,1]=-2*ml+2*n.par
-  modfit[3,1]=modfit[2,1]+(2*n.par*(n.par+1))/(N-n.par-1)
-  modfit[4,1]=-2*ml+log(N)*n.par
-  modfit[5,1]=r.squared*100
-  modfit[6,1]=sst
-  modfit[7,1]=sse
+  modfit[1,1] = ml
+  modfit[2,1] = -2*ml+2*n.par
+  modfit[3,1] = modfit[2,1]+(2*n.par*(n.par+1))/(N-n.par-1)
+  modfit[4,1] = -2*ml+log(N)*n.par
+  modfit[5,1] = fit$r.squared*100
+  modfit[6,1] = fit$sst
+  modfit[7,1] = fit$sse
   
   
   if(length(half_life_values) > 1 && length(vy_values) > 1){
@@ -281,9 +276,7 @@ model.fit.dev2<-function(ancestor,
                                  ncol = 2, nrow = 2,
                                  dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
     
-    
     if(!(all(is.na(gof) | is.infinite(gof)))){
-      
       # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
       h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
       for(i in 1:length(vy_values)){
@@ -312,12 +305,12 @@ model.fit.dev2<-function(ancestor,
                  supportplot = supportplot,
                  climblog_matrix = climblog_matrix,
                  brownian_predictors = brownian_predictors,
-                 opt.reg = opt.reg,
-                 ev.reg = ev.reg,
+                 opt.reg = fit$opt.reg,
+                 ev.reg = fit$ev.reg,
                  oupar = oupar,
                  hlvy_grid_interval = hlvy_grid_interval,
                  n.par = n.par,
-                 V = V)
+                 V = fit$V)
   class(result) <- c("slouch", class(result))
   return(result)
 }
