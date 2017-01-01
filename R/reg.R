@@ -179,7 +179,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   repeat{
     V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
     #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
-    
+    #print(microbenchmark(V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)))
     
     #V.inverse <- pseudoinverse(V)
     
@@ -210,10 +210,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       #   stop("V contains negative eigenvalues.")
       # }
       
-      cholinv <- solve(t(chol(V)))
-      Y2 <- matrix(cholinv%*%Y, ncol=1)
-      X2 <- cholinv%*%X
-      fit <- lm.fit(X2, Y2)
+      V_chol <- t(chol(V))
+      fit <- lm.fit(backsolve(V_chol, X, upper.tri = FALSE), 
+                    matrix(backsolve(V_chol, Y, upper.tri = FALSE), ncol=1))
       beta.i <- matrix(fit$coefficients, ncol=1)
     }
     
@@ -250,14 +249,15 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   }
   
   ## Compute residuals
-  eY <- X%*%beta1
-  resid1 <- Y-eY
-  V.inverse <- solve(V)
+  #eY <- X%*%beta1
+  #resid1 <- Y-eY
+  #V.inverse <- solve(V)
   
   log.det.V <- mk.log.det.V(V = V, N = N)
   
   ## Log-likelihood
-  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
+  #sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
+  sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*crossprod(fit$residuals)
   print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
   
   if(gridsearch){
@@ -266,6 +266,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                 #V = V # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
                 ))
   }else{
+    V.inverse <- solve(V)
     beta1.var <- solve(t(X)%*%V.inverse%*%X)
     
     
