@@ -30,6 +30,7 @@
 #' @param ncores Number of CPU cores to be used, optional.
 #' @param hillclimb TRUE/FALSE whether to use hillclimb parameter estimation routine.
 #' @param hillclimb_start Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.
+#' @param verbose if TRUE, prints each iteration of parameter search. Default FALSE.
 #'
 #' @return An object of class 'slouch'
 #' @export
@@ -53,7 +54,8 @@ model.fit.dev2<-function(ancestor,
                          multicore = FALSE,
                          ncores = NULL,
                          hillclimb = FALSE,
-                         hillclimb_start = NULL)
+                         hillclimb_start = NULL,
+                         verbose = FALSE)
 {
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
@@ -140,7 +142,8 @@ model.fit.dev2<-function(ancestor,
                    regime.specs = as.factor(fixed.fact),
                    factor.exists = !is.null(fixed.fact),
                    names.fixed.cov = names.fixed.cov,
-                   names.random.cov = names.random.cov)
+                   names.random.cov = names.random.cov,
+                   verbose = verbose)
   
   
   
@@ -154,9 +157,10 @@ model.fit.dev2<-function(ancestor,
     vy_values <- runif(1, 0, var(na.exclude(response)))
   }
 
-  
-  message("GRID SEARCH PARAMETER SUPPORT")
-  cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
+  if(verbose){
+    message("GRID SEARCH PARAMETER SUPPORT")
+    cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
+  }
   
   #############
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
@@ -188,10 +192,12 @@ model.fit.dev2<-function(ancestor,
   ml_grid <- max(na.exclude(sup2_grid))
   
   if(hillclimb){
-    Sys.sleep(0.2)
-    cat("\n")
-    print("Start hillclimb parameter estimation routine, method L-BFGS-B")
-    cat("\n")
+    if(verbose){
+      Sys.sleep(0.2)
+      cat("\n")
+      print("Start hillclimb parameter estimation routine, method L-BFGS-B")
+      cat("\n")
+    }
     
     hcenv <- environment()
     hcenv$k <- 0
@@ -226,7 +232,9 @@ model.fit.dev2<-function(ancestor,
   ## Find the regression for which the support value is maximized
   besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
   best.estimate <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
-  print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
+  if(verbose){
+    print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
+  }
   
   ############################
   ###### PASTED IN FROM rREG 
