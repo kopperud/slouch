@@ -26,9 +26,7 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     rho <- 1
   }
   if(!is.null(fixed.fact)){
-    #m1 <- weight.matrix(a, topology, times, N, regime.specs, fixed.cov = NULL, intercept)
     m1 <- weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
-    #print(microbenchmark(weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)))
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
     }else{
@@ -123,30 +121,6 @@ vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
   return(V)
 }
 
-
-test.conv <- function(beta.i, beta1, con.count, convergence){
-  # if(!is.null(modelpar$intercept)){
-  #   test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-  # }else if(is.null(modelpar$intercept) & (!is.null(modelpar$fixed.fact)) | (is.null(fixed.cov) & is.null(random.cov))){
-  #   test <- ifelse(abs(as.numeric(beta.i - beta1))[-1] <= convergence, 0, 1)
-  # }
-  # else{
-  #   test <- ifelse(abs(as.numeric(beta.i - beta1))[-(1:2)] <= convergence, 0, 1)
-  #   ## Effectively removes beta[1:2] <= 0.001 from being criteria in convergence, when non-ultrametric with continuous covariates
-  # }
-  beta.i <- beta.i[!is.na(beta.i),]
-  beta1 <- beta1[!is.na(beta1), ]
-  test <- ifelse(abs(as.numeric(beta.i - beta1)) <= convergence, 0, 1)
-  
-  if(sum(test)==0) return (TRUE)
-  if(con.count >= 50)
-  {
-    message("Warning, estimates did not converge after 50 iterations, last estimates printed out")
-    return(TRUE)
-  }
-  return(FALSE)
-}
-
 reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
@@ -163,13 +137,13 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     }else cm2 <- NULL
   }
   X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
-  #print(microbenchmark(calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)))
   ## ols.beta1 exists from OLS estimate
   #beta1 <- ols.beta1
   #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
   ##  Error in solve.default(t(X) %*% X) : 
   ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
-  beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
+  #beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
+  beta1 <- matrix(lm.fit(X, Y)$coefficients, ncol=1)
   beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
                         rep("Instantaneous cov", length(names.fixed.cov)),
                         rep("Random cov", length(names.random.cov)))
@@ -179,11 +153,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
   con.count <- 0
   repeat{
     V <- vcv_residual(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
-    #print(microbenchmark(calc.V(hl, vy, a, cm2, beta1 = beta1)))
-    #print(microbenchmark(V <- calc.V(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)))
-    
-    #V.inverse <- pseudoinverse(V)
-    
+
     if(FALSE){
       V.inverse <- solve(V)
       beta.i.var <- solve(t(X)%*%V.inverse%*%X)
@@ -233,7 +203,6 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     }
     ## Check for convergence
     con.count <- con.count + 1
-    #if (test.conv(beta.i, beta1, con.count, convergence)) {
     if(all(abs(beta1[!is.na(beta1)] - beta.i[!is.na(beta.i)]) < convergence)) {
       beta1<-beta.i
       break
@@ -248,14 +217,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     }
   }
   
-  ## Compute residuals
-  #eY <- X%*%beta1
-  #resid1 <- Y-eY
-  #V.inverse <- solve(V)
   log.det.V <- mk.log.det.V(V = V, N = N)
   
   ## Log-likelihood
-  #sup1 <- -N/2*log(2*pi)-0.5*log.det.V-0.5*(t(resid1) %*% V.inverse%*%resid1)
   sup1 <- - N/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
   if(verbose){
     print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
@@ -308,7 +272,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       X.ev <- calc.X(a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
-      ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), nrow=ncol(X.ev), dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
+      ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
+                                           nrow=ncol(X.ev), 
+                                           dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
                      X = X.ev,
                      residuals = Y - (X.ev %*% ev.beta1))
     }else{
@@ -316,7 +282,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       ev.beta1 <- NULL
       ev.reg <- NULL
     }
-    opt.reg <- list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), nrow=ncol(X), dimnames = list(colnames(X), c("Estimates", "Std. error"))),
+    opt.reg <- list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
+                                          nrow=ncol(X), 
+                                          dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                     X = X,
                     residuals = Y - (X %*% beta1))
     
