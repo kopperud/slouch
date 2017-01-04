@@ -171,7 +171,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
       # Is this method ok to use? Seems to avoid some bugs (see below). R's lm.fit() does not throw
       # error when X is singular, but returns NA in the coefficients.
-      # Problem with this transform is, does not work when matrix V is not positive semi-definite (Should this be possible? happens w dummy dataset on random.cov)
+      # Problem with this transform is, does not work when matrix V is not positive semi-definite (Should this be possible?)
       #
       #  Error in solve.default(t(X) %*% V.inverse %*% X) : 
       #  system is computationally singular: reciprocal condition number = 2.28389e-22
@@ -181,9 +181,9 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       #   stop("V contains negative eigenvalues.")
       # }
       
-      V_chol <- t(chol(V))
-      fit <- lm.fit(backsolve(V_chol, X, upper.tri = FALSE), 
-                    matrix(backsolve(V_chol, Y, upper.tri = FALSE), ncol=1))
+      L <- t(chol(V))
+      fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
+                    matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
       beta.i <- matrix(fit$coefficients, ncol=1)
     }
     
@@ -217,7 +217,8 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     }
   }
   
-  log.det.V <- mk.log.det.V(V = V, N = N)
+  # log.det.V <- mk.log.det.V(V = V, N = N)
+  log.det.V = 2*sum(log(diag(L))) ## Special case for positive definite matrix V, more numerically stable than (log*det(V)) routine for large V
   
   ## Log-likelihood
   sup1 <- - N/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
@@ -231,6 +232,8 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
                 #V = V # This will cause memory overflow when N or Grid is large, or when less memory is available. O(N^2) + O(grid.vy * grid.hl)
                 ))
   }else{
+    
+    ## Following is less optimized, more identical to publication syntax because it only has to run once.
     V.inverse <- solve(V)
     beta1.var <- solve(t(X)%*%V.inverse%*%X)
     
