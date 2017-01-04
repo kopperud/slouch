@@ -28,8 +28,8 @@ ols.seed <- function(treepar, modelpar){
     theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
     for(i in 1:n.pred)
     {
-      s.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[2]) ## Change var name to squared, variance. Not SE.
-      theta.X[,i] <- as.numeric(sigma.X.estimate(pred[,i],me.pred[,i], ancestor, times)[1])
+      s.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[2]) ## Change var name to squared, variance. Not SE.
+      theta.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[1])
     }
   }else{
     n.pred <- 0
@@ -98,8 +98,9 @@ ols.seed <- function(treepar, modelpar){
   
   if(!is.null(random.cov)){
     Vu_random <- list()
-    Vd_random <- lapply(s.X, function(e) pt$bt*e)
-    for (i in seq(from = 1, to = nrow(s.X), by=1)){
+    Vd_random <- lapply(s.X, function(e) ta*e)
+    # for (i in seq(from = 1, to = nrow(s.X), by=1)){
+    for(i in seq_along(s.X)){
       Vu_random[[i]] <- diag(na.exclude(me.pred[,i]))
     }
   }else{

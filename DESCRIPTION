@@ -15,12 +15,11 @@ Depends:
   stats
 Imports:
   parallel,
-  methods
+  methods,
+  ape
 Suggests:
     knitr,
     rmarkdown,
-    ape,
-    ouch,
     testthat
 URL: http://github.com/kopperud/slouch
 BugReports: http://github.com/kopperud/slouch/issues

@@ -1,37 +1,41 @@
-## Test run time dummy dataset
+
+## Generate tree for testing test
+library(ape)
+n = 80
+set.seed(4)
+phy <- rtree(n)
+trait_1 <- runif(n)
+trait_1_SE_sq <- 0.01*runif(n)
+#regimes_tip <- factor(sample(c("A", "B", "C"), n, replace = TRUE))
+regimes_tip <- factor(sample(c("A", "B"), n, replace = TRUE))
+
+## Ancestral state recon
+ans <- ace(regimes_tip, phy, type ="d")
+regimes_internal <- factor(levels(regimes_tip)[apply(ans$lik.anc, 1, function(e) which.max(e))])
+phy$node.label <- regimes_internal
+#levels(regimes_internal) <- c(levels(regimes_internal), "root"); regimes_internal[1] <- "root"
+
+## Plot
+#plot(phy); tiplabels(regimes_tip); nodelabels(regimes_internal)
+
+regimes <- concat.factor(regimes_tip, regimes_internal)
+lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
 
 
-dummydata <- read.table("dummy_data_slouch.txt")
-
-
-## Square the SE, so that it is the Var of the mean
-dummydata$SE_sq_trait_1 <- NA
-dummydata$SE_sq_trait_1[!is.na(dummydata$SE_trait_1)] <- (dummydata$SE_trait_1[!is.na(dummydata$SE_trait_1)])^2
-
-dummydata$SE_sq_trait_2 <- NA
-dummydata$SE_sq_trait_2[!is.na(dummydata$SE_trait_2)] <- (dummydata$SE_trait_1[!is.na(dummydata$SE_trait_2)])^2
-
-## Fake data, rnorm
-dummydata$fake_rnorm <- NA
-dummydata$fake_rnorm[!is.na(dummydata$species)] <- rnorm(length(na.exclude(dummydata$species)))
-
-attach(dummydata)
-
-m1 <- model.fit.dev2(dummydata$ancestor,
-                     dummydata$time,
-                     half_life_values = seq(0.1,5, length.out = 3),
-                     vy_values = seq(0.4,7, length.out = 3),
-                     response = dummydata$trait_1,
-                     me.response = dummydata$SE_sq_trait_1,
-                     fixed.fact = dummydata$three_niches,
+m1 <- model.fit.dev2(phy,
+                     half_life_values = seq(0,0.4, length.out = 15),
+                     vy_values = seq(0.05,0.15, length.out = 15),
+                     response = trait_1,
+                     me.response = trait_1_SE_sq,
+                     fixed.fact = regimes_tip,
                      ultrametric = TRUE)
 
-detach(dummydata)
+
+#detach(dummydata)
 
 test_that("No errors ANOVA", {
-  expect_equal(structure(c(1.72188320563384, 0.667703233610768, 0.951808167895859, 
-                           1.2482851617156, 1.06450145357172, 0.892032143040452), .Dim = c(3L, 
-                                                                                           2L), .Dimnames = list(c("ANC", "A", "B"), c("Estimates", "Std. error"
-                                                                                           ))),
+  expect_equal(structure(c(0.421599539503631, 0.481516052311344, 0.0453131399491333, 
+                           0.050412202001475), .Dim = c(2L, 2L), .Dimnames = list(c("A", 
+                                                                                    "B"), c("Estimates", "Std. error"))),
                m1$opt.reg$coefficients)
 })

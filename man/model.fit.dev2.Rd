@@ -4,8 +4,8 @@
 \alias{model.fit.dev2}
 \title{Title}
 \usage{
-model.fit.dev2(ancestor, times, half_life_values = NULL, vy_values = NULL,
-  response, me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
+model.fit.dev2(phy, half_life_values = NULL, vy_values = NULL, response,
+  me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
   intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
@@ -13,9 +13,7 @@ model.fit.dev2(ancestor, times, half_life_values = NULL, vy_values = NULL,
   hillclimb = FALSE, hillclimb_start = NULL, verbose = FALSE)
 }
 \arguments{
-\item{ancestor}{Vector of ancestors for each given node in tree}
-
-\item{times}{A numeric vector; time from root to given node}
+\item{phy}{an object of class 'phylo', must be rooted.}
 
 \item{half_life_values}{A vector of candidate phylogenetic half-life values to be evaluated in grid search.}
 

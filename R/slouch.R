@@ -9,8 +9,7 @@
 
 #' Title
 #'
-#' @param ancestor Vector of ancestors for each given node in tree
-#' @param times A numeric vector; time from root to given node
+#' @param phy an object of class 'phylo', must be rooted.
 #' @param half_life_values A vector of candidate phylogenetic half-life values to be evaluated in grid search.
 #' @param vy_values A vector of candidate stationary variances for the response trait, to be evaluated in grid search.
 #' @param response A numeric vector of a trait to be treated as response variable
@@ -34,8 +33,7 @@
 #'
 #' @return An object of class 'slouch'
 #' @export
-model.fit.dev2<-function(ancestor, 
-                         times, 
+model.fit.dev2<-function(phy,
                          half_life_values = NULL, 
                          vy_values = NULL, 
                          response, 
@@ -59,7 +57,7 @@ model.fit.dev2<-function(ancestor,
 {
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
-  ancestor <- ancestor
+  #ancestor <- ancestor
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
     me.response<-diag(rep(0, times=length(response[!is.na(response)])))
@@ -71,14 +69,25 @@ model.fit.dev2<-function(ancestor,
   
   Y <- response[!is.na(response)]
   N <- length(Y)
-  T.term <- times[terminal.twigs(ancestor)]
-  tia<-tsia(ancestor, times)
-  tja<-tsja(ancestor, times)
   
-  term<-terminal.twigs(ancestor)
-  pt<-parse.tree(ancestor, times)
-  ta<-pt$bt
-  tij<-pt$dm
+  if(!is.null(fixed.fact)){
+    stopifnot(!is.null(phy$node.label))
+    regimes_internal <- phy$node.label
+    regimes_tip <- fixed.fact
+    
+    regimes <- concat.factor(regimes_tip, regimes_internal)
+    lineages <- lapply(1:N, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
+  }else{
+    regimes <- lineages <- NULL
+  }
+
+  mrca1 <- mrca(phy)
+  times <- node.depth.edgelength(phy)
+  ta <- matrix(times[mrca1], nrow=N, dimnames = list(phy$tip.label, phy$tip.label))
+  T.term <- times[1:N]
+  tia <- times[1:N] - ta
+  tja <- t(tia)
+  tij <- tja + tia
   
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
@@ -98,28 +107,27 @@ model.fit.dev2<-function(ancestor,
     NULL
   }
   
-  if(!is.null(fixed.fact)){
-    regime.specs <- as.factor(fixed.fact)
-    regimes1 <- regimes(ancestor, times, regime.specs, term)
-    epochs1 <- epochs(ancestor, times, term)
-  }else{
-    regimes1 <- NULL
-    epochs1 <- NULL
-  }
+  # if(!is.null(fixed.fact)){
+  #   regime.specs <- as.factor(fixed.fact)
+  #   regimes1 <- regimes(ancestor, times, regime.specs, term)
+  #   epochs1 <- epochs(ancestor, times, term)
+  # }else{
+  #   regimes1 <- NULL
+  #   epochs1 <- NULL
+  # }
   
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T.term = T.term,
                   tia = tia,
                   tja = tja,
-                  term = term,
+                  #term = term,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  ancestor = ancestor,
+                  #ancestor = ancestor,
                   times = times,
-                  #species = species,
-                  regimes1 = regimes1,
-                  epochs1 = epochs1)
+                  lineages = lineages,
+                  regimes = regimes)
   
   ## Cluster parameters concerning the type of model being run
   modelpar <- list(response = response,
@@ -148,7 +156,7 @@ model.fit.dev2<-function(ancestor,
   
   
   seed <- ols.seed(treepar, modelpar)
-  coef.names <- colnames(calc.X(a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
+  coef.names <- colnames(calc.X(phy, a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
   
   if (is.null(half_life_values)){
     half_life_values <- runif(1, 0, max(times))
@@ -181,11 +189,11 @@ model.fit.dev2<-function(ancestor,
       cl <- parallel::makeCluster(getOption("cl.cores", ncores))
       parallel::setDefaultCluster(cl)
       parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
-      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, modelpar, treepar, seed))
+      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, phy, modelpar, treepar, seed))
       parallel::stopCluster(cl)
     }
   }else{
-    grid_support <- apply(vector_hl_vy, 1, reg, modelpar, treepar, seed)
+    grid_support <- apply(vector_hl_vy, 1, reg, phy, modelpar, treepar, seed)
   }
   
   sup2_grid <- sapply(grid_support, function(e) e$support)
@@ -207,7 +215,7 @@ model.fit.dev2<-function(ancestor,
     }
     hl_vy_est <- optim(
       par = hillclimb_start,
-      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
+      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, phy, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
       gridsearch = TRUE,
       lower=0, 
       method="L-BFGS-B")
@@ -233,7 +241,7 @@ model.fit.dev2<-function(ancestor,
   besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
   
   ## Repeat regression at a, vy for which logLik is maximized
-  fit <- reg(besthl_vy, modelpar, treepar, seed, gridsearch=FALSE)
+  fit <- reg(besthl_vy, phy, modelpar, treepar, seed, gridsearch=FALSE)
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   }

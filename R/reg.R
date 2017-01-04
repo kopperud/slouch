@@ -1,21 +1,33 @@
-## Calculate determinant of V
-mk.log.det.V <- function(V, N){
-  det.V<-det(V)
-  if(det.V==0){
-    print(paste("Warning: Determinant of V = 0"))
-    #Minimum value of diagonal scaling factor
-    inv.min.diag.V<-1/min(diag(V))
-    V<-V*inv.min.diag.V
-    #Rescale and log determinant
-    log(det(V))+log(min(diag(V)))*N
+## Generalized inverse, or pseudoinverse
+pseudoinverse <-
+  function (m){
+    msvd <- svd(m)
+    if (length(msvd$d) == 0) {
+      return(array(0, dim(m)[2:1]))
+    }
+    else {
+      return(msvd$v %*% (1/msvd$d * t(msvd$u)))
+    }
   }
-  else {
-    log(det.V)
-  }
-}
+
+# ## Calculate determinant of V
+# mk.log.det.V <- function(V, N){
+#   det.V<-det(V)
+#   if(det.V==0){
+#     print(paste("Warning: Determinant of V = 0"))
+#     #Minimum value of diagonal scaling factor
+#     inv.min.diag.V<-1/min(diag(V))
+#     V<-V*inv.min.diag.V
+#     #Rescale and log determinant
+#     log(det(V))+log(min(diag(V)))*N
+#   }
+#   else {
+#     log(det.V)
+#   }
+# }
 
 ## Design matrix
-calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
+calc.X <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
   list2env(seed, envir = environment())
@@ -26,7 +38,8 @@ calc.X <- function(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     rho <- 1
   }
   if(!is.null(fixed.fact)){
-    m1 <- weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
+    #m1 <- weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
+    m1 <- weight.matrix(phy, a, lineages)
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
     }else{
@@ -121,7 +134,7 @@ vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
   return(V)
 }
 
-reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
+reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
   list2env(seed, envir = environment())
@@ -136,7 +149,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
       cm2 <- calc.cm2(a, T.term, N, tia, tja, ta)
     }else cm2 <- NULL
   }
-  X <- calc.X(a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
+  X <- calc.X(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
   ## ols.beta1 exists from OLS estimate
   #beta1 <- ols.beta1
   #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
@@ -272,7 +285,7 @@ reg <- function(hl_vy, modelpar, treepar, seed, gridsearch = TRUE){
     
     ## 
     if(!is.null(random.cov)){
-      X.ev <- calc.X(a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
+      X.ev <- calc.X(phy, a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
       ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
