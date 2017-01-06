@@ -71,14 +71,14 @@ calc.X <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
 # Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
 calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   ti <- matrix(rep(T.term, N), nrow=N)
-  tj <- t(ti)
-  term0 <- (1-exp(-a*ti))
-  
+  #tj <- t(ti)
+  term0 <- exp(-a*tja)*(1-exp(-a*ti))/(a*ti)
+  term2 <- (1-exp(-a*ti))/(a*ti)
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  return((term0/(a*ti))*(t(term0)/(a*tj)) -
-           (exp(-a*tia)*t(term0)/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
-  # return((term0/(a*ti))*(t(term0)/(a*tj)) -  ##### INTENTIONALLY WRONG
-  #          (exp(-a*tia)*(1 - exp(-a*ti))/(a*tj) + exp(-a*tja)*term0/(a*ti))*num.prob)
+  
+  # res_old <- ((1-exp(-a*ti))/(a*ti))*(t((1-exp(-a*ti)))/(a*tj)) -
+  #   (exp(-a*tja)*(1-exp(-a*ti))/(a*ti) + t(exp(-a*tja)*(1-exp(-a*ti))/(a*ti)))*num.prob
+  return(term2*t(term2) - num.prob*(term0 + t(term0)))
 }
 
 vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
@@ -279,7 +279,8 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
       K <- solve(diag(1,m,m)-bias_corr)
       
       beta1_bias_corr <- K%*%beta1
-      beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))
+      #beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))
+      beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(solve(K))
     }
 
     
