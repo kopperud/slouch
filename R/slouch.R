@@ -1,6 +1,8 @@
 #'SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses
 #'
 #'
+#'@importFrom Rcpp evalCpp
+#'@useDynLib slouch
 "_PACKAGE"
 
 
@@ -318,7 +320,8 @@ model.fit.dev2<-function(phy,
                  oupar = oupar,
                  hlvy_grid_interval = hlvy_grid_interval,
                  n.par = n.par,
-                 V = fit$V)
+                 V = fit$V,
+                 lineages = lineages)
   class(result) <- c("slouch", class(result))
   return(result)
 }
