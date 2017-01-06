@@ -76,7 +76,7 @@ calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   term2 <- (1-exp(-a*ti))/(a*ti)
   num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
   
-  # res_old <- ((1-exp(-a*ti))/(a*ti))*(t((1-exp(-a*ti)))/(a*tj)) -
+  # res_old <- ((1-exp(-a*ti))/(a*ti))*(t((1-exp(-a*ti))/(a*ti))) -
   #   (exp(-a*tja)*(1-exp(-a*ti))/(a*ti) + t(exp(-a*tja)*(1-exp(-a*ti))/(a*ti)))*num.prob
   return(term2*t(term2) - num.prob*(term0 + t(term0)))
 }
