@@ -57,8 +57,14 @@ model.fit.dev2<-function(phy,
                          hillclimb_start = NULL,
                          verbose = FALSE)
 {
+  ## Checks, defensive conditions
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
+  if((is.null(half_life_values) | is.null(vy_values)) & !hillclimb){
+    stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
+  }
+  
+  
   #ancestor <- ancestor
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -217,10 +223,13 @@ model.fit.dev2<-function(phy,
     }
     hl_vy_est <- optim(
       par = hillclimb_start,
-      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, phy, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return((-1)*tmp$support) },
+      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, phy, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
       lower=0, 
-      method="L-BFGS-B")
+      method="L-BFGS-B",
+      control = list(parscale = c(max(T.term), var(response)),
+                     fnscale = -0.1)
+      )
     
     ## Matrix for plotting the route of hillclimber
     climblog_matrix <- data.frame(index = 1:length(climblog), 
@@ -252,7 +261,7 @@ model.fit.dev2<-function(phy,
   
   alpha <- log(2) / fit$hl_vy[1]
   
-  oupar <- matrix(c(log(2) / fit$hl_vy[1], 
+  oupar <- matrix(c(alpha, 
                     fit$hl_vy[1], 
                     fit$hl_vy[2], 
                     mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))), 
@@ -287,7 +296,6 @@ model.fit.dev2<-function(phy,
                                  dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
     
     if(!(all(is.na(gof) | is.infinite(gof)))){
-      # PLOT THE SUPPORT SURFACE FOR HALF-LIVES AND VY
       h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
       for(i in 1:length(vy_values)){
         h.lives[,i]=rev(gof[,i])
