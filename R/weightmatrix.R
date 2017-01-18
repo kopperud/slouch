@@ -1,4 +1,3 @@
-
 parent <- function(phy, x){
   m <- which(phy$edge[, 2] == x)
   return(phy$edge[m, 1])
@@ -27,27 +26,12 @@ lineage.constructor <- function(phy, e, regimes){
 weights <- function(a, lineage) {
   nt <- lineage$nodes_time
   ## Following is HUGE bottleneck, spends 60% ish time of a run with n=63
-  res <- c(vapply(head(seq_along(nt), -1),
-                  function(i) exp(-a*(nt[1] - nt[i])) - exp(-a*(nt[1] - nt[i + 1])), FUN.VALUE = 0),
-           exp(-a*nt[1]) ## Theta0\Ya
-  )
-  
- # Slight, (10%?) speed improvement. Worth uglier code?
-  # et0 <- 1
   # res <- c(vapply(head(seq_along(nt), -1),
-  #                 function(i) {et1 <- exp(-a*(nt[1] - nt[i + 1])); m <- et0 - et1; et0 <- et1; m}, FUN.VALUE = 0),
-  #          exp(-a*nt[1])) ## Theta0\Ya
-  
+  #                 function(i) exp(-a*(nt[1] - nt[i])) - exp(-a*(nt[1] - nt[i + 1])), FUN.VALUE = 0),
+  #          exp(-a*nt[1]) ## Theta0\Ya
+  #)
+  res <- regimeWeightsHelper(a, nt) ## Rcpp wrapper, equivalent to above commented out code
   w <- vapply(lineage$which.regimes, function(e) sum(e*res), FUN.VALUE = 0)
-  # print(microbenchmark(vapply(lineage$which.regimes, function(e) sum(e*res), FUN.VALUE = 0),
-  #                      c(vapply(head(seq_along(nt), -1),
-  #                               function(i) exp(-a*(nt[1] - nt[i])) - exp(-a*(nt[1] - nt[i + 1])), FUN.VALUE = 0),
-  #                        exp(-a*nt[1]) ## Theta0\Ya
-  #                      ),
-  #                      c(vapply(head(seq_along(nt), -1),
-  #                               function(i) {et1 <- exp(-a*(nt[1] - nt[i + 1])); m <- et0 - et1; et0 <- et1; m}, FUN.VALUE = 0),
-  #                        exp(-a*nt[1])) ## Theta0\Ya
-  #                      ))
   return(w)
 }
 
@@ -58,7 +42,6 @@ weight.matrix <- function(phy, a, lineages){
   rownames(res) <- phy$tip.label
   return(res)
 }
-
 
 ## Thanks to user "snaut" at stackoverflow, http://stackoverflow.com/users/1999873/snaut
 concat.factor <- function(...){

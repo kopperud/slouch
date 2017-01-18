@@ -4,12 +4,12 @@
 \alias{model.fit.dev2}
 \title{Title}
 \usage{
-model.fit.dev2(phy, half_life_values = NULL, vy_values = NULL, response,
-  me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
-  me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
-  me.random.cov = NULL, mecov.random.cov = NULL, ultrametric = TRUE,
-  intercept = if (ultrametric == TRUE) "root" else NULL, support = 2,
-  convergence = 1e-06, multicore = FALSE, ncores = NULL,
+model.fit.dev2(phy, species = NULL, half_life_values = NULL,
+  vy_values = NULL, response, me.response = NULL, fixed.fact = NULL,
+  fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
+  random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
+  ultrametric = TRUE, intercept = if (ultrametric == TRUE) "root" else NULL,
+  support = 2, convergence = 1e-06, multicore = FALSE, ncores = NULL,
   hillclimb = FALSE, hillclimb_start = NULL, verbose = FALSE)
 }
 \arguments{

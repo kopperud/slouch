@@ -4,7 +4,7 @@
 \alias{logLik.slouch}
 \title{Title}
 \usage{
-logLik.slouch(object, ...)
+\method{logLik}{slouch}(object, ...)
 }
 \arguments{
 \item{object}{An object of class 'slouch'}
