@@ -38,7 +38,6 @@ calc.X <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
     rho <- 1
   }
   if(!is.null(fixed.fact)){
-    #m1 <- weight.matrix(a, ancestor, times, N, regime.specs, fixed.cov = NULL, intercept, weight.m.regimes = regimes1, ep = epochs1)
     m1 <- weight.matrix(phy, a, lineages)
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))

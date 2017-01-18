@@ -69,8 +69,6 @@ ols.seed <- function(treepar, modelpar){
   }else{
     mecov.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
   }
-  
-  regime.specs<-as.factor(fixed.fact)
 
   ## ------------------------------------------------------- ##
   ##                                                         ##

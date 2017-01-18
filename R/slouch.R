@@ -34,6 +34,7 @@
 #' @return An object of class 'slouch'
 #' @export
 model.fit.dev2<-function(phy,
+                         species = NULL,
                          half_life_values = NULL, 
                          vy_values = NULL, 
                          response, 
@@ -55,9 +56,27 @@ model.fit.dev2<-function(phy,
                          hillclimb_start = NULL,
                          verbose = FALSE)
 {
+  stopifnot(!is.null(species))
+  if(is.null(species)){
+    stop("Use argument \"species\" to make sure the order of the data correctly lines up with the tree. See example.")
+  }
+  if(!all(species == phy$tip.label)){
+    stop("Argument \"species\" must have the exact same species names as phy$tip.label, and in the same order.")
+  }
   stopifnot(intercept == "root" | is.null(intercept))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
-  #ancestor <- ancestor
+  # m <- sapply(list(response, 
+  #             me.response, 
+  #             fixed.fact, 
+  #             fixed.cov, 
+  #             me.fixed.cov, 
+  #             mecov.fixed.cov, 
+  #             random.cov, 
+  #             me.random.cov, 
+  #             mecov.random.cov),
+  #        function(e) if(!is.null(e)) assert_species_order(e, phy))
+  
+  
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
     me.response<-diag(rep(0, times=length(response[!is.na(response)])))
@@ -71,7 +90,9 @@ model.fit.dev2<-function(phy,
   N <- length(Y)
   
   if(!is.null(fixed.fact)){
-    stopifnot(!is.null(phy$node.label))
+    if(is.null(phy$node.label)){
+      stop("For categorical variables, the regimes corresponding to their primary optima need to be painted on all of the branches in the tree, and assigned to phy$node.label - use plot(phy) & nodelabels(phy$node.label) to see whether they are correct. See example.")
+    }
     regimes_internal <- phy$node.label
     regimes_tip <- fixed.fact
     
@@ -107,15 +128,6 @@ model.fit.dev2<-function(phy,
     NULL
   }
   
-  # if(!is.null(fixed.fact)){
-  #   regime.specs <- as.factor(fixed.fact)
-  #   regimes1 <- regimes(ancestor, times, regime.specs, term)
-  #   epochs1 <- epochs(ancestor, times, term)
-  # }else{
-  #   regimes1 <- NULL
-  #   epochs1 <- NULL
-  # }
-  
   ## Cluster all parameters concerning phylogenetic tree
   treepar <- list(T.term = T.term,
                   tia = tia,
@@ -147,7 +159,6 @@ model.fit.dev2<-function(phy,
                    support = support,
                    convergence = convergence,
                    intercept = intercept,
-                   regime.specs = as.factor(fixed.fact),
                    factor.exists = !is.null(fixed.fact),
                    names.fixed.cov = names.fixed.cov,
                    names.random.cov = names.random.cov,
@@ -321,4 +332,21 @@ model.fit.dev2<-function(phy,
                  V = fit$V)
   class(result) <- c("slouch", class(result))
   return(result)
+}
+
+assert_species_order <- function(x, phy){
+  msg <- "Use \"names()\ <- ...\" for single traits, or \"rownames() <- ...\" for a matrix with several variables. Names must be in the same order as phy$tip.label"
+  print("ahlo")
+  if(is.vector(x)){
+    names1 <- names(x)
+  }else if(is.matrix(x) | is.data.frame(x)){
+    names1 <- rownames(x)
+  }else{
+    stop("Input variables not vector, matrix or dataframe")
+  }
+  if(is.null(names1)) stop(msg)
+  if(!all(names1 == phy$tip.label)){
+    print("hello")
+    stop(msg)
+  }
 }
