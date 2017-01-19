@@ -15,6 +15,8 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
+\item{species}{.}
+
 \item{half_life_values}{A vector of candidate phylogenetic half-life values to be evaluated in grid search.}
 
 \item{vy_values}{A vector of candidate stationary variances for the response trait, to be evaluated in grid search.}

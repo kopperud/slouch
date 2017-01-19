@@ -2,7 +2,6 @@
 #'
 #'
 #'@importFrom Rcpp evalCpp
-#'@useDynLib(XDemo)
 #'@useDynLib slouch
 "_PACKAGE"
 
@@ -13,6 +12,7 @@
 #' Title
 #'
 #' @param phy an object of class 'phylo', must be rooted.
+#' @param species .
 #' @param half_life_values A vector of candidate phylogenetic half-life values to be evaluated in grid search.
 #' @param vy_values A vector of candidate stationary variances for the response trait, to be evaluated in grid search.
 #' @param response A numeric vector of a trait to be treated as response variable
@@ -162,7 +162,7 @@ model.fit.dev2<-function(phy,
   
   
   
-  seed <- ols.seed(treepar, modelpar)
+  seed <- ols.seed(phy, treepar, modelpar)
   coef.names <- colnames(calc.X(phy, a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
   
   if (is.null(half_life_values)){
@@ -273,7 +273,7 @@ model.fit.dev2<-function(phy,
     brownian_predictors <- NULL
   }
   
-  n.par <- length(fit$opt.reg$coefficients[,1]) + 2
+  n.par <- length(coef.names) + 2
   modfit<-matrix(data=0, nrow=7, ncol=1, dimnames=list(c("Support", "AIC", "AICc", "SIC", "r squared", "SST", "SSE"),("Value")))
   modfit[1,1] = ml
   modfit[2,1] = -2*ml+2*n.par

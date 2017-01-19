@@ -7,7 +7,7 @@
 
 ## Function to seed the OLS
 ## outputs; beta1, x.ols, xx, yy, Vu, Vd
-ols.seed <- function(treepar, modelpar){
+ols.seed <- function(phy, treepar, modelpar){
   list2env(treepar, envir = environment())
   list2env(modelpar, envir = environment())
   
