@@ -66,6 +66,7 @@ model.fit.dev2<-function(phy,
 
   ## Checks, defensive conditions
   stopifnot(intercept == "root" | is.null(intercept))
+  stopifnot(is.rooted(phy))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
   if((is.null(half_life_values) | is.null(vy_values)) & !hillclimb){
     stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
@@ -126,11 +127,9 @@ model.fit.dev2<-function(phy,
   treepar <- list(T.term = T.term,
                   tia = tia,
                   tja = tja,
-                  #term = term,
                   pt = pt,
                   ta = ta,
                   tij = tij,
-                  #ancestor = ancestor,
                   times = times,
                   lineages = lineages,
                   regimes = regimes)
@@ -161,7 +160,7 @@ model.fit.dev2<-function(phy,
   
   
   seed <- ols.seed(phy, treepar, modelpar)
-  coef.names <- colnames(calc.X(phy, a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
+  coef.names <- colnames(slouch.modelmatrix(phy, a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
   
   if (is.null(half_life_values)){
     half_life_values <- runif(1, 0, max(times))

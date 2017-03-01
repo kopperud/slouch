@@ -27,7 +27,7 @@ pseudoinverse <-
 # }
 
 ## Design matrix
-calc.X <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
+slouch.modelmatrix <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   list2env(modelpar, envir = environment())
   list2env(treepar, envir = environment())
   list2env(seed, envir = environment())
@@ -37,32 +37,27 @@ calc.X <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
   }else{
     rho <- 1
   }
+  
+  if(!is.null(fixed.cov) | !is.null(random.cov)){
+    covariates <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+  }else{
+    covariates <- NULL
+  }
+  
   if(!is.null(fixed.fact)){
-    m1 <- weight.matrix(phy, a, lineages)
-    if(!is.null(fixed.cov) | !is.null(random.cov)){
-      m2 <- matrix(cbind(fixed.pred, rho*pred), nrow = N, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
-    }else{
-      m2 <- NULL
-    }
-    return(cbind(m1,m2))
+    w_regimes <- weight.matrix(phy, a, lineages)
+    X <- cbind(w_regimes,covariates)
   }else{
     if(!is.null(modelpar$intercept)){
-      K <- 1
-      K.name <- "Intercept"
+      K <- c(Intercept = rep(1, length(phy$tip.label)))
     }else{
-      K <- cbind(exp(-a*T.term),
-                 1-exp(-a*T.term),
-                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
-      K.name <- c("Ya",
-                  "b0",
-                  if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) "X_anc" else NULL)
+      K <- cbind(Ya = exp(-a*T.term),
+                 b0 = 1-exp(-a*T.term),
+                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) bXa = 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
     }
-    matrix(cbind(K,
-                 fixed.pred,
-                 rho*pred), 
-           nrow=N,
-           dimnames=list(NULL, c(K.name, names.fixed.cov, names.random.cov)))
+    X <- cbind(K, covariates)
   }
+  return(X)
 }
 
 # Part "two" of variance-covariance matrix, hansen et al. 2008.
@@ -148,7 +143,7 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
       cm2 <- calc.cm2(a, T.term, N, tia, tja, ta)
     }else cm2 <- NULL
   }
-  X <- calc.X(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
+  X <- slouch.modelmatrix(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
   ## ols.beta1 exists from OLS estimate
   #beta1 <- ols.beta1
   #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
@@ -285,7 +280,7 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
     
     ## 
     if(!is.null(random.cov)){
-      X.ev <- calc.X(phy, a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
+      X.ev <- slouch.modelmatrix(phy, a = a, hl = hl, treepar, modelpar, seed, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
       ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
