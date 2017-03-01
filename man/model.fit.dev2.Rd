@@ -9,8 +9,8 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
   fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
   random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
   ultrametric = TRUE, intercept = if (ultrametric == TRUE) "root" else NULL,
-  support = 2, convergence = 1e-06, multicore = FALSE, ncores = NULL,
-  hillclimb = FALSE, hillclimb_start = NULL, verbose = FALSE)
+  support = 2, convergence = 1e-06, nCores = 1, hillclimb = FALSE,
+  hillclimb_start = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
@@ -47,9 +47,7 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 
 \item{convergence}{Threshold of iterative GLS estimation, when beta is considered converged.}
 
-\item{multicore}{Use of multiple CPU cores. Using multicore, prints are silenced during parameter search.}
-
-\item{ncores}{Number of CPU cores to be used, optional.}
+\item{nCores}{Use multiple CPU cores in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. Optional, defaults to 1.}
 
 \item{hillclimb}{TRUE/FALSE whether to use hillclimb parameter estimation routine.}
 

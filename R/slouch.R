@@ -28,8 +28,7 @@
 #' @param intercept NULL or "root". If NULL, model matrix is expanded with Ya for categorical models, or b0 + bXa for models without categorical variables.
 #' @param support A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence Threshold of iterative GLS estimation, when beta is considered converged.
-#' @param multicore Use of multiple CPU cores. Using multicore, prints are silenced during parameter search.
-#' @param ncores Number of CPU cores to be used, optional.
+#' @param nCores Use multiple CPU cores in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. Optional, defaults to 1.
 #' @param hillclimb TRUE/FALSE whether to use hillclimb parameter estimation routine.
 #' @param hillclimb_start Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.
 #' @param verbose if TRUE, prints each iteration of parameter search. Default FALSE.
@@ -53,8 +52,7 @@ model.fit.dev2<-function(phy,
                          intercept= if(ultrametric==TRUE) "root" else NULL, 
                          support = 2, 
                          convergence = 0.000001,
-                         multicore = FALSE,
-                         ncores = NULL,
+                         nCores = 1,
                          hillclimb = FALSE,
                          hillclimb_start = NULL,
                          verbose = FALSE)
@@ -181,19 +179,18 @@ model.fit.dev2<-function(phy,
   vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
   time0 <- Sys.time()
   
-  if(multicore == TRUE){
+  if(nCores > 1 & nCores %% 1 == 0){
     if(!"package:parallel" %in% search()){
       stop("For multicore, please load package with library(parallel)")
     }
-    if(is.null(ncores)){
-      ncores <- detectCores(all.tests = FALSE, logical = TRUE)
-    }
     if(.Platform$OS.type == "unix"){
-      stop("Parallel computing parameter search is not supported on unix-based systems. To be fixed.")
-      list_hl_vy <- unname(split(vector_hl_vy, rep(1:nrow(vector_hl_vy), each = ncol(vector_hl_vy))))
-      grid_support <- mclapply(list_hl_vy, reg, modelpar, treepar, seed, mc.cleanup = TRUE, mc.cores = ncores)
+      list_hl_vy <- lapply(seq_len(nrow(vector_hl_vy)), function(e) vector_hl_vy[e,])
+      grid_support <- mclapply(list_hl_vy, 
+                               function(e) reg(e, phy, modelpar, treepar, seed),
+                               mc.cleanup = TRUE,
+                               mc.cores = nCores)
     }else{
-      cl <- parallel::makeCluster(getOption("cl.cores", ncores))
+      cl <- parallel::makeCluster(getOption("cl.cores", nCores))
       parallel::setDefaultCluster(cl)
       parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
       grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, phy, modelpar, treepar, seed))
