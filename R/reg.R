@@ -86,24 +86,46 @@ calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   return(term2*t(term2) - num.prob*(term0 + t(term0)))
 }
 
-vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
+varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
   
+  ## Piece together V
+  if(hl == 0){
+    Vt <- diag(rep(vy, times=N))
+  }else{
+    if(!is.null(random.cov)){
+      s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))
+      Vt <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
+    }else{
+      Vt <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
+    }
+  }
+  
+  return(Vt)
+}
+
+varcov_measurement <- function(phy, modelpar, treepar, seed, beta1, hl, a, which.fixed.cov, which.random.cov){
+  list2env(modelpar, envir = environment())
+  list2env(treepar, envir = environment())
+  list2env(seed, envir = environment())
   
   if (hl == 0 | is.null(random.cov)){
     rho2 <- 1
   }   else {
     rho2 <- (1-(1-exp(-a*T.term))/(a*T.term))^2
   }
+  
   if(!is.null(fixed.cov) | !is.null(random.cov)){
+    
+    #stop()
     
     ## Update measurement error in X.
     ## Measurement error in predictor - take 2]
-    beta2_Vu_given_x_list <-  mapply(function(a, b, c) {a * b^2 * c} , 
-                           Vu_given_x, 
-                           beta1[c(which.fixed.cov, which.random.cov),], 
-                           c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
-                             lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
-                   SIMPLIFY = FALSE)
+    beta2_Vu_given_x_list <-  mapply(function(a, b, m) {a * b^2 * m} , 
+                                     a = Vu_given_x, 
+                                     b = beta1[c(which.fixed.cov, which.random.cov),], 
+                                     m = c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
+                                       lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
+                                     SIMPLIFY = FALSE)
     beta2_Vu_given_x <- Reduce('+', beta2_Vu_given_x_list)
     
     # ## BROKEN!? Needs test.
@@ -124,19 +146,9 @@ vcv_residual <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
     mcov <- 0
     mcov.fixed <- 0
   }
-  ## Piece together V
-  if(hl == 0){
-    Vt <- diag(rep(vy, times=N))
-  }else{
-    if(!is.null(random.cov)){
-      s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))
-      Vt <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
-    }else{
-      Vt <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
-    }
-  }
-  V <- Vt + na.exclude(me.response) + beta2_Vu_given_x - mcov - mcov.fixed
-  return(V)
+  
+  V_me <- na.exclude(me.response) + beta2_Vu_given_x - mcov - mcov.fixed
+  return(V_me)
 }
 
 reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
@@ -155,12 +167,9 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
     }else cm2 <- NULL
   }
   X <- slouch.modelmatrix(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE)
-  ## ols.beta1 exists from OLS estimate
-  #beta1 <- ols.beta1
-  #beta1 <- solve(t(X)%*%X)%*%(t(X)%*%Y) ## Confirm: Is it ok to do qr-decomposition instead of usual beta estimator? Seems to avoid some bugs, e.g 
-  ##  Error in solve.default(t(X) %*% X) : 
-  ##  system is computationally singular: reciprocal condition number = 4.96821e-23 
-  #beta1 <- matrix(qr.coef(qr(X), Y), ncol=1)
+  Vt <- varcov_model(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
+  
+  ## Initial OLS estimate of beta, disregarding variance covariance matrix
   beta1 <- matrix(lm.fit(X, Y)$coefficients, ncol=1)
   beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
                         rep("Instantaneous cov", length(names.fixed.cov)),
@@ -170,22 +179,9 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
   
   con.count <- 0
   repeat{
-    V <- vcv_residual(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response)
+    V_me <- varcov_measurement(phy, modelpar, treepar, seed, beta1, hl, a, which.fixed.cov, which.random.cov)
+    V <- Vt + V_me
 
-    if(FALSE){
-      V.inverse <- solve(V)
-      beta.i.var <- solve(t(X)%*%V.inverse%*%X)
-      #beta.i.var <- pseudoinverse(t(X)%*%V.inverse%*%X)
-      
-      #### Ask Thomas about this one.
-      if(Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = Inf, which were set to 10^300")}
-      beta.i.var <-replace(beta.i.var, beta.i.var ==Inf, 10^300)
-      if(-Inf %in% beta.i.var) {print("Pseudoinverse of (XT * V * X) contained values = -Inf, which were set to -10^300")}
-      beta.i.var <-replace(beta.i.var, beta.i.var ==-Inf, -10^300)
-      
-      beta.i<-beta.i.var%*%(t(X)%*%V.inverse%*%Y)
-      #if(all(V.inverse[!diag(nrow(V.inverse))] == 0)) warning("For hl = ", hl," and vy = ", vy," the inverse of V is strictly diagonal.")
-    }else{
       # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
       # Is this method ok to use? Seems to avoid some bugs (see below). R's lm.fit() does not throw
       # error when X is singular, but returns NA in the coefficients.
@@ -193,32 +189,21 @@ reg <- function(hl_vy, phy, modelpar, treepar, seed, gridsearch = TRUE){
       #
       #  Error in solve.default(t(X) %*% V.inverse %*% X) : 
       #  system is computationally singular: reciprocal condition number = 2.28389e-22
-      #
-      # if(any(Re(eigen(V)$values) < 0)){
-      #   print(eigen(V)$values)
-      #   stop("V contains negative eigenvalues.")
-      # }
       
       L <- t(chol(V))
       fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
                     matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
       beta.i <- matrix(fit$coefficients, ncol=1)
-    }
-    
-    
+      
     ## Defensive & debug conditions
     if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov),]))) {
       print(beta.i)
       warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
       print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
-      if (gridsearch){
         return(list(support = NA,
                     hl_vy = hl_vy))
-      }else{
-        return(list(support = NA,
-                    hl_vy = hl_vy))
-      }
     }
+      
     ## Check for convergence
     con.count <- con.count + 1
     if(all(abs(beta1[!is.na(beta1)] - beta.i[!is.na(beta.i)]) < convergence)) {
