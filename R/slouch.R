@@ -249,6 +249,7 @@ model.fit.dev2<-function(phy,
   
   ## Repeat regression at a, vy for which logLik is maximized
   fit <- reg(besthl_vy, phy, modelpar, treepar, seed, gridsearch=FALSE)
+  
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   }
@@ -328,21 +329,4 @@ model.fit.dev2<-function(phy,
                  lineages = lineages)
   class(result) <- c("slouch", class(result))
   return(result)
-}
-
-assert_species_order <- function(x, phy){
-  msg <- "Use \"names()\ <- ...\" for single traits, or \"rownames() <- ...\" for a matrix with several variables. Names must be in the same order as phy$tip.label"
-  print("ahlo")
-  if(is.vector(x)){
-    names1 <- names(x)
-  }else if(is.matrix(x) | is.data.frame(x)){
-    names1 <- rownames(x)
-  }else{
-    stop("Input variables not vector, matrix or dataframe")
-  }
-  if(is.null(names1)) stop(msg)
-  if(!all(names1 == phy$tip.label)){
-    print("hello")
-    stop(msg)
-  }
 }
