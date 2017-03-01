@@ -24,8 +24,8 @@
 #' @param random.cov Independent variables each modeled as a brownian motion
 #' @param me.random.cov Observational variances for the brownian covariates
 #' @param mecov.random.cov .
-#' @param ultrametric Deprecated
-#' @param intercept NULL or "root". If NULL, model matrix is expanded with Ya for categorical models, or b0 + bXa for models without categorical variables.
+#' @param estimate.Ya Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
+#' @param estimate.bXa Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
 #' @param support A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence Threshold of iterative GLS estimation, when beta is considered converged.
 #' @param nCores Use multiple CPU cores in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. Optional, defaults to 1.
@@ -47,9 +47,9 @@ model.fit.dev2<-function(phy,
                          mecov.fixed.cov=NULL, 
                          random.cov=NULL, 
                          me.random.cov=NULL, 
-                         mecov.random.cov=NULL,  
-                         ultrametric=TRUE, 
-                         intercept= if(ultrametric==TRUE) "root" else NULL, 
+                         mecov.random.cov=NULL,
+                         estimate.Ya = FALSE,
+                         estimate.bXa = FALSE,
                          support = 2, 
                          convergence = 0.000001,
                          nCores = 1,
@@ -65,7 +65,7 @@ model.fit.dev2<-function(phy,
   }
 
   ## Checks, defensive conditions
-  stopifnot(intercept == "root" | is.null(intercept))
+  #stopifnot(intercept == "root" | is.null(intercept))
   stopifnot(is.rooted(phy))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
   if((is.null(half_life_values) | is.null(vy_values)) & !hillclimb){
@@ -89,6 +89,11 @@ model.fit.dev2<-function(phy,
       stop("For categorical variables, the regimes corresponding to their primary optima need to be painted on all of the branches in the tree, and assigned to phy$node.label - use plot(phy) & nodelabels(phy$node.label) to see whether they are correct. See example.")
     }
     regimes_internal <- phy$node.label
+    if(estimate.Ya){
+      tmp <- as.character(regimes_internal)
+      tmp[1] <- "Ya"
+      regimes_internal <- factor(tmp)
+    }
     regimes_tip <- fixed.fact
     
     regimes <- concat.factor(regimes_tip, regimes_internal)
@@ -151,7 +156,8 @@ model.fit.dev2<-function(phy,
                    vy_values = vy_values,
                    support = support,
                    convergence = convergence,
-                   intercept = intercept,
+                   estimate.Ya = estimate.Ya,
+                   estimate.bXa = estimate.bXa,
                    factor.exists = !is.null(fixed.fact),
                    names.fixed.cov = names.fixed.cov,
                    names.random.cov = names.random.cov,

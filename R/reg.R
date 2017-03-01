@@ -44,16 +44,27 @@ slouch.modelmatrix <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg =
     covariates <- NULL
   }
   
+  if(estimate.bXa){
+    if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)){
+      bXa <- c(bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)))
+    }else{
+      stop("bXa can not be estimated without continuous covariates.")
+    }
+  }else{
+    bXa <- NULL
+  }
+  
   if(!is.null(fixed.fact)){
     w_regimes <- weight.matrix(phy, a, lineages)
     X <- cbind(w_regimes,covariates)
   }else{
-    if(!is.null(modelpar$intercept)){
-      K <- c(Intercept = rep(1, length(phy$tip.label)))
+    if(!modelpar$estimate.Ya){
+      K <- cbind(Intercept = rep(1, length(phy$tip.label)), 
+                 bXa)
     }else{
       K <- cbind(Ya = exp(-a*T.term),
                  b0 = 1-exp(-a*T.term),
-                 if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)) bXa = 1-exp(-a*T.term)-(1-(1-exp(-a*T.term))/(a*T.term)) else NULL)
+                 bXa)
     }
     X <- cbind(K, covariates)
   }
