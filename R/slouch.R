@@ -113,9 +113,6 @@ model.fit.dev2<-function(phy,
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
   
-  ## Establish beta names and descriptor
-  #factor.names <- coef.names.factor(fixed.fact, random.cov, fixed.cov, intercept)
-  
   names.fixed.cov <- if(!is.null(fixed.cov)){
     if(ncol(as.matrix(fixed.cov))==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov)
   }else{

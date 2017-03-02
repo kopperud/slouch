@@ -45,7 +45,7 @@ Rudimentary helpfiles exist, such as `?model.fit.dev2`
 * Because of this, functions for simulating OU traits, plotting the tree, and the Fitch algorithm for reconstructing ancestral states have been scrapped.
 * SLOUCH now depends on packages `parallel`, `ape`, `Rcpp`.
 * Model outputs are no longer printed directly in the console, but returned as a composite object of class `slouch`, essentially a list with lots of information and methods for printing and plotting.
-* Arguments `intercept` and `ultrametric` are misleading and to be changed.
+* Arguments `intercept` and `ultrametric` are misleading. Changed to `estimate.Ya` and `estimate.bXa`, see docstrings.
 * SLOUCH now has one unit test, should be many more
 
 ### Other changes

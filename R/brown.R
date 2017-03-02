@@ -37,15 +37,6 @@ sigma.X.estimate <-
       if(abs(as.numeric(sigma1)-sigma) <= 0.0000001*sigma) break
       sigma <- as.numeric(sigma1)
     }
-    return(list(as.numeric(theta), as.numeric(sigma)));
+    return(list(mean = as.numeric(theta), 
+                sigma_squared = as.numeric(sigma)));
   }
-
-# 
-# is.NullOb <- function(x) is.null(x) | all(sapply(x, is.null))
-# 
-# 
-# rmNullObs <- function(x)
-# {
-#   x <- Filter(Negate(is.NullOb), x)
-#   lapply(x, function(x) if (is.list(x)) rmNullObs(x) else x)
-# }

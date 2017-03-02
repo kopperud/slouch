@@ -31,13 +31,15 @@ ols.seed <- function(phy, treepar, modelpar){
       s.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[2]) ## Change var name to squared, variance. Not SE.
       theta.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[1])
     }
+    
+    #mapply(function(pred, me.pred) sigma.X.estimate(phy, ta, pred, me.pred), )
+
   }else{
     n.pred <- 0
     pred <- NULL
     s.X <- NULL
     theta.X <- NULL
     me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
-    #me.pred <- NULL
   }
   
   if(is.null(mecov.random.cov)){
