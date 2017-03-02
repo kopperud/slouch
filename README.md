@@ -34,6 +34,7 @@ Rudimentary helpfiles exist, such as `?model.fit.dev2`
 * Fix incorrect calculation of branch lengths "tja" and "tia" for non-ultrametric trees, see below for new tree format
 * The weight matrix generated with categorical covariates is no longer sorted by columns, the order is now invariant with respect to alpha. This was not strictly a bug but if the coefficient labels are not rearranged in the same way, output will be wrong & misleading.
 
+
 ### Structural changes
 * Code duplication largely removed, R-code reduced from about 4k to 1k lines.
 * SLOUCH now uses Git version control.
