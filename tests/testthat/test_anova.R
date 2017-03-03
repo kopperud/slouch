@@ -28,8 +28,7 @@ m1 <- model.fit.dev2(phy,
                      vy_values = seq(0.05,0.15, length.out = 15),
                      response = trait_1,
                      me.response = trait_1_SE_sq,
-                     fixed.fact = regimes_tip,
-                     ultrametric = TRUE)
+                     fixed.fact = regimes_tip)
 
 
 #detach(dummydata)
@@ -38,5 +37,6 @@ test_that("No errors ANOVA", {
   expect_equal(structure(c(0.421599539503631, 0.481516052311344, 0.0453131399491333, 
                            0.050412202001475), .Dim = c(2L, 2L), .Dimnames = list(c("A", 
                                                                                     "B"), c("Estimates", "Std. error"))),
-               m1$opt.reg$coefficients)
+               m1$opt.reg$coefficients,
+               tolerance = 9e-07)
 })
