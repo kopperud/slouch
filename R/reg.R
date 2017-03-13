@@ -6,25 +6,9 @@ pseudoinverse <-
       return(array(0, dim(m)[2:1]))
     }
     else {
-      return(msvd$v %*% (1/msvd$d * t(msvd$u)))
+      return(msvd$v %*% (1 / msvd$d * t(msvd$u)))
     }
   }
-
-# ## Calculate determinant of V
-# mk.log.det.V <- function(V, N){
-#   det.V<-det(V)
-#   if(det.V==0){
-#     print(paste("Warning: Determinant of V = 0"))
-#     #Minimum value of diagonal scaling factor
-#     inv.min.diag.V<-1/min(diag(V))
-#     V<-V*inv.min.diag.V
-#     #Rescale and log determinant
-#     log(det(V))+log(min(diag(V)))*N
-#   }
-#   else {
-#     log(det.V)
-#   }
-# }
 
 ## Design matrix
 slouch.modelmatrix <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg = TRUE){
@@ -43,7 +27,7 @@ slouch.modelmatrix <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg =
   }else{
     covariates <- NULL
   }
-  
+
   if(estimate.bXa){
     if (!is.null(modelpar$random.cov) | !is.null(modelpar$fixed.cov)){
       bXa <- c(bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)))
@@ -77,29 +61,28 @@ slouch.modelmatrix <- function(phy, a, hl, treepar, modelpar, seed, is.opt.reg =
 calc.cm2 <- function(a, T.term, N, tia, tja, ta){
   ti <- matrix(rep(T.term, N), nrow=N)
   #tj <- t(ti)
-  term0 <- exp(-a*tja)*(1-exp(-a*ti))/(a*ti)
-  term2 <- (1-exp(-a*ti))/(a*ti)
-  num.prob <- ifelse(ta == 0, 1, (1-exp(-a*ta))/(a*ta))
-  
+  term0 <- exp(-a * tja) * (1 - exp(-a * ti)) / (a * ti)
+  term2 <- (1 - exp(-a * ti))/(a * ti)
+  num.prob <- ifelse(ta == 0, 1, (1 - exp(-a * ta)) / (a * ta))
+
   # res_old <- ((1-exp(-a*ti))/(a*ti))*(t((1-exp(-a*ti))/(a*ti))) -
   #   (exp(-a*tja)*(1-exp(-a*ti))/(a*ti) + t(exp(-a*tja)*(1-exp(-a*ti))/(a*ti)))*num.prob
-  return(term2*t(term2) - num.prob*(term0 + t(term0)))
+  return(term2 * t(term2) - num.prob * (term0 + t(term0)))
 }
 
 varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, N, s.X, ta, tij, me.response){
   
   ## Piece together V
-  if(hl == 0){
-    Vt <- diag(rep(vy, times=N))
+  if (hl == 0){
+    Vt <- diag(rep(vy, times = N))
   }else{
-    if(!is.null(random.cov)){
-      s1 <- sum(s.X%*%((beta1[which.random.cov,])^2))
-      Vt <- (s1/(2*a)+vy)*(1-exp(-2*a*ta))*exp(-a*tij) + (s1*ta*cm2)
+    if (!is.null(random.cov)){
+      s1 <- sum(s.X %*% ((beta1[which.random.cov, ])^2))
+      Vt <- (s1 / (2 * a) + vy) * (1 - exp( -2 * a * ta)) * exp(-a * tij) + (s1 * ta * cm2)
     }else{
-      Vt <- vy*(1-exp(-2*a*ta))*exp(-a*tij)
+      Vt <- vy * (1 - exp(-2 * a * ta)) * exp(-a * tij)
     }
   }
-  
   return(Vt)
 }
 
@@ -111,22 +94,19 @@ varcov_measurement <- function(phy, modelpar, treepar, seed, beta1, hl, a, which
   if (hl == 0 | is.null(random.cov)){
     rho2 <- 1
   }   else {
-    rho2 <- (1-(1-exp(-a*T.term))/(a*T.term))^2
+    rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
   }
   
   if(!is.null(fixed.cov) | !is.null(random.cov)){
-    
-    #stop()
-    
     ## Update measurement error in X.
     ## Measurement error in predictor - take 2]
-    beta2_Vu_given_x_list <-  mapply(function(a, b, m) {a * b^2 * m} , 
-                                     a = Vu_given_x, 
+    beta2_Vu_given_x_list <-  mapply(function(Vu_given_xi, b, rho_squared) {Vu_given_xi * b^2 * rho_squared} , 
+                                     Vu_given_xi = Vu_given_x, 
                                      b = beta1[c(which.fixed.cov, which.random.cov),], 
-                                     m = c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
+                                     rho_squared = c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
                                        lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
                                      SIMPLIFY = FALSE)
-    beta2_Vu_given_x <- Reduce('+', beta2_Vu_given_x_list)
+    beta2_Vu_given_x <- Reduce("+", beta2_Vu_given_x_list)
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
