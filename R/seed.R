@@ -7,43 +7,43 @@
 
 ## Function to seed the OLS
 ## outputs; beta1, x.ols, xx, yy, Vu, Vd
-ols.seed <- function(phy, treepar, modelpar){
-  list2env(treepar, envir = environment())
-  list2env(modelpar, envir = environment())
+ols.seed <- function(tree, pars, control){
+  list2env(tree, envir = environment())
+  list2env(pars, envir = environment())
+  list2env(control, envir = environment())
+  
+  n <- length(tree$phy$tip.label)
   
   ## RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
   if(!is.null(random.cov)){
-    n.pred<-length(as.matrix(random.cov)[1,])
-    pred<-data.frame(random.cov)
-    pred<-matrix(data=pred[!is.na(pred)], ncol=n.pred)
+    pred <- cbind(random.cov)
+    n.pred <- ncol(pred)
     
     if(!is.null(me.random.cov)){
-      me.pred<-matrix(data=me.random.cov[!is.na(me.random.cov)], ncol=n.pred)
+      me.pred <- cbind(me.random.cov)
     }else{
-      me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
+      me.pred<-matrix(data=0, nrow=n, ncol=n.pred)
     }
     
-    s.X<-matrix(data=0, ncol=n.pred)  # PREDICTOR SIGMA
-    theta.X<-matrix(data=0, ncol=n.pred)  #PREDICTOR THETA
-    for(i in 1:n.pred)
-    {
-      s.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[2]) ## Change var name to squared, variance. Not SE.
-      theta.X[,i] <- as.numeric(sigma.X.estimate(phy, ta, pred[,i],me.pred[,i])[1])
-    }
+    brownian <- mapply(function(y, y_me) sigma.X.estimate(tree$phy, ta, y, y_me),
+                       y = split(pred, colnames(pred)),
+                       y_me = split(me.pred, colnames(pred)),
+                       SIMPLIFY = FALSE)
     
-    #mapply(function(pred, me.pred) sigma.X.estimate(phy, ta, pred, me.pred), )
+    sigma_squared <- sapply(brownian, function(x) x$sigma_squared)
+    theta.X <- sapply(brownian, function(x) x$mean)
 
   }else{
     n.pred <- 0
     pred <- NULL
-    s.X <- NULL
+    sigma_squared <- NULL
     theta.X <- NULL
-    me.pred<-matrix(data=0, nrow=N, ncol=n.pred)
+    me.pred<-matrix(data=0, nrow=n, ncol=n.pred)
   }
   
   if(is.null(mecov.random.cov)){
-    me.cov<-matrix(data=0, nrow=N, ncol=n.pred)
+    me.cov<-matrix(data=0, nrow=n, ncol=n.pred)
   }else{
     me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=ncol(as.matrix(mecov.random.cov)))
   }
@@ -57,17 +57,17 @@ ols.seed <- function(phy, treepar, modelpar){
   }else{
     n.fixed.pred <- 0
     fixed.pred <- NULL
-    me.fixed.pred <- matrix(0, nrow=N, ncol = n.fixed.pred)
+    me.fixed.pred <- matrix(0, nrow=n, ncol = n.fixed.pred)
   }
   
   if(is.null(me.fixed.cov)) {
-    me.fixed.pred<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    me.fixed.pred<-matrix(data=0, nrow=n, ncol=n.fixed.pred)
   } else{
     me.fixed.pred<- matrix(data=me.fixed.cov[!is.na(me.fixed.cov)], ncol=n.fixed.pred)
   }
   
   if(is.null(mecov.fixed.cov)){
-    mecov.fixed.cov<-matrix(data=0, nrow=N, ncol=n.fixed.pred)
+    mecov.fixed.cov<-matrix(data=0, nrow=n, ncol=n.fixed.pred)
   }else{
     mecov.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
   }
@@ -85,7 +85,7 @@ ols.seed <- function(phy, treepar, modelpar){
     for (i in 1:n.fixed.pred)
     {
       Vu_fixed[[i]] <- diag(na.exclude(me.fixed.pred[,i]))
-      Vd_fixed[[i]] <- diag(rep(var(na.exclude(fixed.pred[,i])), N)) - Vu_fixed[[i]]
+      Vd_fixed[[i]] <- diag(rep(var(na.exclude(fixed.pred[,i])), n)) - Vu_fixed[[i]]
       if(any(Vd_fixed[[i]] < 0)){
         Vd_fixed[[i]][Vd_fixed[[i]] < 0] <- 0
         warning("Vd contains negative variances, scaled up to 0. Do any of the predictor variables have a larger measurement error than their trait variance?")
@@ -98,9 +98,9 @@ ols.seed <- function(phy, treepar, modelpar){
   
   if(!is.null(random.cov)){
     Vu_random <- list()
-    Vd_random <- lapply(s.X, function(e) ta*e)
-    # for (i in seq(from = 1, to = nrow(s.X), by=1)){
-    for(i in seq_along(s.X)){
+    Vd_random <- lapply(sigma_squared, function(e) ta*e)
+    # for (i in seq(from = 1, to = nrow(sigma_squared), by=1)){
+    for(i in seq_along(sigma_squared)){
       Vu_random[[i]] <- diag(na.exclude(me.pred[,i]))
     }
   }else{
@@ -123,7 +123,7 @@ ols.seed <- function(phy, treepar, modelpar){
     Vx <- NULL
   }
   
-  list(s.X = s.X,
+  list(sigma_squared = sigma_squared,
        theta.X = theta.X,
        pred = pred,
        me.pred = me.pred,

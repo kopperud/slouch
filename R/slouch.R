@@ -113,55 +113,63 @@ model.fit.dev2<-function(phy,
   h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
   half_life_values<-rev(half_life_values)
   
-  names.fixed.cov <- if(!is.null(fixed.cov)){
-    if(ncol(as.matrix(fixed.cov))==1) deparse(substitute(fixed.cov)) else colnames(fixed.cov)
+  if(!is.null(fixed.cov)){
+    if(ncol(as.matrix(fixed.cov))==1) {
+      names.fixed.cov <- deparse(substitute(fixed.cov))
+    }else{
+      stopifnot(!is.null(colnames(fixed.cov)))
+      names.fixed.cov <- colnames(fixed.cov)
+    }
   }else{
-    NULL
+    names.fixed.cov <- NULL
   }
   
-  names.random.cov <- if(!is.null(random.cov)){
-    if(ncol(as.matrix(random.cov)) == 1) deparse(substitute(random.cov)) else colnames(random.cov)
+  if(!is.null(random.cov)){
+    if(ncol(as.matrix(random.cov)) == 1) {
+      names.random.cov <- deparse(substitute(random.cov))
+    }
+    else {
+      stopifnot(!is.null(colnames(random.cov)))
+      names.random.cov <- colnames(random.cov)
+    }
   }else{
-    NULL
+    names.random.cov <- NULL
   }
+  
   
   ## Cluster all parameters concerning phylogenetic tree
-  treepar <- list(T.term = T.term,
-                  tia = tia,
-                  tja = tja,
-                  ta = ta,
-                  tij = tij,
-                  times = times,
-                  lineages = lineages,
-                  regimes = regimes)
+  tree <- list(phy = phy,
+               T.term = T.term,
+               tia = tia,
+               tja = tja,
+               ta = ta,
+               tij = tij,
+               times = times,
+               lineages = lineages,
+               regimes = regimes)
   
   ## Cluster parameters concerning the type of model being run
-  modelpar <- list(response = response,
-                   me.response = me.response,
-                   fixed.fact = fixed.fact,
-                   fixed.cov = fixed.cov,
-                   me.fixed.cov = me.fixed.cov,
-                   mecov.fixed.cov = mecov.fixed.cov,
-                   random.cov = random.cov,
-                   me.random.cov = me.random.cov,
-                   mecov.random.cov = mecov.random.cov,
-                   Y = Y,
-                   N = N,
-                   h.lives = h.lives,
-                   half_life_values = half_life_values,
-                   vy_values = vy_values,
-                   support = support,
-                   convergence = convergence,
-                   estimate.Ya = estimate.Ya,
-                   estimate.bXa = estimate.bXa,
-                   names.fixed.cov = names.fixed.cov,
-                   names.random.cov = names.random.cov,
-                   verbose = verbose)
+  pars <- list(response = response,
+               me.response = me.response,
+               fixed.fact = fixed.fact,
+               fixed.cov = fixed.cov,
+               me.fixed.cov = me.fixed.cov,
+               mecov.fixed.cov = mecov.fixed.cov,
+               random.cov = random.cov,
+               me.random.cov = me.random.cov,
+               mecov.random.cov = mecov.random.cov,
+               Y = Y,
+               names.fixed.cov = names.fixed.cov,
+               names.random.cov = names.random.cov)
   
+  control <- list(verbose = verbose,
+                  estimate.Ya = estimate.Ya,
+                  estimate.bXa = estimate.bXa,
+                  support = support,
+                  convergence = convergence)
   
-  
-  seed <- ols.seed(phy, treepar, modelpar)
-  coef.names <- colnames(slouch.modelmatrix(phy, a = 1, hl = 1, treepar, modelpar, seed, is.opt.reg = TRUE))
+  seed <- ols.seed(tree, pars, control)
+  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, seed, is.opt.reg = TRUE))
   
   if (is.null(half_life_values)){
     half_life_values <- runif(1, 0, max(times))
@@ -186,18 +194,18 @@ model.fit.dev2<-function(phy,
     if(.Platform$OS.type == "unix"){
       list_hl_vy <- lapply(seq_len(nrow(vector_hl_vy)), function(e) vector_hl_vy[e,])
       grid_support <- mclapply(list_hl_vy, 
-                               function(e) reg(e, phy, modelpar, treepar, seed),
+                               function(e) reg(e, tree, pars, control, seed),
                                mc.cleanup = TRUE,
                                mc.cores = nCores)
     }else{
       cl <- parallel::makeCluster(getOption("cl.cores", nCores))
       parallel::setDefaultCluster(cl)
-      parallel::clusterExport(cl, c("modelpar", "treepar", "seed"), envir = environment())
-      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, phy, modelpar, treepar, seed))
+      parallel::clusterExport(cl, c("tree", "pars", "control", "seed"), envir = environment())
+      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, tree, pars, control, seed))
       parallel::stopCluster(cl)
     }
   }else{
-    grid_support <- apply(vector_hl_vy, 1, reg, phy, modelpar, treepar, seed)
+    grid_support <- apply(vector_hl_vy, 1, reg, tree, pars, control, seed)
   }
   
   sup2_grid <- sapply(grid_support, function(e) e$support)
@@ -219,7 +227,7 @@ model.fit.dev2<-function(phy,
     }
     hl_vy_est <- optim(
       par = hillclimb_start,
-      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, phy, modelpar, treepar, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
+      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, pars, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
       lower=0, 
       method="L-BFGS-B",
@@ -248,7 +256,7 @@ model.fit.dev2<-function(phy,
   besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
   
   ## Repeat regression at a, vy for which logLik is maximized
-  fit <- reg(besthl_vy, phy, modelpar, treepar, seed, gridsearch=FALSE)
+  fit <- reg(besthl_vy, tree, pars, control, seed, gridsearch=FALSE)
   
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
@@ -266,7 +274,7 @@ model.fit.dev2<-function(phy,
                   dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
   
   if(!is.null(random.cov)){
-    brownian_predictors <- matrix(data=rbind(seed$theta.X, seed$s.X), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov)))
+    brownian_predictors <- matrix(data=rbind(seed$theta.X, seed$sigma_squared), nrow=2, ncol=seed$n.pred, dimnames=list(c("Predictor theta", "Predictor variance"), if(seed$n.pred==1) deparse(substitute(random.cov)) else colnames(random.cov)))
   }else{
     brownian_predictors <- NULL
   }
@@ -312,10 +320,7 @@ model.fit.dev2<-function(phy,
   print("debug: model.fit.dev2 - slouch in development, use at own risk")
   
   result <- list(parameter_space = parameter_space,
-                 tree = list(tia = tia,
-                             tja = tja,
-                             tij = tij,
-                             ta = ta),
+                 tree = tree,
                  modfit = modfit,
                  supportplot = supportplot,
                  climblog_matrix = climblog_matrix,
