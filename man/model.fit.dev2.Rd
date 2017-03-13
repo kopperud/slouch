@@ -8,8 +8,8 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
   vy_values = NULL, response, me.response = NULL, fixed.fact = NULL,
   fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
   random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
-  ultrametric = TRUE, intercept = if (ultrametric == TRUE) "root" else NULL,
-  support = 2, convergence = 1e-06, nCores = 1, hillclimb = FALSE,
+  estimate.Ya = FALSE, estimate.bXa = FALSE, support = 2,
+  convergence = 1e-06, nCores = 1, hillclimb = FALSE,
   hillclimb_start = NULL, verbose = FALSE)
 }
 \arguments{
@@ -39,9 +39,9 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 
 \item{mecov.random.cov}{.}
 
-\item{ultrametric}{Deprecated}
+\item{estimate.Ya}{Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 
-\item{intercept}{NULL or "root". If NULL, model matrix is expanded with Ya for categorical models, or b0 + bXa for models without categorical variables.}
+\item{estimate.bXa}{Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
 
 \item{support}{A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.}
 
