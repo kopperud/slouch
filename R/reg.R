@@ -46,7 +46,7 @@ slouch.modelmatrix <- function(a, hl, tree, pars, control, seed, is.opt.reg = TR
     w_regimes <- weight.matrix(tree$phy, a, lineages)
     X <- cbind(w_regimes, bXa, covariates)
   }else{
-    if(!pars$estimate.Ya){
+    if(!control$estimate.Ya){
       K <- cbind(Intercept = rep(1, length(tree$phy$tip.label)), 
                  bXa)
     }else{
