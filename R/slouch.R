@@ -12,25 +12,27 @@
 #' Title
 #'
 #' @param phy an object of class 'phylo', must be rooted.
-#' @param species .
+#' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
 #' @param half_life_values A vector of candidate phylogenetic half-life values to be evaluated in grid search.
 #' @param vy_values A vector of candidate stationary variances for the response trait, to be evaluated in grid search.
 #' @param response A numeric vector of a trait to be treated as response variable
 #' @param me.response Numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.
-#' @param fixed.fact Factor
+#' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node numbers (root: n+1),(n+2),(n+3), ...
 #' @param fixed.cov Direct effect independent variables
 #' @param me.fixed.cov Observational variances for direct effect independent variables
 #' @param mecov.fixed.cov .
 #' @param random.cov Independent variables each modeled as a brownian motion
 #' @param me.random.cov Observational variances for the brownian covariates
 #' @param mecov.random.cov .
-#' @param estimate.Ya Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
-#' @param estimate.bXa Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
+#' @param estimate.Ya Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular. Defaults to false.
+#' @param estimate.bXa Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya. Defaults to false.
 #' @param support A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence Threshold of iterative GLS estimation, when beta is considered converged.
 #' @param nCores Use multiple CPU cores in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. Optional, defaults to 1.
 #' @param hillclimb TRUE/FALSE whether to use hillclimb parameter estimation routine.
 #' @param hillclimb_start Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.
+#' @param lower lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.
+#' @param upper upper bounds for the optimization routine, defaults to positive infinite.
 #' @param verbose if TRUE, prints each iteration of parameter search. Default FALSE.
 #'
 #' @return An object of class 'slouch'
@@ -55,6 +57,8 @@ model.fit.dev2<-function(phy,
                          nCores = 1,
                          hillclimb = FALSE,
                          hillclimb_start = NULL,
+                         lower = c(0,0),
+                         upper = Inf,
                          verbose = FALSE)
 {
   if(is.null(species)){
@@ -229,8 +233,9 @@ model.fit.dev2<-function(phy,
       par = hillclimb_start,
       fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, pars, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
-      lower=0, 
-      method="L-BFGS-B",
+      lower = lower,
+      upper = uppper,
+      method = "L-BFGS-B",
       control = list(parscale = c(max(T.term), var(response)),
                      fnscale = -0.1)
       )

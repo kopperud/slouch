@@ -10,12 +10,12 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
   random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
   estimate.Ya = FALSE, estimate.bXa = FALSE, support = 2,
   convergence = 1e-06, nCores = 1, hillclimb = FALSE,
-  hillclimb_start = NULL, verbose = FALSE)
+  hillclimb_start = NULL, lower = c(0, 0), upper = Inf, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
-\item{species}{.}
+\item{species}{a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label}
 
 \item{half_life_values}{A vector of candidate phylogenetic half-life values to be evaluated in grid search.}
 
@@ -25,7 +25,7 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 
 \item{me.response}{Numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.}
 
-\item{fixed.fact}{Factor}
+\item{fixed.fact}{factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node numbers (root: n+1),(n+2),(n+3), ...}
 
 \item{fixed.cov}{Direct effect independent variables}
 
@@ -39,9 +39,9 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 
 \item{mecov.random.cov}{.}
 
-\item{estimate.Ya}{Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
+\item{estimate.Ya}{Boolean. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular. Defaults to false.}
 
-\item{estimate.bXa}{Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
+\item{estimate.bXa}{Boolean. If true, bXa = bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya. Defaults to false.}
 
 \item{support}{A scalar indicating the size of the support set, defaults to 2 units of log-likelihood.}
 
@@ -52,6 +52,10 @@ model.fit.dev2(phy, species = NULL, half_life_values = NULL,
 \item{hillclimb}{TRUE/FALSE whether to use hillclimb parameter estimation routine.}
 
 \item{hillclimb_start}{Numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts. Optional.}
+
+\item{lower}{lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.}
+
+\item{upper}{upper bounds for the optimization routine, defaults to positive infinite.}
 
 \item{verbose}{if TRUE, prints each iteration of parameter search. Default FALSE.}
 }
