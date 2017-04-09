@@ -234,7 +234,7 @@ model.fit.dev2<-function(phy,
       fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, pars, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
       lower = lower,
-      upper = uppper,
+      upper = upper,
       method = "L-BFGS-B",
       control = list(parscale = c(max(T.term), var(response)),
                      fnscale = -0.1)
