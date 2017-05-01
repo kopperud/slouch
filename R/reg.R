@@ -238,19 +238,20 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=n), 2, function(e) e - mean(e))
       
       if(!is.null(fixed.cov)){
-        X0_fixed <- apply(matrix(X[,which.fixed.cov], nrow=n), 2, function(e) e - mean(e))
+        #X0_fixed <- apply(matrix(X[,which.fixed.cov], nrow=n), 2, function(e) e - mean(e))
+        X0_fixed <- matrix(apply(matrix(X[,which.fixed.cov], nrow=n), 2, function(e) mean(e)), byrow = TRUE, nrow = n, ncol = length(which.fixed.cov))
       }else{
         X0_fixed <- NULL
       }
       
       if(!is.null(random.cov)){
-        X0_random <- matrix(sigma_squared, ncol=length(sigma_squared), nrow=n, byrow = TRUE)
+        X0_random <- matrix(theta.X, ncol=length(theta.X), nrow=n, byrow = TRUE)
       }else{
         X0_random <- NULL
       }
       
       X0 <- cbind(X0_intercept, X0_fixed, X0_random)
-      
+      print(X0)
       correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
       bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
       m<-length(beta1)
@@ -286,9 +287,11 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       opt.reg$coefficients_bias_corr = matrix(cbind(beta1_bias_corr, sqrt(diag(beta1_bias_corr_var))), nrow=ncol(X), dimnames = list(colnames(X), c("Bias-corrected estimates", "Std. error")))
       opt.reg$residuals_bias_corr = Y - (X %*% beta1_bias_corr)
+      opt.reg$K <- K
     }else{
       opt.reg$coefficients_bias_corr <- NULL
       opt.reg$residuals_bias_corr <- NULL
+      opt.reg$K <- NULL
     }
     
     pred.mean <- X%*%beta1
