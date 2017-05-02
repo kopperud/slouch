@@ -235,11 +235,15 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       Vd <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
       
       ## Center each column in X on its respective mean
-      X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=n), 2, function(e) e - mean(e))
+      #X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=n), 2, function(e) e - mean(e))
+      X0_intercept <- matrix(0, nrow = nrow(X), ncol = ncol(X) - length(c(which.fixed.cov, which.random.cov)))
       
       if(!is.null(fixed.cov)){
-        #X0_fixed <- apply(matrix(X[,which.fixed.cov], nrow=n), 2, function(e) e - mean(e))
-        X0_fixed <- matrix(apply(matrix(X[,which.fixed.cov], nrow=n), 2, function(e) mean(e)), byrow = TRUE, nrow = n, ncol = length(which.fixed.cov))
+        X0_fixed <- matrix(apply(X[,which.fixed.cov, drop = FALSE], 
+                                 2, 
+                                 function(e) mean(e)), 
+                           byrow = TRUE, nrow = n, 
+                           ncol = length(which.fixed.cov))
       }else{
         X0_fixed <- NULL
       }
@@ -251,8 +255,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       }
       
       X0 <- cbind(X0_intercept, X0_fixed, X0_random)
-      print(X0)
-      correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
+      correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X - X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
       bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
       m<-length(beta1)
       K <- solve(diag(1,m,m)-bias_corr)
