@@ -4,7 +4,7 @@
 ## ------------------------------------------ ##
 
 
-ols.seed <- function(tree, pars, control){
+seed <- function(tree, pars, control){
   list2env(tree, envir = environment())
   list2env(pars, envir = environment())
   list2env(control, envir = environment())

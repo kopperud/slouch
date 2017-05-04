@@ -110,16 +110,22 @@ slouch.fit<-function(phy,
     if(ncol(as.matrix(fixed.cov))==1) {
       names.fixed.cov <- deparse(substitute(fixed.cov))
       fixed.cov <- matrix(fixed.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.fixed.cov))
-      
-      if(is.null(mecov.fixed.cov)){
-        mecov.fixed.cov <- matrix(data = 0, nrow = n, ncol = ncol(fixed.cov))
-      }else{
-        mecov.fixed.cov <- as.matrix(mecov.fixed.cov)
-      }
+
     }else{
+      fixed.cov <- as.matrix(fixed.cov)
       stopifnot(!is.null(colnames(fixed.cov)))
       names.fixed.cov <- colnames(fixed.cov)
     }
+    if(is.null(me.fixed.cov)){
+      me.fixed.cov <- matrix(0, nrow = n, ncol = ncol(fixed.cov))
+    }
+    
+    if(is.null(mecov.fixed.cov)){
+      mecov.fixed.cov <- matrix(data = 0, nrow = n, ncol = ncol(fixed.cov))
+    }else{
+      mecov.fixed.cov <- as.matrix(mecov.fixed.cov)
+    }
+    
   }else{
     names.fixed.cov <- NULL
   }
@@ -128,16 +134,20 @@ slouch.fit<-function(phy,
     if(ncol(as.matrix(random.cov)) == 1) {
       names.random.cov <- deparse(substitute(random.cov))
       random.cov <- matrix(random.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.random.cov))
-      
-      if(is.null(mecov.random.cov)){
-        mecov.random.cov <- matrix(data = 0, nrow = n, ncol = ncol(random.cov))
-      }else{
-        mecov.random.cov <- as.matrix(mecov.random.cov)
-      }
     }
-    else {
+    else{
+      random.cov <- as.matrix(random.cov)
       stopifnot(!is.null(colnames(random.cov)))
       names.random.cov <- colnames(random.cov)
+    }
+    if(is.null(me.random.cov)){
+      me.random.cov <- matrix(0, nrow = n, ncol = ncol(random.cov))
+    }
+    
+    if(is.null(mecov.random.cov)){
+      mecov.random.cov <- matrix(data = 0, nrow = n, ncol = ncol(random.cov))
+    }else{
+      mecov.random.cov <- as.matrix(mecov.random.cov)
     }
   }else{
     names.random.cov <- NULL
@@ -175,7 +185,7 @@ slouch.fit<-function(phy,
                   support = support,
                   convergence = convergence)
   
-  seed <- ols.seed(tree, pars, control)
+  seed <- seed(tree, pars, control)
   coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, seed, is.opt.reg = TRUE))
   
   if (is.null(half_life_values)){

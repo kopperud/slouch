@@ -87,7 +87,6 @@ varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
       Vt <- vy * (1 - exp(-2 * a * ta)) * exp(-a * tij)
     }
   }
-  #print(paste0("alpha = ", a, "vy = ", vy, "beta1 = ", c(beta1)))
   return(Vt)
 }
 
@@ -155,6 +154,11 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       cm2 <- calc.cm2(a, T.term, n, tia, tja, ta)
     }else cm2 <- NULL
   }
+  if (verbose){
+    cat(as.numeric(round(cbind(hl, vy), 4)))
+    cat(" ")
+  }
+  
   X <- slouch.modelmatrix(a, hl, tree, pars, control, seed, is.opt.reg = TRUE)
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
@@ -171,21 +175,24 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     V_me <- varcov_measurement(tree, pars, control, seed, beta1, hl, a, which.fixed.cov, which.random.cov)
     V <- Vt + V_me
 
-      # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
-      # Is this method ok to use? Seems to avoid some bugs (see below). R's lm.fit() does not throw
-      # error when X is singular, but returns NA in the coefficients.
-      # Problem with this transform is, does not work when matrix V is not positive semi-definite (Should this be possible?)
-      #
-      #  Error in solve.default(t(X) %*% V.inverse %*% X) : 
-      #  system is computationally singular: reciprocal condition number = 2.28389e-22
-      
-      L <- t(chol(V))
-      fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
-                    matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
-      beta.i <- matrix(fit$coefficients, ncol=1)
-      
+    # Note: Calculation of regression coefficients deviates from paper notation, but should be algebraically 
+    # equivalent. This is done for an increase in computational speed, convenience of diagnosing problems
+    # with better error-messages, and it is possibly more numerically stable.
+    #
+    # Instead of writing out the naive GLS beta estimator as-is, we have
+    #
+    # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
+    # With this method, the program will not crash even if X is singular. In this case, R's lm.fit() does not throw
+    # error, but return coefficients that contain "NA", and subsequently the log-likelihood is evaluated as "NA".
+
+    L <- t(chol(V))
+    fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
+                  matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
+    beta.i <- matrix(fit$coefficients, ncol=1)
+    
     ## Defensive & debug conditions
-    if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov),]))) {
+    if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov), ]))) {
+      cat("\n")
       print(beta.i)
       warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
       print(as.numeric(round(cbind(hl, vy, NA, t(beta1)), 4)))
@@ -214,7 +221,8 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   ## Log-likelihood
   sup1 <- - n/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
   if(verbose){
-    print(as.numeric(round(cbind(hl, vy, sup1, t(beta1)), 4)))
+    sprintf(as.character(as.numeric(round(cbind(sup1, t(beta1)), 4))))
+    cat("\n")
   }
   
   if(gridsearch){
@@ -228,81 +236,35 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     V.inverse <- solve(V)
     beta1.var <- solve(t(X)%*%V.inverse%*%X)
     
-    
-    if(!is.null(fixed.cov) | !is.null(random.cov)){
-      # ## Bias correction
-      Vu <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.cov), na.exclude(me.random.cov))))
-      Vd <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
-      
-      ## Center each column in X on its respective mean
-      #X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=n), 2, function(e) e - mean(e))
-      #X0_intercept <- matrix(0, nrow = nrow(X), ncol = ncol(X) - length(c(which.fixed.cov, which.random.cov)))
-      X0_intercept <- X[, -c(which.fixed.cov, which.random.cov), drop = FALSE]
-      
-      if(!is.null(fixed.cov)){
-        X0_fixed <- matrix(apply(X[,which.fixed.cov, drop = FALSE], 
-                                 2, 
-                                 function(e) mean(e)), 
-                           byrow = TRUE, nrow = n, 
-                           ncol = length(which.fixed.cov))
-      }else{
-        X0_fixed <- NULL
-      }
-      
-      if(!is.null(random.cov)){
-        X0_random <- matrix(theta.X, ncol=length(theta.X), nrow=n, byrow = TRUE)
-      }else{
-        X0_random <- NULL
-      }
-      
-      X0 <- cbind(X0_intercept, X0_fixed, X0_random)
-      correction <- matrix(Vu%*%pseudoinverse(Vd+Vu)%*%c(X - X0),  ncol=ncol(X), nrow=nrow(X), byrow=F)
-      bias_corr <- pseudoinverse(t(X)%*%V.inverse%*%X)%*%t(X)%*%V.inverse%*%correction
-      m<-length(beta1)
-      K <- solve(diag(1,m,m)-bias_corr)
-      
-      beta1_bias_corr <- K%*%beta1
-      #beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))
-      beta1_bias_corr_var <- solve(K)%*%beta1.var%*%t(solve(K))
-    }
 
     
-    ## 
+    ## Evolutionary regression
     if(!is.null(random.cov)){
       X.ev <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, seed, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
-      ev.reg <- list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
+      ev.reg <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
                                            nrow=ncol(X.ev), 
                                            dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
                      X = X.ev,
-                     residuals = Y - (X.ev %*% ev.beta1))
+                     residuals = Y - (X.ev %*% ev.beta1)),
+                  bias_correction(ev.beta1, ev.beta1.var, X.ev, V, which.fixed.cov, which.random.cov, tree, pars, control, seed))
     }else{
       ev.beta1.var <- NULL
       ev.beta1 <- NULL
       ev.reg <- NULL
     }
-    opt.reg <- list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
+    opt.reg <- c(list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
                                           nrow=ncol(X), 
                                           dimnames = list(colnames(X), c("Estimates", "Std. error"))),
-                    X = X,
-                    residuals = Y - (X %*% beta1))
-    
-    if(!is.null(fixed.cov) | !is.null(random.cov)){
-      opt.reg$coefficients_bias_corr = matrix(cbind(beta1_bias_corr, sqrt(diag(beta1_bias_corr_var))), nrow=ncol(X), dimnames = list(colnames(X), c("Bias-corrected estimates", "Std. error")))
-      opt.reg$residuals_bias_corr = Y - (X %*% beta1_bias_corr)
-      opt.reg$K <- K
-    }else{
-      opt.reg$coefficients_bias_corr <- NULL
-      opt.reg$residuals_bias_corr <- NULL
-      opt.reg$K <- NULL
-    }
+                    residuals = Y - (X %*% beta1)),
+                 if (!is.null(fixed.cov)) bias_correction(beta1, beta1.var, X, V, which.fixed.cov, which.random.cov, tree, pars, control, seed) else NULL)
     
     pred.mean <- X%*%beta1
-    g.mean <- (t(rep(1, times=n))%*%solve(V)%*%Y)/sum(solve(V))
-    sst<-t(Y- c(g.mean))%*% solve(V)%*%(Y- c(g.mean))
-    sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
-    r.squared<-(sst-sse)/sst
+    g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))
+    sst <- t(Y - c(g.mean)) %*% solve(V) %*% (Y - c(g.mean))
+    sse <- t(Y - pred.mean) %*% solve(V) %*% (Y - pred.mean)
+    r.squared <- (sst - sse) / sst
     
     return(list(support = sup1,
                 V = V, 
@@ -314,3 +276,4 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
                 r.squared = r.squared))
   }
 }
+

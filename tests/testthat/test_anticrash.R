@@ -31,14 +31,14 @@ m1 <- slouch.fit(phy,
                      fixed.fact = regimes_tip)
 
 m2 <- slouch.fit(phy,
-                     species = phy$tip.label,
-                     half_life_values = seq(0,0.4, length.out = 5),
-                     vy_values = seq(0.05,0.15, length.out = 5),
-                     response = trait_1,
-                     me.response = trait_1_SE_sq,
-                     fixed.cov = rnorm(n),
-                     me.fixed.cov = 0.001*rnorm(n),
-                     fixed.fact = regimes_tip)
+                 species = phy$tip.label,
+                 half_life_values = seq(0,0.4, length.out = 5),
+                 vy_values = seq(0.05,0.15, length.out = 5),
+                 response = trait_1,
+                 me.response = trait_1_SE_sq,
+                 fixed.cov = cbind(a = rnorm(n)),
+                 me.fixed.cov = 0.001*rnorm(n),
+                 fixed.fact = regimes_tip)
 
 m3 <- slouch.fit(phy,
                      species = phy$tip.label,
