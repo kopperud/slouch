@@ -17,4 +17,3 @@ An object of class 'logLik'
 \description{
 Title
 }
-

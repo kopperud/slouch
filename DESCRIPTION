@@ -1,15 +1,15 @@
 Package: slouch
 Type: Package
 Title: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
-Version: 0.1
+Version: 3.0.0
 Date: 2016-07-09
 Author: Jason Pienaar
 Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Description: This package is an implementation of a particular phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves toward a primary optimum. Optima can be fitted either as discrete regimes as niches on the phylogenetic tree, and/or with continuous covariates.
 License: What license is it under?
 LazyData: TRUE
 ByteCompile: FALSE
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 Depends:
   base,
   stats

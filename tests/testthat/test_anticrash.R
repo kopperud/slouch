@@ -22,7 +22,7 @@ regimes <- concat.factor(regimes_tip, regimes_internal)
 lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
 
 
-m1 <- model.fit.dev2(phy,
+m1 <- slouch.fit(phy,
                      species = phy$tip.label,
                      half_life_values = seq(0,0.4, length.out = 5),
                      vy_values = seq(0.05,0.15, length.out = 5),
@@ -30,7 +30,7 @@ m1 <- model.fit.dev2(phy,
                      me.response = trait_1_SE_sq,
                      fixed.fact = regimes_tip)
 
-m2 <- model.fit.dev2(phy,
+m2 <- slouch.fit(phy,
                      species = phy$tip.label,
                      half_life_values = seq(0,0.4, length.out = 5),
                      vy_values = seq(0.05,0.15, length.out = 5),
@@ -40,7 +40,7 @@ m2 <- model.fit.dev2(phy,
                      me.fixed.cov = 0.001*rnorm(n),
                      fixed.fact = regimes_tip)
 
-m3 <- model.fit.dev2(phy,
+m3 <- slouch.fit(phy,
                      species = phy$tip.label,
                      half_life_values = seq(0,0.4, length.out = 5),
                      vy_values = seq(0.05,0.15, length.out = 5),
@@ -51,7 +51,7 @@ m3 <- model.fit.dev2(phy,
                      fixed.fact = regimes_tip)
 
 ## The "everything" model
-m3 <- model.fit.dev2(phy,
+m3 <- slouch.fit(phy,
                      species = phy$tip.label,
                      half_life_values = seq(0.1,0.4, length.out = 5),
                      vy_values = seq(0.05,0.15, length.out = 5),

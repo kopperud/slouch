@@ -1,9 +1,3 @@
----
-output:
-  html_document: default
-  pdf_document: default
-  word_document: default
----
 [![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch)
 
 # Install and load devtools

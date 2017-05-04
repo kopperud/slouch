@@ -27,7 +27,7 @@ slouch.modelmatrix <- function(a, hl, tree, pars, control, seed, is.opt.reg = TR
   }
   
   if(!is.null(fixed.cov) | !is.null(random.cov)){
-    covariates <- matrix(cbind(fixed.pred, rho*pred), nrow = n, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+    covariates <- matrix(cbind(fixed.cov, rho*random.cov), nrow = n, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
   }else{
     covariates <- NULL
   }
@@ -74,7 +74,7 @@ calc.cm2 <- function(a, T.term, n, tia, tja, ta){
   return(term2 * t(term2) - num.prob * (term0 + t(term0)))
 }
 
-varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, n, sigma_squared, ta, tij, me.response){
+varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, ta, tij, me.response){
   
   ## Piece together V
   if (hl == 0){
@@ -117,16 +117,16 @@ varcov_measurement <- function(tree, pars, control, seed, beta1, hl, a, which.fi
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-    if(sum(me.cov) == 0){
+    if(sum(mecov.random.cov) == 0){
       mcov <- 0
     }else{
-      mcov <- diag(rowSums(matrix(data=as.numeric(me.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.pred)))
+      mcov <- diag(rowSums(matrix(data=as.numeric(mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(random.cov))))
     }
     
     if(sum(mecov.fixed.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol=n.fixed.pred)))
+      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(fixed.cov))))
     }
   }else{
     beta2_Vu_given_x <- 0
@@ -167,7 +167,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
 
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, me.cov, n.pred, mecov.fixed.cov, n.fixed.pred, n, sigma_squared, ta, tij, me.response)
+    Vt <- varcov_model(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, ta, tij, me.response)
     V_me <- varcov_measurement(tree, pars, control, seed, beta1, hl, a, which.fixed.cov, which.random.cov)
     V <- Vt + V_me
 
@@ -231,12 +231,13 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     
     if(!is.null(fixed.cov) | !is.null(random.cov)){
       # ## Bias correction
-      Vu <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.pred), na.exclude(me.pred))))
+      Vu <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(na.exclude(me.fixed.cov), na.exclude(me.random.cov))))
       Vd <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
       
       ## Center each column in X on its respective mean
       #X0_intercept <- apply(matrix(X[, -c(which.fixed.cov, which.random.cov)], nrow=n), 2, function(e) e - mean(e))
-      X0_intercept <- matrix(0, nrow = nrow(X), ncol = ncol(X) - length(c(which.fixed.cov, which.random.cov)))
+      #X0_intercept <- matrix(0, nrow = nrow(X), ncol = ncol(X) - length(c(which.fixed.cov, which.random.cov)))
+      X0_intercept <- X[, -c(which.fixed.cov, which.random.cov), drop = FALSE]
       
       if(!is.null(fixed.cov)){
         X0_fixed <- matrix(apply(X[,which.fixed.cov, drop = FALSE], 
@@ -299,7 +300,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times=n))%*%solve(V)%*%Y)/sum(solve(V))
-    sst<-t(Y-g.mean)%*% solve(V)%*%(Y-g.mean)
+    sst<-t(Y- c(g.mean))%*% solve(V)%*%(Y- c(g.mean))
     sse<-t(Y-pred.mean)%*%solve(V)%*%(Y-pred.mean)
     r.squared<-(sst-sse)/sst
     

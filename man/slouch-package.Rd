@@ -8,4 +8,11 @@
 \description{
 SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{http://github.com/kopperud/slouch}
+  \item Report bugs at \url{http://github.com/kopperud/slouch/issues}
+}
 
+}

@@ -18,7 +18,7 @@ print.slouch <- function(x, ...){
   print(x$oupar)
   
   if (!is.null(x$hlvy_grid_interval)){
-    message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate. Do not trust)")
+    message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
     print(x$hlvy_grid_interval)
   }
 

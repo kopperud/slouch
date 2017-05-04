@@ -14,4 +14,3 @@
 \description{
 Graphical plot of parameter space traversed in order to find ML-estimate of the model.
 }
-

@@ -3,6 +3,6 @@
 S3method(logLik,slouch)
 S3method(plot,slouch)
 S3method(print,slouch)
-export(model.fit.dev2)
+export(slouch.fit)
 importFrom(Rcpp,evalCpp)
 useDynLib(slouch)

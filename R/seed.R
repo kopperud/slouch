@@ -17,18 +17,17 @@ ols.seed <- function(tree, pars, control){
   ## RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
   if(!is.null(random.cov)){
-    pred <- cbind(random.cov)
-    n.pred <- ncol(pred)
+    random.cov <- cbind(random.cov)
+    n.pred <- ncol(random.cov)
     
     if(!is.null(me.random.cov)){
-      me.pred <- cbind(me.random.cov)
+      me.random.cov <- cbind(me.random.cov)
     }else{
-      me.pred<-matrix(data=0, nrow=n, ncol=n.pred)
+      me.random.cov <- matrix(data=0, nrow=n, ncol = n.pred)
     }
-    
     brownian <- mapply(function(y, y_me) sigma.X.estimate(tree$phy, ta, y, y_me),
-                       y = split(pred, colnames(pred)),
-                       y_me = split(me.pred, colnames(pred)),
+                       y = split(random.cov, colnames(random.cov)),
+                       y_me = split(me.random.cov, colnames(random.cov)),
                        SIMPLIFY = FALSE)
     
     sigma_squared <- sapply(brownian, function(x) x$sigma_squared)
@@ -36,41 +35,32 @@ ols.seed <- function(tree, pars, control){
 
   }else{
     n.pred <- 0
-    pred <- NULL
+    random.cov <- NULL
     sigma_squared <- NULL
     theta.X <- NULL
-    me.pred<-matrix(data=0, nrow=n, ncol=n.pred)
+    me.random.cov<-matrix(data=0, nrow=n, ncol=n.pred)
   }
   
-  if(is.null(mecov.random.cov)){
-    me.cov<-matrix(data=0, nrow=n, ncol=n.pred)
-  }else{
-    me.cov<-matrix(data=mecov.random.cov[!is.na(mecov.random.cov)], ncol=ncol(as.matrix(mecov.random.cov)))
-  }
+
   # END OF RANDOM PREDICTOR THETA AND SIGMA ESTIMATES
   
   # FIXED COVARIATES
   if(!is.null(fixed.cov)){
-    n.fixed.pred<-length(as.matrix(fixed.cov)[1,])
-    fixed.pred<-data.frame(fixed.cov)
-    fixed.pred<-matrix(data=fixed.pred[!is.na(fixed.pred)], ncol=n.fixed.pred)
+    n.fixed.cov <- length(as.matrix(fixed.cov)[1,])
+    fixed.cov <- as.matrix(fixed.cov, dimnames = list(NULL, names.fixed.cov))
   }else{
-    n.fixed.pred <- 0
-    fixed.pred <- NULL
-    me.fixed.pred <- matrix(0, nrow=n, ncol = n.fixed.pred)
+    n.fixed.cov <- 0
+    fixed.cov <- NULL
+    me.fixed.cov <- matrix(0, nrow=n, ncol = n.fixed.cov)
   }
   
   if(is.null(me.fixed.cov)) {
-    me.fixed.pred<-matrix(data=0, nrow=n, ncol=n.fixed.pred)
+    me.fixed.cov<-matrix(0, nrow=n, ncol=n.fixed.cov)
   } else{
-    me.fixed.pred<- matrix(data=me.fixed.cov[!is.na(me.fixed.cov)], ncol=n.fixed.pred)
+    me.fixed.cov<- matrix(me.fixed.cov, ncol = n.fixed.cov)
   }
   
-  if(is.null(mecov.fixed.cov)){
-    mecov.fixed.cov<-matrix(data=0, nrow=n, ncol=n.fixed.pred)
-  }else{
-    mecov.fixed.cov<-matrix(data=mecov.fixed.cov[!is.na(mecov.fixed.cov)], ncol=n.fixed.pred)
-  }
+
 
   ## ------------------------------------------------------- ##
   ##                                                         ##
@@ -79,13 +69,13 @@ ols.seed <- function(tree, pars, control){
   ##                                                         ##
   ## ------------------------------------------------------- ##
 
-  if(!is.null(fixed.pred)){
+  if(!is.null(fixed.cov)){
     Vd_fixed <- list()
     Vu_fixed <- list()
-    for (i in 1:n.fixed.pred)
+    for (i in 1:n.fixed.cov)
     {
-      Vu_fixed[[i]] <- diag(na.exclude(me.fixed.pred[,i]))
-      Vd_fixed[[i]] <- diag(rep(var(na.exclude(fixed.pred[,i])), n)) - Vu_fixed[[i]]
+      Vu_fixed[[i]] <- diag(na.exclude(me.fixed.cov[,i]))
+      Vd_fixed[[i]] <- diag(rep(var(na.exclude(fixed.cov[,i])), n)) - Vu_fixed[[i]]
       if(any(Vd_fixed[[i]] < 0)){
         Vd_fixed[[i]][Vd_fixed[[i]] < 0] <- 0
         warning("Vd contains negative variances, scaled up to 0. Do any of the predictor variables have a larger measurement error than their trait variance?")
@@ -101,7 +91,7 @@ ols.seed <- function(tree, pars, control){
     Vd_random <- lapply(sigma_squared, function(e) ta*e)
     # for (i in seq(from = 1, to = nrow(sigma_squared), by=1)){
     for(i in seq_along(sigma_squared)){
-      Vu_random[[i]] <- diag(na.exclude(me.pred[,i]))
+      Vu_random[[i]] <- diag(na.exclude(me.random.cov[,i]))
     }
   }else{
     Vd_random <- NULL
@@ -125,15 +115,7 @@ ols.seed <- function(tree, pars, control){
   
   list(sigma_squared = sigma_squared,
        theta.X = theta.X,
-       pred = pred,
-       me.pred = me.pred,
-       n.pred = n.pred,
-       me.cov = me.cov,
-       fixed.pred = fixed.pred,
-       n.fixed.pred = n.fixed.pred,
-       me.fixed.pred = me.fixed.pred,
-       me.fixed.cov = me.fixed.cov,
-       mecov.fixed.cov = mecov.fixed.cov,
+       #me.fixed.cov = me.fixed.cov,
        Vu_given_x = Vu_given_x,
        Vu = Vu,
        Vx = Vx,
