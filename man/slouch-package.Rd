@@ -16,3 +16,18 @@ Useful links:
 }
 
 }
+\author{
+\strong{Maintainer}: Bjørn Tore Kopperud \email{bjorntko@student.ibv.uio.no}
+
+Authors:
+\itemize{
+  \item Jason Pienaar
+  \item Kjetil Lysne Voje
+}
+
+Other contributors:
+\itemize{
+  \item Mark Grabowski [contributor]
+}
+
+}

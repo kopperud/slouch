@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{logLik.slouch}
 \alias{logLik.slouch}
-\title{Title}
+\title{Extract Log-Likelihood}
 \usage{
 \method{logLik}{slouch}(object, ...)
 }
@@ -15,5 +15,5 @@
 An object of class 'logLik'
 }
 \description{
-Title
+Extract Log-Likelihood
 }

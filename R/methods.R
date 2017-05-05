@@ -3,7 +3,7 @@
 
 
 
-#' Title
+#' Print slouch-objects
 #' 
 #' @param x An object of class 'slouch'
 #' @param ... Additional arguments, unused.
@@ -45,7 +45,7 @@ print.slouch <- function(x, ...){
 }
 
 
-#' Title
+#' Plot slouch-objects
 #' @description Graphical plot of parameter space traversed in order to find ML-estimate of the model.
 #'
 #' @param x An object of class 'slouch'
@@ -100,7 +100,7 @@ plot.slouch <- function(x, ...){
 }
 
 
-#' Title
+#' Extract Log-Likelihood
 #'
 #' @param object An object of class 'slouch'
 #' @param ... Additional arguments.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{plot.slouch}
 \alias{plot.slouch}
-\title{Title}
+\title{Plot slouch-objects}
 \usage{
 \method{plot}{slouch}(x, ...)
 }

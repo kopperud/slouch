@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{print.slouch}
 \alias{print.slouch}
-\title{Title}
+\title{Print slouch-objects}
 \usage{
 \method{print}{slouch}(x, ...)
 }
@@ -12,5 +12,5 @@
 \item{...}{Additional arguments, unused.}
 }
 \description{
-Title
+Print slouch-objects
 }

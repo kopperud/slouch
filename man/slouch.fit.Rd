@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit.R
 \name{slouch.fit}
 \alias{slouch.fit}
-\title{Title}
+\title{Function to fit Ornstein-Uhlenbeck models}
 \usage{
 slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
   response, me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
@@ -63,5 +63,5 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 An object of class 'slouch'
 }
 \description{
-Title
+Function to fit Ornstein-Uhlenbeck models
 }

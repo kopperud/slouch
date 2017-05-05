@@ -1,4 +1,4 @@
-#' Title
+#' Function to fit Ornstein-Uhlenbeck models
 #'
 #' @param phy an object of class 'phylo', must be rooted.
 #' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
