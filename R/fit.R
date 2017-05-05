@@ -2,7 +2,7 @@
 #'
 #' @param phy an object of class 'phylo', must be rooted.
 #' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
-#' @param half_life_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
+#' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
 #' @param response a numeric vector of a trait to be treated as response variable
 #' @param me.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.
@@ -28,7 +28,7 @@
 #' @export
 slouch.fit<-function(phy,
                      species = NULL,
-                     half_life_values = NULL, 
+                     hl_values = NULL, 
                      vy_values = NULL, 
                      response, 
                      me.response=NULL, 
@@ -47,7 +47,7 @@ slouch.fit<-function(phy,
                      hillclimb = FALSE,
                      hillclimb_start = NULL,
                      lower = c(0,0),
-                     upper = Inf,
+                     upper = c(Inf, Inf),
                      verbose = FALSE)
 {
   if(is.null(species)){
@@ -61,7 +61,7 @@ slouch.fit<-function(phy,
   #stopifnot(intercept == "root" | is.null(intercept))
   stopifnot(is.rooted(phy))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
-  if((is.null(half_life_values) | is.null(vy_values)) & !hillclimb){
+  if((is.null(hl_values) | is.null(vy_values)) & !hillclimb){
     stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
   }
   
@@ -103,8 +103,8 @@ slouch.fit<-function(phy,
   tja <- t(tia)
   tij <- tja + tia
   
-  h.lives<-matrix(data=0, nrow=length(half_life_values), ncol=length(vy_values))
-  half_life_values<-rev(half_life_values)
+  h.lives<-matrix(data=0, nrow=length(hl_values), ncol=length(vy_values))
+  hl_values<-rev(hl_values)
   
   if(!is.null(fixed.cov)){
     if(ncol(as.matrix(fixed.cov))==1) {
@@ -188,8 +188,8 @@ slouch.fit<-function(phy,
   seed <- seed(tree, pars, control)
   coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, seed, is.opt.reg = TRUE))
   
-  if (is.null(half_life_values)){
-    half_life_values <- runif(1, 0, max(times))
+  if (is.null(hl_values)){
+    hl_values <- runif(1, 0, max(times))
   }
   if (is.null(vy_values)){
     vy_values <- runif(1, 0, var(na.exclude(response)))
@@ -201,7 +201,7 @@ slouch.fit<-function(phy,
   }
   
   #############
-  vector_hl_vy <- cbind(sort(rep(half_life_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(half_life_values)))
+  vector_hl_vy <- cbind(sort(rep(hl_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(hl_values)))
   time0 <- Sys.time()
   
   if(nCores > 1 & nCores %% 1 == 0){
@@ -266,7 +266,7 @@ slouch.fit<-function(phy,
   sup2 <- sapply(parameter_space, function(e) e$support)
   ml <- max(na.exclude(sup2))
   
-  gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(half_life_values, vy_values))
+  gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(hl_values, vy_values))
   gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
   
   
@@ -313,7 +313,7 @@ slouch.fit<-function(phy,
   modfit[7,1] = fit$sse
   
   
-  if(length(half_life_values) > 1 && length(vy_values) > 1){
+  if(length(hl_values) > 1 && length(vy_values) > 1){
     ## All hl + vy in the support interval
     hlsupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
     vysupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
@@ -324,12 +324,12 @@ slouch.fit<-function(phy,
                                  dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
     
     if(!(all(is.na(gof) | is.infinite(gof)))){
-      h.lives <- matrix(0, nrow=length(half_life_values), ncol=length(vy_values), dimnames = list(rev(half_life_values), vy_values))
+      h.lives <- matrix(0, nrow=length(hl_values), ncol=length(vy_values), dimnames = list(rev(hl_values), vy_values))
       for(i in 1:length(vy_values)){
         h.lives[,i]=rev(gof[,i])
       }
       
-      supportplot = list(hl = rev(half_life_values),
+      supportplot = list(hl = rev(hl_values),
                          vy = vy_values,
                          z = h.lives)
     }else{

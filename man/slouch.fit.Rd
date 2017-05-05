@@ -4,20 +4,20 @@
 \alias{slouch.fit}
 \title{Title}
 \usage{
-slouch.fit(phy, species = NULL, half_life_values = NULL, vy_values = NULL,
+slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
   response, me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
   me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
   me.random.cov = NULL, mecov.random.cov = NULL, estimate.Ya = FALSE,
   estimate.bXa = FALSE, support = 2, convergence = 1e-06, nCores = 1,
   hillclimb = FALSE, hillclimb_start = NULL, lower = c(0, 0),
-  upper = Inf, verbose = FALSE)
+  upper = c(Inf, Inf), verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
 \item{species}{a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label}
 
-\item{half_life_values}{a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.}
+\item{hl_values}{a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.}
 
 \item{vy_values}{a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.}
 

@@ -221,7 +221,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   ## Log-likelihood
   sup1 <- - n/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
   if(verbose){
-    sprintf(as.character(as.numeric(round(cbind(sup1, t(beta1)), 4))))
+    cat(as.numeric(round(cbind(sup1, t(beta1)), 4)))
     cat("\n")
   }
   

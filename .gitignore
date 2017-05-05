@@ -1,7 +1,6 @@
 .Rproj.user
 .Rhistory
 .RData
-inst/doc
 src/*.dll
 src/*.so
 src/*.o
