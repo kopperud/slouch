@@ -352,7 +352,8 @@ slouch.fit<-function(phy,
                  hlvy_grid_interval = hlvy_grid_interval,
                  n.par = n.par,
                  V = fit$V,
-                 lineages = lineages)
+                 lineages = lineages,
+                 fixed.fact = fixed.fact)
   class(result) <- c("slouch", class(result))
   return(result)
 }

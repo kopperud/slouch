@@ -110,3 +110,33 @@ plot.slouch <- function(x, ...){
 logLik.slouch <- function(object, ...){
   return(structure(object$modfit[1, 1], df = object$n.par, class = "logLik"))
 }
+
+
+
+
+#' Plot the internal regimes for a given fitted model
+#'
+#' @param x an object of class 'slouch'
+#' @param ... additional parameters
+#'
+#' @return nothing
+#' @export
+regimeplot.slouch <- function(x, ...){
+  stopifnot(!is.null(x$fixed.fact))
+  
+  regimes <- c(x$fixed.fact, x$tree$phy$node.label)
+  regimes_edges <- regimes[x$tree$phy$edge[,2]]
+  
+  plot(x$tree$phy, edge.col = factor(regimes_edges))
+}
+
+#' Title
+#'
+#' @param x an object of class 'slouch'
+#' @param ... additional parameters
+#'
+#' @return
+#' @export
+regimeplot <- function(x, ...){
+  UseMethod("regimeplot")
+}
