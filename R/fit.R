@@ -81,6 +81,7 @@ slouch.fit<-function(phy,
     if(is.null(phy$node.label)){
       stop("For categorical variables, the regimes corresponding to their primary optima need to be painted on all of the branches in the tree, and assigned to phy$node.label - use plot(phy) & nodelabels(phy$node.label) to see whether they are correct. See example.")
     }
+    
     regimes_internal <- phy$node.label
     if(estimate.Ya){
       tmp <- as.character(regimes_internal)
@@ -106,6 +107,12 @@ slouch.fit<-function(phy,
   h.lives<-matrix(data=0, nrow=length(hl_values), ncol=length(vy_values))
   hl_values<-rev(hl_values)
   
+  ############################################################################
+  
+  ##          Make sure variable matrices are of correct dimensions         ##
+  
+  ############################################################################
+  
   if(!is.null(fixed.cov)){
     if(ncol(as.matrix(fixed.cov))==1) {
       names.fixed.cov <- deparse(substitute(fixed.cov))
@@ -118,6 +125,8 @@ slouch.fit<-function(phy,
     }
     if(is.null(me.fixed.cov)){
       me.fixed.cov <- matrix(0, nrow = n, ncol = ncol(fixed.cov))
+    }else{
+      me.fixed.cov <- cbind(me.fixed.cov)
     }
     
     if(is.null(mecov.fixed.cov)){
@@ -142,6 +151,8 @@ slouch.fit<-function(phy,
     }
     if(is.null(me.random.cov)){
       me.random.cov <- matrix(0, nrow = n, ncol = ncol(random.cov))
+    }else{
+      me.random.cov <- cbind(me.random.cov)
     }
     
     if(is.null(mecov.random.cov)){
@@ -185,14 +196,16 @@ slouch.fit<-function(phy,
                   support = support,
                   convergence = convergence)
   
-  seed <- seed(tree, pars, control)
+  
+  seed <- seed(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov)
   coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, seed, is.opt.reg = TRUE))
   
+  ## Uniform random start values for hl and vy, in case hillclimber is used
   if (is.null(hl_values)){
     hl_values <- runif(1, 0, max(times))
   }
   if (is.null(vy_values)){
-    vy_values <- runif(1, 0, var(na.exclude(response)))
+    vy_values <- runif(1, 0, var(response))
   }
   
   if(verbose){

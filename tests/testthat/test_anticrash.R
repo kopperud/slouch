@@ -65,6 +65,21 @@ m3 <- slouch.fit(phy,
                      estimate.Ya = TRUE,
                      estimate.bXa = TRUE)
 
+
+## The "everything" model without measurement error
+## The "everything" model
+m4 <- slouch.fit(phy,
+                 species = phy$tip.label,
+                 hl_values = seq(0.1,0.4, length.out = 5),
+                 vy_values = seq(0.05,0.15, length.out = 5),
+                 response = trait_1,
+                 me.response = trait_1_SE_sq,
+                 random.cov = cbind(a = rnorm(n), b = rnorm(n)),
+                 fixed.cov = cbind(c = rnorm(n), d = rnorm(n)),
+                 fixed.fact = regimes_tip,
+                 estimate.Ya = TRUE,
+                 estimate.bXa = TRUE)
+
 #detach(dummydata)
 
 test_that("1 + 1 = 2", {

@@ -1,9 +1,4 @@
-bias_correction <- function(beta1, beta1.var, X, V, which.fixed.cov, which.random.cov, tree, pars, control, seed){
-  list2env(tree, envir = environment())
-  list2env(pars, envir = environment())
-  list2env(control, envir = environment())
-  list2env(seed, envir = environment())
-  
+bias_correction <- function(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed){
   ## ###################################################################### ##
   ##                                                                        ##
   ##                            Bias correction                             ##
@@ -13,13 +8,14 @@ bias_correction <- function(beta1, beta1.var, X, V, which.fixed.cov, which.rando
   
   n <- nrow(X)
   
-  ## Vu and Vd are square block-matrices of size (n*ncol(X)).
-  Vu <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(me.fixed.cov, me.random.cov)))
-  Vd <- diag(c(rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),])), c(sapply(Vd, function(e) diag(e)))))
+  ## Redefine Vu and Vd as square block-matrices of size (n*ncol(X)).
+  zeros <- rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),]))
+  Vu <- diag(c(zeros, sapply(seed$Vu, diag)))
+  Vd <- diag(c(zeros, sapply(seed$Vd, diag)))
   
   a_intercept <- X[, -c(which.fixed.cov, which.random.cov), drop = FALSE]
   
-  if(!is.null(fixed.cov)){
+  if(length(which.fixed.cov) > 0){
     a_fixed <- matrix(apply(X[,which.fixed.cov, drop = FALSE], 
                             2, 
                             function(e) mean(e)), 
@@ -29,8 +25,8 @@ bias_correction <- function(beta1, beta1.var, X, V, which.fixed.cov, which.rando
     a_fixed <- NULL
   }
   
-  if(!is.null(random.cov)){
-    a_random <- matrix(theta.X, ncol=length(theta.X), nrow = nrow(X), byrow = TRUE)
+  if(length(which.random.cov) > 0){
+    a_random <- matrix(seed$theta.X, ncol=length(seed$theta.X), nrow = nrow(X), byrow = TRUE)
   }else{
     a_random <- NULL
   }
