@@ -14,9 +14,9 @@ devtools::install_github("kopperud/slouch")
 library(slouch)
 ```
 
-Since it is in development, I've changed the name of model.fit command, as to point out that it is in dev, to `model.fit.dev2()`.
+# Documentation
 
-Rudimentary helpfiles exist, such as `?model.fit.dev2`
+There is a **vignette** written as a short introduction to the syntax of the main functions in this package. The vignette can be viewed either in R along with the regular R documentation by typing the command `?slouch`, or at [the package website](https://kopperud.github.io/slouch/articles/introduction.html).
 
 # Notable changes since v2.*
 

@@ -5,8 +5,8 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Slouch user guide • slouch</title>
-<!-- jquery --><script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<title>Slouch introduction • slouch</title>
+<!-- jquery --><script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script><!-- Font Awesome icons --><link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
 <!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../jquery.sticky-kit.min.js"></script><script src="../pkgdown.js"></script><!-- mathjax --><script src="https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!--[if lt IE 9]>
@@ -54,16 +54,16 @@
       </header><div class="row">
   <div class="col-md-9">
     <div class="page-header toc-ignore">
-      <h1>Slouch user guide</h1>
+      <h1>Slouch introduction</h1>
                         <h4 class="author">Bjørn Tore Kopperud</h4>
             
-            <h4 class="date">2017-05-05</h4>
+            <h4 class="date">2017-05-10</h4>
           </div>
 
     
     
 <div class="contents">
-<p>Slouch is an implementation of a particular phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves toward a primary optimum. Optima can be fitted either as discrete regimes as niches on the phylogenetic tree, and/or with continuous covariates. See the following articles for more information about the theoretical background, how the method is derived, and how to interpret the parameters.</p>
+<p>Slouch is an implementation of a particular phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves toward a primary optimum. Optima can be fitted either as discrete regimes as niches on the phylogenetic tree, and/or with continuous covariates. This documentation is not meant to be exhaustive nor cover the biological interpretations in any depth; it is merely a short introduction on software syntax and a few technical issues. See the following articles for more information about the theoretical background, how the method is derived, and how to interpret the models.</p>
 <ul>
 <li>Hansen (1997)<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>
 </li>
@@ -88,16 +88,16 @@ phy &lt;-<span class="st"> </span><span class="kw">rtree</span>(n)
 
 oldmar &lt;-<span class="st"> </span><span class="kw">par</span>(<span class="st">"mar"</span>); <span class="kw">par</span>(<span class="dt">mar =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))
 <span class="kw">plot</span>(<span class="kw">ladderize</span>(phy))</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-1-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-1-1.png" width="672"></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">par</span>(<span class="dt">mar =</span> oldmar)</code></pre></div>
-<p>Slouch can fit univariate Ornstein-Uhlenbeck models. Let’s create a toy dataset. The species in the data frame need to be in a particular order to line up with the order of the tree, so I will intentionally scramble the dataframe first, to illustrate how to reorder it.</p>
+<p>Slouch can fit univariate Ornstein-Uhlenbeck models. Let’s create a toy dataset. The species in the data frame need to be in a particular order to line up with the order of the tree, so we will intentionally scramble the dataframe first, to illustrate how to reorder it. If you use your own data to fit models, it is recommended to store them in a data frame or in a similar data structure.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mydata &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">species =</span> phy$tip.label,
                      <span class="dt">y =</span> <span class="kw">rnorm</span>(n, <span class="dt">sd =</span> <span class="dv">4</span>) +<span class="st"> </span><span class="dv">1</span>:n*<span class="fl">1.7</span>,
                      <span class="dt">x =</span> <span class="kw">rnorm</span>(n, <span class="dt">sd =</span> <span class="dv">4</span>) +<span class="st"> </span><span class="dv">1</span>:n,
                      <span class="dt">z =</span> <span class="kw">rnorm</span>(n, <span class="dt">sd =</span> <span class="dv">4</span>) +<span class="st"> </span><span class="dv">1</span>:n*(-<span class="fl">0.6</span>))
 
 <span class="kw">plot</span>(mydata$x, mydata$y, <span class="dt">ylab =</span> <span class="st">"y"</span>, <span class="dt">xlab =</span> <span class="st">"x"</span>)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-2-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-2-1.png" width="672"></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## Scramble the rows
 mydata &lt;-<span class="st"> </span>mydata[<span class="kw">sample</span>(<span class="dv">1</span>:n, n),]
 
@@ -111,7 +111,7 @@ mydata$species ==<span class="st"> </span>phy$tip.label</code></pre></div>
 ## [56] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
 ## [67] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
 ## [78] FALSE FALSE FALSE</code></pre>
-<p>Unsurprisingly, not a single one of the species is in its correct place. As <code>slouch</code> is (for now) intentionally programmed in a <em>dumb</em> way, we will have to reorder the species. Here is one way to do it.</p>
+<p>Unsurprisingly, not a single one of the species is in its correct place. As <code>slouch</code> is intentionally programmed in a <em>dumb</em> way, we will have to reorder the species. Here is one way to do it.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mydata &lt;-<span class="st"> </span>mydata[<span class="kw">match</span>(phy$tip.label, mydata$species) ,]
 
 ## Check if they line up again
@@ -126,7 +126,7 @@ mydata$species ==<span class="st"> </span>phy$tip.label</code></pre></div>
 <div id="single-optimum-model" class="section level2">
 <h2 class="hasAnchor">
 <a href="#single-optimum-model" class="anchor"></a>Single optimum model</h2>
-<p>Now we are ready to fit the first models, for which we will use the function <code>slouch.fit</code>. The following is an intercept only model, or a single optimum model. In <code>slouch</code>, there are two main techniques for estimating the most likely <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\sigma_y^2\)</span> parameters. In this particular implementation the <span class="math inline">\(\sigma_y^2\)</span> is reparameterized as <span class="math inline">\(\frac{\sigma_y^2}{2\alpha}\)</span>, which is the variance of the predictor variable when it is stationary around the optimum. The first way is to use a grid-search of likely parameters from user input, which may take some trial and error.</p>
+<p>Now we are ready to fit the first models, for which we will use the function <code>slouch.fit</code>. The following is an intercept only model, or a single optimum model. In <code>slouch</code>, there are two main techniques for estimating the most likely <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\sigma_y^2\)</span> parameters. In this particular implementation the <span class="math inline">\(\sigma_y^2\)</span> is reparameterized as <span class="math inline">\(\sigma_y^2/2\alpha\)</span>, which is the variance of the predictor variable when it is stationary around the optimum. The first way is to use a grid-search of likely parameters from user input, which may take some trial and error.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(slouch)
 model0 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slouch.fit.html">slouch.fit</a></span>(<span class="dt">phy =</span> phy,
                      <span class="dt">hl_values =</span> <span class="kw">seq</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dt">length.out =</span> <span class="dv">10</span>),
@@ -141,8 +141,8 @@ model0 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slou
                      <span class="dt">species =</span> mydata$species,
                      <span class="dt">response =</span> mydata$y)
 <span class="kw">plot</span>(model0, <span class="dt">cex.lab =</span> <span class="fl">0.7</span>, <span class="dt">cex.axis =</span> <span class="fl">0.7</span>)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-4-1.png" width="288"><img src="user-guide_files/figure-html/unnamed-chunk-4-2.png" width="288"></p>
-<p>These plots of the likelihood surfaces are both based on the same data, but with different grid location and resolution. The optima and model fit statistics that are reported in the output are conditional on a particular combination of these <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\sigma_y^2/2\alpha\)</span>. When the grid-search is used, these parameters are the combination which gives the highest log-likelihood; the peak of the surface in the likelihood plot. If the grid-search does not contain the true maximum likelihood, the model outputs will reflect this.</p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-4-1.png" width="288"><img src="introduction_files/figure-html/unnamed-chunk-4-2.png" width="288"></p>
+<p>These plots of the likelihood surfaces are both based on the same data, but with different grid location and resolution. The optima and model fit statistics that are reported in the output are conditional on the combination of these <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\sigma_y^2/2\alpha\)</span> that give the highest log-likelihood; in this case the peak of the surface in the likelihood plot. If the grid-search does not contain the true maximum likelihood, the model outputs will reflect this.</p>
 <p>It is also possible to use other packages to plot the grid-search likelihood surface, for a more fancy look (not run).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(plotly)
 p &lt;-<span class="st"> </span><span class="kw">plot_ly</span>(<span class="dt">x =</span> model0$supportplot$hl,
@@ -161,7 +161,7 @@ p</code></pre></div>
                      <span class="dt">response =</span> mydata$y,
                      <span class="dt">hillclimb =</span> <span class="ot">TRUE</span>)
 <span class="kw">plot</span>(model0)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-5-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-5-1.png" width="672"></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model0$oupar</code></pre></div>
 <pre><code>##                                    Estimate
 ## Rate of adaptation             9.672302e-08
@@ -173,7 +173,7 @@ p</code></pre></div>
 <div id="optima-as-a-linear-regression" class="section level2">
 <h2 class="hasAnchor">
 <a href="#optima-as-a-linear-regression" class="anchor"></a>Optima as a linear regression</h2>
-<p>Slouch can also fit continuous covariates to the model, with the optimum being a linear regression. The covariates may either be fitted as direct effects without a phylogenetic covariance structure, or as univariate Brownian motion variables. Let’s fit our toy x as a direct effect. One problem with fitting direct effect covariate models is that its residual variance-covariance matrix collapses if <span class="math inline">\(\sigma_y^2/2\alpha\)</span> reaches zero. The immediate consequence is that the residual variance-covariance matrix <span class="math inline">\(V\)</span> is non-invertible, and the program will crash. If within-species observational error is added to the model, this does not happen. In order to use the hillclimber in this scenario, it may be necessary to constrain its search space such that it does not enter zero or close to zero. The exact feasible boundary for this may depend on the scale of the response trait.</p>
+<p>Slouch can also fit the optimum as a linear regression over one or more continuous covariates. The covariates may either be fitted as direct effects without a phylogenetic covariance structure, or as univariate Brownian motion variables. Let’s fit our toy x as a direct effect covariate. One problem with fitting direct effect covariate models is that its residual variance-covariance matrix collapses if <span class="math inline">\(\sigma_y^2/2\alpha\)</span> reaches zero. The immediate consequence is that the residual variance-covariance matrix <span class="math inline">\(V\)</span> is non-invertible, and the program will crash. If within-species observational error is added to the model, this does not happen. In order to use the hillclimber in this scenario, it may be necessary to constrain its search space such that it does not enter zero or close to zero. The exact feasible boundary for this may depend on the scale of the response trait.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model1 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slouch.fit.html">slouch.fit</a></span>(<span class="dt">phy =</span> phy,
                      <span class="dt">species =</span> mydata$species,
                      <span class="dt">response =</span> mydata$y,
@@ -189,7 +189,7 @@ model1$opt.reg$coefficients</code></pre></div>
 <pre><code>##           Estimates Std. error
 ## Intercept  1.869318  1.6161664
 ## mydata$x   1.646679  0.0340688</code></pre>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-6-1.png" width="672"><img src="user-guide_files/figure-html/unnamed-chunk-6-2.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-6-1.png" width="672"><img src="introduction_files/figure-html/unnamed-chunk-6-2.png" width="672"></p>
 <p>Even though the single-optimum model showed considerable phylogenetic inertia, in this model it has completely vanished. In this case, the regression line estimated using ordinary least squares is indistinguishable from the Ornstein-Uhlenbeck optimal regression. Given that we started with random normally distributed variables without any phylogenetic correlation structure, this makes sense. It is also possible to fit a model with multiple continuous covariates, however the input to <code>fixed.cov</code> must be a matrix that has column names.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slouch.fit.html">slouch.fit</a></span>(<span class="dt">phy =</span> phy,
                      <span class="dt">species =</span> mydata$species,
@@ -198,7 +198,7 @@ model1$opt.reg$coefficients</code></pre></div>
                      <span class="dt">lower =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">0.01</span>),
                      <span class="dt">hillclimb =</span> <span class="ot">TRUE</span>)
 <span class="kw">plot</span>(model2)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
 </div>
 <div id="multiple-optima-phylo-format" class="section level2">
 <h2 class="hasAnchor">
@@ -225,7 +225,7 @@ edge_regimes &lt;-<span class="st"> </span><span class="kw">factor</span>(regime
 
 oldmar &lt;-<span class="st"> </span><span class="kw">par</span>(<span class="st">"mar"</span>); <span class="kw">par</span>(<span class="dt">mar =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>))
 <span class="kw">plot</span>(phy, <span class="dt">edge.color =</span> <span class="kw">c</span>(<span class="st">"Black"</span>, <span class="st">"#EE7600"</span>, <span class="st">"blue"</span>)[edge_regimes], <span class="dt">edge.width =</span> <span class="dv">3</span>)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-9-1.png" width="672"></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">par &lt;-<span class="st"> </span><span class="kw">par</span>(oldmar)</code></pre></div>
 <p>If it looks like are no obvious mistakes, we can go ahead and fit the slouch model.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">phy$node.label &lt;-<span class="st"> </span>internal_regimes
@@ -263,7 +263,7 @@ model4 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slou
                      <span class="dt">lower =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">0.1</span>))
 
 <span class="kw">plot</span>(model4)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-11-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-11-1.png" width="672"></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model4$opt.reg$coefficients</code></pre></div>
 <pre><code>##           Estimates Std. error
 ## A        -1.4082354  2.0118660
@@ -275,7 +275,7 @@ model4 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slou
 <div id="observational-error" class="section level2">
 <h2 class="hasAnchor">
 <a href="#observational-error" class="anchor"></a>Observational error</h2>
-<p>The variables that we study are seldom estimated without error. Slouch can incorporate this by specifying the within-species estimation variances. For example, if <span class="math inline">\(X\)</span> is the mean body mass for each species, the statistic for the measurement error argument would be the variance of the mean for each species.</p>
+<p>The variables that we study are seldom estimated without error. Slouch can incorporate this by specifying the within-species estimation variances. For example, if <span class="math inline">\(X\)</span> is the mean body mass for each species, the statistic for the measurement error argument would be the variance of the mean body mass for each species.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">phy$node.label &lt;-<span class="st"> </span>internal_regimes
 
 model5 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slouch.fit.html">slouch.fit</a></span>(<span class="dt">phy =</span> phy,
@@ -292,7 +292,7 @@ model5 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/slou
                      <span class="dt">lower =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">0.1</span>))
 
 <span class="kw">plot</span>(model5)</code></pre></div>
-<p><img src="user-guide_files/figure-html/unnamed-chunk-12-1.png" width="672"></p>
+<p><img src="introduction_files/figure-html/unnamed-chunk-12-1.png" width="672"></p>
 <p>The generalized least squares (GLS) estimator will calculate a more shallow regression line when measurement error is incorporated. A bias-correction for these regression coefficients is implemented, but keep in mind all of the reported model fit statistics are conditional on the <em>naive</em> optimal regression. See Hansen &amp; Bartoszek (2012) for further reading.</p>
 </div>
 <div class="footnotes">
