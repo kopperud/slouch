@@ -141,7 +141,7 @@ regimeplot.slouch <- function(x, ...){
 #' @param x an object of class 'slouch'
 #' @param ... additional parameters
 #'
-#' @return
+#' @return nothing
 #' @export
 regimeplot <- function(x, ...){
   UseMethod("regimeplot")

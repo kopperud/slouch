@@ -11,30 +11,29 @@ pseudoinverse <-
   }
 
 ## Design matrix
-slouch.modelmatrix <- function(a, hl, tree, pars, control, seed, is.opt.reg = TRUE){
-  list2env(tree, envir = environment())
-  list2env(pars, envir = environment())
-  list2env(control, envir = environment())
-  
-  list2env(seed, envir = environment())
+slouch.modelmatrix <- function(a, hl, tree, pars, control, is.opt.reg = TRUE){
+
   
   n <- length(tree$phy$tip.label)
   
   if(is.opt.reg == TRUE){
-    rho <- (1-(1-exp(-a*T.term))/(a*T.term))
+    rho <- (1 - (1 - exp(-a * tree$T.term))/(a * tree$T.term))
   }else{
     rho <- 1
   }
   
-  if(!is.null(fixed.cov) | !is.null(random.cov)){
-    covariates <- matrix(cbind(fixed.cov, rho*random.cov), nrow = n, dimnames = list(NULL, c(names.fixed.cov, names.random.cov)))
+  if(!is.null(pars$fixed.cov) | !is.null(pars$random.cov)){
+    covariates <- matrix(cbind(pars$fixed.cov, rho * pars$random.cov), 
+                         nrow = n, 
+                         dimnames = list(NULL, c(pars$names.fixed.cov, 
+                                                 pars$names.random.cov)))
   }else{
     covariates <- NULL
   }
 
-  if(estimate.bXa){
+  if(control$estimate.bXa){
     if (!is.null(pars$random.cov) | !is.null(pars$fixed.cov)){
-      bXa <- c(bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)))
+      bXa <- c(bXa = 1 - exp(-a * tree$T.term) - (1 - (1 - exp(-a * tree$T.term))/(a * tree$T.term)))
     }else{
       stop("bXa can not be estimated without continuous covariates.")
     }
@@ -42,16 +41,16 @@ slouch.modelmatrix <- function(a, hl, tree, pars, control, seed, is.opt.reg = TR
     bXa <- NULL
   }
   
-  if(!is.null(fixed.fact)){
-    w_regimes <- weight.matrix(tree$phy, a, lineages)
+  if(!is.null(pars$fixed.fact)){
+    w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
     X <- cbind(w_regimes, bXa, covariates)
   }else{
     if(!control$estimate.Ya){
       K <- cbind(Intercept = rep(1, length(tree$phy$tip.label)), 
                  bXa)
     }else{
-      K <- cbind(Ya = exp(-a*T.term),
-                 b0 = 1-exp(-a*T.term),
+      K <- cbind(Ya = exp(-a * tree$T.term),
+                 b0 = 1-exp(-a * tree$T.term),
                  bXa)
     }
     X <- cbind(K, covariates)
@@ -59,22 +58,7 @@ slouch.modelmatrix <- function(a, hl, tree, pars, control, seed, is.opt.reg = TR
   return(X)
 }
 
-# Part "two" of variance-covariance matrix, hansen et al. 2008.
-# It looks a little cryptic since it was vectorized from a nested for-loop
-# Still is a bottleneck in performance. 01 sept 2016. Consider rewrite in Rcpp ?
-calc.cm2 <- function(a, T.term, n, tia, tja, ta){
-  ti <- matrix(rep(T.term, n), nrow=n)
-  #tj <- t(ti)
-  term0 <- exp(-a * tja) * (1 - exp(-a * ti)) / (a * ti)
-  term2 <- (1 - exp(-a * ti))/(a * ti)
-  num.prob <- ifelse(ta == 0, 1, (1 - exp(-a * ta)) / (a * ta))
-
-  # res_old <- ((1-exp(-a*ti))/(a*ti))*(t((1-exp(-a*ti))/(a*ti))) -
-  #   (exp(-a*tja)*(1-exp(-a*ti))/(a*ti) + t(exp(-a*tja)*(1-exp(-a*ti))/(a*ti)))*num.prob
-  return(term2 * t(term2) - num.prob * (term0 + t(term0)))
-}
-
-varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, ta, tij, me.response){
+varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response){
   
   ## Piece together V
   if (hl == 0){
@@ -82,7 +66,14 @@ varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
   }else{
     if (!is.null(random.cov)){
       s1 <- sum(sigma_squared %*% ((beta1[which.random.cov, ])^2))
-      Vt <- (s1 / (2 * a) + vy) * (1 - exp( -2 * a * ta)) * exp(-a * tij) + (s1 * ta * cm2)
+      
+      ti <- matrix(rep(T.term, n), nrow=length(phy$tip.label))
+      
+      term0 <- (s1 / (2 * a) + vy) * (1 - exp( -2 * a * ta)) * exp(-a * tij)
+      term1 <- (1 - exp(-a * ti))/(a * ti)
+      term2 <- exp(-a * tja) * (1 - exp(-a * ti)) / (a * ti)
+      
+      Vt <- term0 + s1*(ta * term1 * t(term1) - ((1 - exp(-a * ta))/a) * (term2 + t(term2)))
     }else{
       Vt <- vy * (1 - exp(-2 * a * ta)) * exp(-a * tij)
     }
@@ -90,42 +81,34 @@ varcov_model <- function(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.co
   return(Vt)
 }
 
-varcov_measurement <- function(tree, pars, control, seed, beta1, hl, a, which.fixed.cov, which.random.cov){
-  list2env(tree, envir = environment())
-  list2env(pars, envir = environment())
-  list2env(control, envir = environment())
+varcov_measurement <- function(pars, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov){
+
+
+  rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
   
-  list2env(seed, envir = environment())
-  
-  if (hl == 0 | is.null(random.cov)){
-    rho2 <- 1
-  }   else {
-    rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
-  }
-  
-  if(!is.null(fixed.cov) | !is.null(random.cov)){
+  if(length(which.fixed.cov) > 0 | length(which.random.cov) > 0){
     ## Update measurement error in X.
     ## Measurement error in predictor - take 2]
     beta2_Vu_given_x_list <-  mapply(function(Vu_given_xi, b, rho_squared) {Vu_given_xi * b^2 * rho_squared} , 
-                                     Vu_given_xi = Vu_given_x, 
+                                     Vu_given_xi = seed$Vu_given_x, 
                                      b = beta1[c(which.fixed.cov, which.random.cov),], 
                                      rho_squared = c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
-                                       lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
+                                                     lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
                                      SIMPLIFY = FALSE)
     beta2_Vu_given_x <- Reduce("+", beta2_Vu_given_x_list)
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-    if(sum(mecov.random.cov) == 0){
+    if(sum(pars$mecov.random.cov) == 0){
       mcov <- 0
     }else{
-      mcov <- diag(rowSums(matrix(data=as.numeric(mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(random.cov))))
+      mcov <- diag(rowSums(matrix(data=as.numeric(pars$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(pars$random.cov))))
     }
     
-    if(sum(mecov.fixed.cov) == 0){
+    if(sum(pars$mecov.fixed.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(fixed.cov))))
+      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(pars$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(pars$fixed.cov))))
     }
   }else{
     beta2_Vu_given_x <- 0
@@ -133,7 +116,7 @@ varcov_measurement <- function(tree, pars, control, seed, beta1, hl, a, which.fi
     mcov.fixed <- 0
   }
   
-  V_me <- na.exclude(me.response) + beta2_Vu_given_x - mcov - mcov.fixed
+  V_me <- na.exclude(pars$me.response) + beta2_Vu_given_x - mcov - mcov.fixed
   return(V_me)
 }
 
@@ -150,16 +133,14 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
   }else{
     a <- log(2)/hl
-    if (!is.null(random.cov)){
-      cm2 <- calc.cm2(a, T.term, n, tia, tja, ta)
-    }else cm2 <- NULL
   }
+  
   if (verbose){
     cat(as.numeric(round(cbind(hl, vy), 4)))
     cat(" ")
   }
   
-  X <- slouch.modelmatrix(a, hl, tree, pars, control, seed, is.opt.reg = TRUE)
+  X <- slouch.modelmatrix(a, hl, tree, pars, control, is.opt.reg = TRUE)
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
   beta1 <- matrix(lm.fit(X, Y)$coefficients, ncol=1)
@@ -171,8 +152,8 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
 
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, vy, a, cm2, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, ta, tij, me.response)
-    V_me <- varcov_measurement(tree, pars, control, seed, beta1, hl, a, which.fixed.cov, which.random.cov)
+    Vt <- varcov_model(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response)
+    V_me <- varcov_measurement(pars, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov)
     V <- Vt + V_me
 
     # Note: Calculation of regression coefficients deviates from paper notation, but should be algebraically 
@@ -240,7 +221,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     
     ## Evolutionary regression
     if(!is.null(random.cov)){
-      X.ev <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, seed, is.opt.reg = FALSE)
+      X.ev <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
       ev.reg <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 

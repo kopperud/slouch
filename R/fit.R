@@ -181,10 +181,8 @@ slouch.fit<-function(phy,
                me.response = me.response,
                fixed.fact = fixed.fact,
                fixed.cov = fixed.cov,
-               me.fixed.cov = me.fixed.cov,
                mecov.fixed.cov = mecov.fixed.cov,
                random.cov = random.cov,
-               me.random.cov = me.random.cov,
                mecov.random.cov = mecov.random.cov,
                Y = Y,
                names.fixed.cov = names.fixed.cov,
@@ -198,7 +196,7 @@ slouch.fit<-function(phy,
   
   
   seed <- seed(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov)
-  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, seed, is.opt.reg = TRUE))
+  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, is.opt.reg = TRUE))
   
   ## Uniform random start values for hl and vy, in case hillclimber is used
   if (is.null(hl_values)){

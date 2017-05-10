@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{an object of class 'slouch'}
 
-\item{...}{additional parameters}
+\item{...}{additional parameters passed to plot.phylo(...)}
 }
 \value{
 nothing
