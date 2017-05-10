@@ -117,17 +117,23 @@ logLik.slouch <- function(object, ...){
 #' Plot the internal regimes for a given fitted model
 #'
 #' @param x an object of class 'slouch'
-#' @param ... additional parameters
+#' @param ... additional parameters passed to plot.phylo(...)
 #'
 #' @return nothing
 #' @export
 regimeplot.slouch <- function(x, ...){
   stopifnot(!is.null(x$fixed.fact))
   
-  regimes <- c(x$fixed.fact, x$tree$phy$node.label)
+  regimes <- concat.factor(x$fixed.fact, x$tree$phy$node.label)
   regimes_edges <- regimes[x$tree$phy$edge[,2]]
   
-  plot(x$tree$phy, edge.col = factor(regimes_edges))
+  plot.phylo(x$tree$phy, edge.col = factor(regimes_edges), ...)
+  
+  p <- palette()
+  print("Colors:")
+  for (e in seq_along(levels(regimes))){
+    print(paste0(levels(regimes)[e], ": ", p[e]))
+  }
 }
 
 #' Title
