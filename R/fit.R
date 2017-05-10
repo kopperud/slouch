@@ -59,7 +59,7 @@ slouch.fit<-function(phy,
   
   ## Checks, defensive conditions
   #stopifnot(intercept == "root" | is.null(intercept))
-  stopifnot(is.rooted(phy))
+  stopifnot(ape::is.rooted(phy))
   stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
   if((is.null(hl_values) | is.null(vy_values)) & !hillclimb){
     stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
@@ -96,8 +96,8 @@ slouch.fit<-function(phy,
     regimes <- lineages <- NULL
   }
   
-  mrca1 <- mrca(phy)
-  times <- node.depth.edgelength(phy)
+  mrca1 <- ape::mrca(phy)
+  times <- ape::node.depth.edgelength(phy)
   ta <- matrix(times[mrca1], nrow=n, dimnames = list(phy$tip.label, phy$tip.label))
   T.term <- times[1:n]
   tia <- times[1:n] - ta
@@ -200,10 +200,10 @@ slouch.fit<-function(phy,
   
   ## Uniform random start values for hl and vy, in case hillclimber is used
   if (is.null(hl_values)){
-    hl_values <- runif(1, 0, max(times))
+    hl_values <- stats::runif(1, 0, max(times))
   }
   if (is.null(vy_values)){
-    vy_values <- runif(1, 0, var(response))
+    vy_values <- stats::runif(1, 0, stats::var(response))
   }
   
   if(verbose){
@@ -221,10 +221,10 @@ slouch.fit<-function(phy,
     }
     if(.Platform$OS.type == "unix"){
       list_hl_vy <- lapply(seq_len(nrow(vector_hl_vy)), function(e) vector_hl_vy[e,])
-      grid_support <- mclapply(list_hl_vy, 
-                               function(e) reg(e, tree, pars, control, seed),
-                               mc.cleanup = TRUE,
-                               mc.cores = nCores)
+      grid_support <- parallel::mclapply(list_hl_vy, 
+                                         function(e) reg(e, tree, pars, control, seed),
+                                         mc.cleanup = TRUE,
+                                         mc.cores = nCores)
     }else{
       cl <- parallel::makeCluster(getOption("cl.cores", nCores))
       parallel::setDefaultCluster(cl)
@@ -237,7 +237,7 @@ slouch.fit<-function(phy,
   }
   
   sup2_grid <- sapply(grid_support, function(e) e$support)
-  ml_grid <- max(na.exclude(sup2_grid))
+  ml_grid <- max(stats::na.exclude(sup2_grid))
   
   if(hillclimb){
     if(verbose){
@@ -253,7 +253,7 @@ slouch.fit<-function(phy,
     if(is.null(hillclimb_start)){
       hillclimb_start <- vector_hl_vy[which.max(sup2_grid),]
     }
-    hl_vy_est <- optim(
+    hl_vy_est <- stats::optim(
       par = hillclimb_start,
       fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, pars, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,

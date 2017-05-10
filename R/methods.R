@@ -127,9 +127,9 @@ regimeplot.slouch <- function(x, ...){
   regimes <- concat.factor(x$fixed.fact, x$tree$phy$node.label)
   regimes_edges <- regimes[x$tree$phy$edge[,2]]
   
-  plot.phylo(x$tree$phy, edge.col = factor(regimes_edges), ...)
+  ape::plot.phylo(x$tree$phy, edge.col = factor(regimes_edges), ...)
   
-  p <- palette()
+  p <- grDevices::palette()
   print("Colors:")
   for (e in seq_along(levels(regimes))){
     print(paste0(levels(regimes)[e], ": ", p[e]))

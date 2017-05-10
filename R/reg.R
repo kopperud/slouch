@@ -58,17 +58,22 @@ slouch.modelmatrix <- function(a, hl, tree, pars, control, is.opt.reg = TRUE){
   return(X)
 }
 
-varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response){
+#varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response){
+varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, tree, pars, seed){
+
+  tij <- tree$tij
+  tja <- tree$tja
+  ta <- tree$ta
+  n <- length(tree$phy$tip.label)
   
   ## Piece together V
   if (hl == 0){
     Vt <- diag(rep(vy, times = n))
   }else{
-    if (!is.null(random.cov)){
-      s1 <- sum(sigma_squared %*% ((beta1[which.random.cov, ])^2))
-      
-      ti <- matrix(rep(T.term, n), nrow=length(phy$tip.label))
-      
+    if (!is.null(pars$random.cov)){
+      s1 <- sum(seed$sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      ti <- matrix(rep(tree$T.term, n), nrow=length(tree$phy$tip.label))
+
       term0 <- (s1 / (2 * a) + vy) * (1 - exp( -2 * a * ta)) * exp(-a * tij)
       term1 <- (1 - exp(-a * ti))/(a * ti)
       term2 <- exp(-a * tja) * (1 - exp(-a * ti)) / (a * ti)
@@ -116,17 +121,16 @@ varcov_measurement <- function(pars, seed, beta1, hl, a, T.term, which.fixed.cov
     mcov.fixed <- 0
   }
   
-  V_me <- na.exclude(pars$me.response) + beta2_Vu_given_x - mcov - mcov.fixed
+  V_me <- pars$me.response + beta2_Vu_given_x - mcov - mcov.fixed
   return(V_me)
 }
 
 reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
-  list2env(tree, envir = environment())
-  list2env(pars, envir = environment())
-  list2env(control, envir = environment())
-  list2env(seed, envir = environment())
+  Y <- pars$Y
   
-  hl <- hl_vy[1]; vy <- hl_vy[2]
+  hl <- hl_vy[1]
+  vy <- hl_vy[2]
+  
   n <- length(tree$phy$tip.label)
   
   if(hl == 0){
@@ -135,7 +139,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     a <- log(2)/hl
   }
   
-  if (verbose){
+  if (control$verbose){
     cat(as.numeric(round(cbind(hl, vy), 4)))
     cat(" ")
   }
@@ -143,17 +147,17 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   X <- slouch.modelmatrix(a, hl, tree, pars, control, is.opt.reg = TRUE)
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
-  beta1 <- matrix(lm.fit(X, Y)$coefficients, ncol=1)
-  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(names.fixed.cov) - length(names.random.cov)),
-                        rep("Instantaneous cov", length(names.fixed.cov)),
-                        rep("Random cov", length(names.random.cov)))
+  beta1 <- matrix(stats::lm.fit(X, Y)$coefficients, ncol=1)
+  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(pars$names.fixed.cov) - length(pars$names.random.cov)),
+                        rep("Instantaneous cov", length(pars$names.fixed.cov)),
+                        rep("Random cov", length(pars$names.random.cov)))
   which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
   which.random.cov <- which(beta1.descriptor == "Random cov")
 
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response)
-    V_me <- varcov_measurement(pars, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov)
+    Vt <- varcov_model(hl, vy, a, beta1, which.fixed.cov, which.random.cov, tree, pars, seed)
+    V_me <- varcov_measurement(pars, seed, beta1, hl, a, tree$T.term, which.fixed.cov, which.random.cov)
     V <- Vt + V_me
 
     # Note: Calculation of regression coefficients deviates from paper notation, but should be algebraically 
@@ -183,7 +187,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       
     ## Check for convergence
     con.count <- con.count + 1
-    if(all(abs(beta1[!is.na(beta1)] - beta.i[!is.na(beta.i)]) < convergence)) {
+    if(all(abs(beta1[!is.na(beta1)] - beta.i[!is.na(beta.i)]) < control$convergence)) {
       beta1<-beta.i
       break
     }else{
@@ -201,7 +205,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   
   ## Log-likelihood
   sup1 <- - n/2*log(2*pi) - 0.5*log.det.V - 0.5*crossprod(fit$residuals)
-  if(verbose){
+  if(control$verbose){
     cat(as.numeric(round(cbind(sup1, t(beta1)), 4)))
     cat("\n")
   }
@@ -220,7 +224,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
 
     
     ## Evolutionary regression
-    if(!is.null(random.cov)){
+    if(!is.null(pars$random.cov)){
       X.ev <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, is.opt.reg = FALSE)
       ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
       ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
@@ -239,7 +243,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
                                           nrow=ncol(X), 
                                           dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                     residuals = Y - (X %*% beta1)),
-                 if (!is.null(fixed.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
+                 if (!is.null(pars$fixed.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))

@@ -19,7 +19,7 @@ lineage.constructor <- function(phy, e, regimes){
   names(which.regimes) <- levels(regimes)
   
   return(list(nodes = nodes, 
-              nodes_time = node.depth.edgelength(phy)[nodes],
+              nodes_time = ape::node.depth.edgelength(phy)[nodes],
               which.regimes = which.regimes))
 }
 

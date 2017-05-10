@@ -33,7 +33,7 @@ seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
     for (i in 1:ncol(fixed.cov))
     {
       Vu_fixed[[i]] <- diag(me.fixed.cov[,i])
-      Vd_fixed[[i]] <- diag(rep(var(fixed.cov[,i]), n)) - Vu_fixed[[i]]
+      Vd_fixed[[i]] <- diag(rep(stats::var(fixed.cov[,i]), n)) - Vu_fixed[[i]]
       if(any(Vd_fixed[[i]] < 0)){
         Vd_fixed[[i]][Vd_fixed[[i]] < 0] <- 0
         warning("Vd contains negative variances, scaled up to 0. Does one or more predictor variables have a larger within-species measurement error than their among-species trait variance?")

@@ -11,6 +11,9 @@ regimeplot(x, ...)
 
 \item{...}{additional parameters}
 }
+\value{
+nothing
+}
 \description{
 Title
 }
