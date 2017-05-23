@@ -243,7 +243,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
                                           nrow=ncol(X), 
                                           dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                     residuals = Y - (X %*% beta1)),
-                 if (!is.null(pars$fixed.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
+                 if (!is.null(pars$fixed.cov) | !is.null(pars$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))
