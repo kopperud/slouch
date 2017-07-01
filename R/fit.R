@@ -67,10 +67,11 @@ slouch.fit<-function(phy,
   
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
-    me.response<-diag(rep(0, times= length(response)))
-  }else{
-    me.response<-diag(me.response)
+    me.response <- rep(0, times= length(response))
   }
+  # else{
+  #   me.response <- diag(me.response)
+  # }
   
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
   
@@ -186,7 +187,8 @@ slouch.fit<-function(phy,
                mecov.random.cov = mecov.random.cov,
                Y = Y,
                names.fixed.cov = names.fixed.cov,
-               names.random.cov = names.random.cov)
+               names.random.cov = names.random.cov,
+               closures = list(V_fixed_partial = memoise::memoise(function(a) (1 - exp(-2 * a * ta)) * exp(-a * tij))))
   
   control <- list(verbose = verbose,
                   estimate.Ya = estimate.Ya,

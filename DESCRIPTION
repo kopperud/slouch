@@ -19,7 +19,8 @@ Imports:
   parallel,
   methods,
   ape,
-  Rcpp
+  Rcpp,
+  memoise
 Suggests:
     knitr,
     rmarkdown,

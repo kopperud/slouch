@@ -63,7 +63,7 @@ seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
     Vx <- list()
     for (i in 1:length(Vd)){
       Vx[[i]] <- Vd[[i]] + Vu[[i]]
-      Vu_given_x[[i]] <- Vu[[i]] - (Vu[[i]] %*% solve(Vx[[i]]) %*% Vu[[i]])
+      Vu_given_x[[i]] <- diag(Vu[[i]] - (Vu[[i]] %*% solve(Vx[[i]]) %*% Vu[[i]])) ## Turn diagonal matrix into vector
     }
   }else{
     Vu_given_x = NULL

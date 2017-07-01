@@ -1,8 +1,7 @@
 ---
 title: "Slouch introduction"
 author: "Bjørn Tore Kopperud"
-date: "`r Sys.Date()`"
-fontsize: 12pt
+date: '`r Sys.Date()`'
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -17,6 +16,8 @@ Slouch is an implementation of a particular phylogenetic comparative method. It 
 - Hansen *et al.* (2008)^[Hansen, T. F., Pienaar, J., & Orzack, S. H. (2008). A comparative method for studying adaptation to a randomly evolving environment. Evolution, 62(8), 1965–1977. https://doi.org/10.1111/j.1558-5646.2008.00412.x]
 - Labra *et al.* (2009)^[Labra, A., Pienaar, J., & Hansen, T. F. (2009). Evolution of Thermal Physiology in Liolaemus Lizards: Adaptation, Phylogenetic Inertia, and Niche Tracking. The American Naturalist, 174(2), 204–220. https://doi.org/10.1086/600088]
 - Hansen & Bartoszek (2012)^[Hansen, T. F., & Bartoszek, K. (2012). Interpreting the evolutionary regression: The interplay between observational and biological errors in phylogenetic comparative studies. Systematic Biology, 61(3), 413–425. https://doi.org/10.1093/sysbio/syr122]
+
+\pagebreak
 
 ## Prerequisites
 
@@ -62,9 +63,9 @@ mydata$species == phy$tip.label
 
 ## Single optimum model
 
-Now we are ready to fit the first models, for which we will use the function `slouch.fit`. The following is an intercept only model, or a single optimum model. In `slouch`, there are two main techniques for estimating the most likely $\alpha$ and $\sigma_y^2$ parameters. In this particular implementation the $\sigma_y^2$ is reparameterized as $\sigma_y^2/2\alpha$, which is the variance of the predictor variable when it is stationary around the optimum. The first way is to use a grid-search of likely parameters from user input, which may take some trial and error.
+Now we are ready to fit the first models, for which we will use the function `slouch.fit`. The following is an intercept only model, or a single optimum model. In `slouch`, there are two main techniques for estimating the most likely $\alpha$ and $\sigma_y^2$ parameters. In this particular implementation the $\sigma_y^2$ is reparameterized as $\sigma_y^2/2\alpha$, which is the variance of the predictor variable when it is stationary around the optimum. The $\alpha$ is reparameterized as the $t_{1/2} = log(2)/\alpha$, which is the phylogenetic half-life. The first way is to use a grid-search of likely parameters from user input, which may take some trial and error.
 
-```{r, fig.show='hold', fig.width=3, fig.height=3}
+```{r, fig.show='hold', fig.width=3, fig.height=3, fig.cap = "Log likelihood surface for the OU model"}
 library(slouch)
 model0 <- slouch.fit(phy = phy,
                      hl_values = seq(0, 50, length.out = 10),
@@ -98,7 +99,7 @@ p <- plot_ly(x = model0$supportplot$hl,
 p
 ```
 
-Another, perhaps more convenient way of estimating parameters is to use the hillclimber function. On default it will start on a random combination of $\alpha$ and $\sigma_y^2/2\alpha$, but this may also be specified. While the hillclimber might seem both faster and more accurate at first glance, there are some drawbacks. If the likelihood search space has one or more local maxima, the hillclimber may converge at a sub-optimal location and give parameter estimates which are not truly maximum likelihood estimates.
+Another, perhaps more convenient way of estimating parameters is to use the hillclimber function. On default it will start on a random combination of $\alpha$ and $\sigma_y^2/2\alpha$, but this may also be specified. While the hillclimber might seem both faster and more accurate at first glance, there are some drawbacks. If the likelihood search space has one or more local maxima, the hillclimber may converge at a sub-optimal location and give parameter estimates that are not truly maximum likelihood estimates.
 
 ```{r}
 model0 <- slouch.fit(phy = phy,
@@ -109,13 +110,14 @@ plot(model0)
 model0$oupar
 ```
 
-In this case, the ML estimate of the phylogenetic half-life $t_{1/2} = log(2)/\alpha$ was very large. The units of the phylogenetic half-life are the same units as the branch lengths in the phylogenetic tree, `phy$edge.length`. The total depth, or distance from the root, can for all nodes be calculated with `node.depth.edgelength(phy)`. In this case the maximum depth is about 6.65. Given that the estimated half-life $t_{1/2}$ was many times larger than the total length of the phylogeny, and that $\alpha$ is very close to zero, we can say that there is next to no strength of pull toward the optimum. If there is no such pull, the model collapses to a Brownian motion.
+In this case, the ML estimate of the phylogenetic half-life $t_{1/2} = log(2)/\alpha$ was very large. The units of the phylogenetic half-life are the same units as the branch lengths in the phylogenetic tree, `phy$edge.length`. The total depth, or distance from the root, can for all nodes be calculated with `node.depth.edgelength(phy)`. In this case the maximum depth is about 6.65, in arbitrary units since the tree was simulated. Given that the estimated half-life $t_{1/2}$ was many times larger than the total length of the phylogeny, and that $\alpha$ is very close to zero, we can say that there is next to no strength of attraction toward the optimum. If there is no such pull, the model collapses to a Brownian motion.
 
 ## Optima as a linear regression
 
 Slouch can also fit the optimum as a linear regression over one or more continuous covariates. The covariates may either be fitted as direct effects without a phylogenetic covariance structure, or as univariate Brownian motion variables. Let's fit our toy x as a direct effect covariate. One problem with fitting direct effect covariate models is that its residual variance-covariance matrix collapses if $\sigma_y^2/2\alpha$ reaches zero. The immediate consequence is that the residual variance-covariance matrix $V$ is non-invertible, and the program will crash. If within-species observational error is added to the model, this does not happen. In order to use the hillclimber in this scenario, it may be necessary to constrain its search space such that it does not enter zero or close to zero. The exact feasible boundary for this may depend on the scale of the response trait.
 
 ```{r, fig.show='hold'}
+par(mfrow = c(1,2))
 model1 <- slouch.fit(phy = phy,
                      species = mydata$species,
                      response = mydata$y,
@@ -151,19 +153,21 @@ categories <- c("A", "B", "C")
 mydata$category <- sample(categories, n, replace = TRUE)
 ```
 
-Next, we need to specify the adaptive regime for each internal node in the tree. Trees in the`phylo` format are represented by the edges found in `phy$edge`, where each edge connects two vertices or nodes. All of the tip nodes have indices starting from 1, 2, 3, 4 ... until $n_{tips}$, in this case 80. The root node has index $n_{tips}$+1, here 81, and the rest of the internal nodes have indices ($n_{tips}$+2, $n_{tips}$+3, $n_{tips}$+4, ..., $n_{nodes}$). When running this type of model in slouch, you will need to specify the internal adaptive regimes in the order of node indices ($n_{tips}$+1, $n_{tips}$+2, $n_{tips}$+3, $n_{tips}$+4, ..., $n_{nodes}$).
+Next, we need to specify the adaptive regime for each internal node in the tree. Trees in the `phylo` format are represented by the edges found in `phy$edge`, where each edge connects two vertices or nodes. All of the tip nodes have indices starting from 1, 2, 3, 4 ... until $n_{tips}$, in this case 80. The root node has index $n_{tips}$+1, here 81, and the rest of the internal nodes have indices ($n_{tips}$+2, $n_{tips}$+3, $n_{tips}$+4, ..., $n_{nodes}$). When running this type of model in slouch, you will need to specify the internal adaptive regimes in the order of node indices ($n_{tips}$+1, $n_{tips}$+2, $n_{tips}$+3, $n_{tips}$+4, ..., $n_{nodes}$).
 
 The adaptive regimes are part of an a priori hypothesis of the trait evolution. Here we will reconstruct the ancestral states using `ape`. In order to plot and visually verify that the reconstruction is sensible, we need to have all the regimes in the order of the **edges**, not the nodes.
 
 ```{r, fig.width=7}
 library(ape)
-reconstruction <- ace(mydata$category, phy, type = "d")
+
+## Reconstruct ancestral regimes
+recon <- ace(mydata$category, phy, type = "d")
 
 ## Extract the most likely regime for each internal node
 ## These have order n+1, n+2, n+3 ...
-internal_regimes <- apply(reconstruction$lik.anc, 
+internal_regimes <- apply(recon$lik.anc, 
                           1, 
-                          function(e) colnames(reconstruction$lik.anc)[which.max(e)])
+                          function(e) colnames(recon$lik.anc)[which.max(e)])
 
 ## Concatenate tip and internal regimes. These will have order 1,2,3,4, ...
 regimes <- c(mydata$category, internal_regimes)
@@ -194,7 +198,7 @@ model3$opt.reg$coefficients
 
 ## Randomly evolving environment
 
-Slouch can also fit models with continuous covariates that themselves have a phylogenetic covariance structure. Currently the only option is to model them as univariate Brownian motions. If $\alpha > 0$, the optimal regression and the evolutionary regression will differ. Here, both the grid-search and the hillclimber routine are used to find the ML estimates for $\alpha$ and $\frac{\sigma_y^2}{2\alpha}$. 
+Slouch can also fit models with continuous covariates that themselves have a phylogenetic covariance structure. Currently the only option is to model them as univariate Brownian motions. If $\alpha > 0$, the optimal regression and the evolutionary regression will differ. Here, both the grid-search and the hillclimber routine are used to find the ML estimates for $\alpha$ and $\sigma_y^2/2\alpha$. 
 
 ```{r, fig.width = 7}
 phy$node.label <- internal_regimes

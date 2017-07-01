@@ -80,7 +80,8 @@ varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, tr
       
       Vt <- term0 + s1*(ta * term1 * t(term1) - ((1 - exp(-a * ta))/a) * (term2 + t(term2)))
     }else{
-      Vt <- vy * (1 - exp(-2 * a * ta)) * exp(-a * tij)
+      #Vt <- vy * (1 - exp(-2 * a * ta)) * exp(-a * tij)
+      Vt <- vy * pars$closures$V_fixed_partial(a)
     }
   }
   return(Vt)
@@ -107,13 +108,13 @@ varcov_measurement <- function(pars, seed, beta1, hl, a, T.term, which.fixed.cov
     if(sum(pars$mecov.random.cov) == 0){
       mcov <- 0
     }else{
-      mcov <- diag(rowSums(matrix(data=as.numeric(pars$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(pars$random.cov))))
+      mcov <- rowSums(matrix(data=as.numeric(pars$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(pars$random.cov)))
     }
     
     if(sum(pars$mecov.fixed.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- diag(rowSums(matrix(data=as.numeric(pars$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(pars$fixed.cov))))
+      mcov.fixed <- rowSums(matrix(data=as.numeric(pars$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(pars$fixed.cov)))
     }
   }else{
     beta2_Vu_given_x <- 0
@@ -145,6 +146,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   }
   
   X <- slouch.modelmatrix(a, hl, tree, pars, control, is.opt.reg = TRUE)
+  
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
   beta1 <- matrix(stats::lm.fit(X, Y)$coefficients, ncol=1)
@@ -154,11 +156,14 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
   which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
   which.random.cov <- which(beta1.descriptor == "Random cov")
 
+  
   con.count <- 0
   repeat{
     Vt <- varcov_model(hl, vy, a, beta1, which.fixed.cov, which.random.cov, tree, pars, seed)
     V_me <- varcov_measurement(pars, seed, beta1, hl, a, tree$T.term, which.fixed.cov, which.random.cov)
-    V <- Vt + V_me
+    V <- Vt + diag(V_me)
+    
+    L <- t(chol(V))
 
     # Note: Calculation of regression coefficients deviates from paper notation, but should be algebraically 
     # equivalent. This is done for an increase in computational speed, convenience of diagnosing problems
@@ -170,7 +175,6 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     # With this method, the program will not crash even if X is singular. In this case, R's lm.fit() does not throw
     # error, but return coefficients that contain "NA", and subsequently the log-likelihood is evaluated as "NA".
 
-    L <- t(chol(V))
     fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
                   matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
     beta.i <- matrix(fit$coefficients, ncol=1)
@@ -200,6 +204,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       }
     }
   }
+
   
   log.det.V = 2*sum(log(diag(L))) ## Special case for positive definite matrix V, more numerically stable than (log*det(V)) routine for large V
   
@@ -209,6 +214,7 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
     cat(as.numeric(round(cbind(sup1, t(beta1)), 4)))
     cat("\n")
   }
+  
   
   if(gridsearch){
     return(list(support = sup1,
