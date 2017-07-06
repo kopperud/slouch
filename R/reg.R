@@ -246,9 +246,10 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
       ev.reg <- NULL
     }
     opt.reg <- c(list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
-                                          nrow=ncol(X), 
-                                          dimnames = list(colnames(X), c("Estimates", "Std. error"))),
-                    residuals = Y - (X %*% beta1)),
+                                            nrow=ncol(X), 
+                                            dimnames = list(colnames(X), c("Estimates", "Std. error"))),
+                      X = X,
+                      residuals = Y - (X %*% beta1)),
                  if (!is.null(pars$fixed.cov) | !is.null(pars$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
