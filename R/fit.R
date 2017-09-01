@@ -5,7 +5,7 @@
 #' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
 #' @param response a numeric vector of a trait to be treated as response variable
-#' @param me.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.
+#' @param me.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species squared standard error of the mean.
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
 #' @param fixed.cov Direct effect independent variables
 #' @param me.fixed.cov Observational variances for direct effect independent variables. Must be the same shape as fixed.cov
@@ -13,15 +13,15 @@
 #' @param random.cov Independent variables each modeled as a brownian motion
 #' @param me.random.cov Observational variances for the brownian covariates. Must be the same shape as random.cov
 #' @param mecov.random.cov .
-#' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
-#' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
+#' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
+#' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
 #' @param nCores number of CPU cores used in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. If performance is critical it is recommended to compile and link R to a multithreaded BLAS, since most of the heavy computations are common matrix operations. Even if a singlethreaded BLAS is used, this may or may not improve performance, and performance may vary with OS.
 #' @param hillclimb logical, whether to use hillclimb parameter estimation routine or not. This routine (L-BFGS-B from optim()) may be combined with the grid-search, in which case it will on default start on the sigma and halflife for the local ML found by the grid-search.
 #' @param hillclimb_start numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts.
 #' @param lower lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.
-#' @param upper upper bounds for the optimization routine, defaults to positive infinite.
+#' @param upper upper bounds for the optimization routine, defaults to c(Inf, Inf).
 #' @param verbose a logical value indicating whether to print a summary in each iteration of parameter search. May be useful when diagnosing unexpected behaviour or crashes.
 #'
 #' @return An object of class 'slouch'

@@ -23,7 +23,7 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{response}{a numeric vector of a trait to be treated as response variable}
 
-\item{me.response}{numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species SE of the mean.}
+\item{me.response}{numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species squared standard error of the mean.}
 
 \item{fixed.fact}{factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...}
 
@@ -39,9 +39,9 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{mecov.random.cov}{.}
 
-\item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*T.term) and b0 = 1-exp(-a*T.term). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
+\item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 
-\item{estimate.bXa}{a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*T.term) - (1-(1-exp(-a*T.term))/(a*T.term)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
+\item{estimate.bXa}{a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
 
 \item{support}{a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.}
 
@@ -55,7 +55,7 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{lower}{lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.}
 
-\item{upper}{upper bounds for the optimization routine, defaults to positive infinite.}
+\item{upper}{upper bounds for the optimization routine, defaults to c(Inf, Inf).}
 
 \item{verbose}{a logical value indicating whether to print a summary in each iteration of parameter search. May be useful when diagnosing unexpected behaviour or crashes.}
 }

@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 regimeWeightsHelper <- function(a, x) {
-    .Call(slouch_regimeWeightsHelper, a, x)
+    .Call(`_slouch_regimeWeightsHelper`, a, x)
 }
 

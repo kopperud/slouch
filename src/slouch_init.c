@@ -8,10 +8,10 @@
 */
 
 /* .Call calls */
-extern SEXP slouch_regimeWeightsHelper(SEXP, SEXP);
+extern SEXP _slouch_regimeWeightsHelper(SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"slouch_regimeWeightsHelper", (DL_FUNC) &slouch_regimeWeightsHelper, 2},
+    {"_slouch_regimeWeightsHelper", (DL_FUNC) &_slouch_regimeWeightsHelper, 2},
     {NULL, NULL, 0}
 };
 

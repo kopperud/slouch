@@ -1,6 +1,6 @@
 #' Artiodactyl brain data 
 #'
-#' Morphological data on mean neocortex area (mm^2), mean brain size (g) and mean body size (g) for 43 species, including estimates of within-species observational error.
+#' Morphological data on mean neocortex area (mm^2), mean brain size (g) and mean body size (g) for 43 species, including estimates of within-species observational error. These standard errors are not based directly on the unbiased sample variance estimator. The sample variances were first calculated, then a "global sample variance" was estimated using a weighted average. Lastly, the global sample variance was divided by the respective within-species sample size for each species to obtain the squared standard error as reported in the dataset.
 #'
 #' @docType data
 #'

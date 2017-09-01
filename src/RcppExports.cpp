@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // regimeWeightsHelper
 NumericVector regimeWeightsHelper(double a, NumericVector x);
-RcppExport SEXP slouch_regimeWeightsHelper(SEXP aSEXP, SEXP xSEXP) {
+RcppExport SEXP _slouch_regimeWeightsHelper(SEXP aSEXP, SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;

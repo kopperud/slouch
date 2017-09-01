@@ -92,6 +92,25 @@ plot.slouch <- function(x, ...){
          xlim = c(min(hl), max(hl)),
          xlab = "Phylogenetic half-life",
          ylab = "Stationary variance")
+    
+    # s <- seq(length(hl) - 1)
+    # x0 <- hl[s]
+    # y0 <- vy[s]
+    # x1 <- hl[s+1]
+    # y1 <- vy[s+1]
+    # 
+    # 
+    # ## All this to remove arrows with near zero-length distance, thus preventing warning()s.
+    # # eudlidean distance.
+    # distance <- function(a){
+    #   sqrt((a[1] - a[3])^2 + (a[2] - a[4])^2)
+    # }
+    # scale1 <- sqrt((max(range(hl)) - min(range(hl)))^2 +(max(range(vy)) - min(range(vy)))^2)
+    # dist1 <- apply(cbind(x0, y0, x1, y1), 1, distance)
+    # keep <- dist1 >= scale1*0.001
+    # arrows(x0[keep], y0[keep], x1[keep], y1[keep], length = 0.15)
+    
+    points(hl[length(hl)], vy[length(vy)], col = "red", pch = 19)
     text(hl[1], vy[1], "Start")
     text(hl[length(hl)], vy[length(vy)], "End")
   }
