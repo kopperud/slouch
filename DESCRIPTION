@@ -19,7 +19,6 @@ Imports:
   parallel,
   methods,
   ape,
-  Rcpp,
   memoise
 Suggests:
     knitr,
@@ -28,5 +27,4 @@ Suggests:
 URL: http://github.com/kopperud/slouch
 BugReports: http://github.com/kopperud/slouch/issues
 VignetteBuilder: knitr
-LinkingTo: Rcpp
 Encoding: UTF-8

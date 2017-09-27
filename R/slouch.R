@@ -3,8 +3,6 @@
 #'
 #'
 #'
-#'@useDynLib slouch, .registration = TRUE
-#'@importFrom Rcpp evalCpp
 #'@importFrom stats lm.fit na.exclude optim runif var
 #'@importFrom utils tail
 #'@importFrom grDevices palette gray.colors
