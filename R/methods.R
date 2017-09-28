@@ -15,7 +15,8 @@ print.slouch <- function(x, ...){
           the true maximum likelihood, the model outputs will reflect this.")
   message("")
   message("Model parameters")
-  print(x$oupar)
+  oupar <- matrix(x$oupar, ncol = 1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
+  print(oupar)
   
   if (!is.null(x$hlvy_grid_interval)){
     message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
@@ -39,7 +40,9 @@ print.slouch <- function(x, ...){
   }
   
   message("Model fit")
-  print(x$modfit)
+  m <- as.matrix(x$modfit)
+  colnames(m) <- "Values"
+  print(m)
   
   plot(x)
 }

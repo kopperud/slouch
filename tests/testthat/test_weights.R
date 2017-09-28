@@ -1,4 +1,8 @@
 ## Tests weightmatrix
+concat.factor <- function(...){
+  as.factor(do.call(c, lapply(list(...), as.character)))
+}
+
 library(ape)
 set.seed(15)
 n <- 85

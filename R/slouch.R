@@ -4,9 +4,9 @@
 #'
 #'
 #'@importFrom stats lm.fit na.exclude optim runif var
-#'@importFrom utils tail
+#'@importFrom utils tail head
 #'@importFrom grDevices palette gray.colors
-#'@importFrom graphics plot text
+#'@importFrom graphics plot text points
 #'
 #' @section References:
 #'

@@ -230,26 +230,27 @@ reg <- function(hl_vy, tree, pars, control, seed, gridsearch = TRUE){
 
     
     ## Evolutionary regression
+    X0 <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, is.opt.reg = FALSE)
     if(!is.null(pars$random.cov)){
-      X.ev <- slouch.modelmatrix(a = a, hl = hl, tree, pars, control, is.opt.reg = FALSE)
-      ev.beta1.var <- pseudoinverse(t(X.ev)%*%V.inverse%*%X.ev)
-      ev.beta1 <- ev.beta1.var%*%(t(X.ev)%*%V.inverse%*%Y)
+      ev.beta1.var <- pseudoinverse(t(X0)%*%V.inverse%*%X0)
+      ev.beta1 <- ev.beta1.var%*%(t(X0)%*%V.inverse%*%Y)
       ev.reg <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
-                                           nrow=ncol(X.ev), 
-                                           dimnames = list(colnames(X.ev), c("Estimates", "Std. error"))),
-                     X = X.ev,
-                     residuals = Y - (X.ev %*% ev.beta1)),
-                  bias_correction(ev.beta1, ev.beta1.var, Y, X.ev, V, which.fixed.cov, which.random.cov, seed))
+                                             nrow=ncol(X0), 
+                                             dimnames = list(colnames(X0), c("Estimates", "Std. error"))),
+                       X = X0,
+                       residuals = Y - (X0 %*% ev.beta1)),
+                  bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, which.fixed.cov, which.random.cov, seed))
     }else{
       ev.beta1.var <- NULL
       ev.beta1 <- NULL
       ev.reg <- NULL
     }
+    
     opt.reg <- c(list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
                                             nrow=ncol(X), 
                                             dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                       X = X,
-                      residuals = Y - (X %*% beta1)),
+                      residuals = Y - (X0 %*% beta1)),
                  if (!is.null(pars$fixed.cov) | !is.null(pars$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
