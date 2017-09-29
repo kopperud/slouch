@@ -41,3 +41,33 @@
 #' plot(neocortex$brain_mass_g_log_mean, neocortex$neocortex_area_mm2_log_mean)
 #' 
 "neocortex"
+
+
+#' Artiodactyla
+#'
+#' A phylogenetic tree of Artiodactyla (even-toed ungulates).
+#'
+#' @docType data
+#'
+#' @usage data(artiodactyla)
+#'
+#' @format An object of class \code{"beast"}, from package \code{"treeio"}.
+#'
+#' @keywords datasets
+#'
+#' @references 
+#' 
+#' The tree is taken from Toljagic et al. (2017).
+#' 
+#' \itemize{
+#' \item{Toljagić, O., Voje, K. L., Matschiner, M., Liow, L. H., & Hansen, T. F. (2017). Millions of years behind: Slow adaptation of ruminants to grasslands. Systematic Biology, (318). https://doi.org/10.1093/sysbio/syx059}
+#' }
+#' 
+#'
+#' @examples
+#' library(treeio)
+#' data(artiodactyla)
+#' library(ape)
+#' plot(artiodactyla@phylo)
+#' 
+"artiodactyla"
