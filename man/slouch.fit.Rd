@@ -60,7 +60,17 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \item{verbose}{a logical value indicating whether to print a summary in each iteration of parameter search. May be useful when diagnosing unexpected behaviour or crashes.}
 }
 \value{
-An object of class 'slouch'
+An object of class 'slouch', essentially a list with the following fields:
+
+\item{parameter_space}{a list of the entire parameter space traversed by the grid search and the hillclimber as applicable}
+\item{tree}{a list including the following:
+\itemize{
+\item{phy - an object of class 'phy'}
+\item{T.term - a numeric vector including the time from the root of the tree to the tip, for all taxa 1,2,3... n}
+
+}
+}
+\item{Lorem ipsum dolorem}{Yes \itemize{\item hello \item there}}
 }
 \description{
 Function to fit Ornstein-Uhlenbeck models
