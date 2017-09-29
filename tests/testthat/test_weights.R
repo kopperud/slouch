@@ -13,7 +13,7 @@ regimes_tip <- sample(c("A", "B"), n, replace = TRUE)
 ans <- ace(regimes_tip, phy, type = "discrete")
 regimes_internal <- factor(colnames(ans$lik.anc))[apply(ans$lik.anc, 1, which.max)]
 
-regimes <- slouch::concat.factor(regimes_tip, regimes_internal)
+regimes <- concat.factor(regimes_tip, regimes_internal)
 
 lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes))
 
