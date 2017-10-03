@@ -65,9 +65,8 @@
 #' 
 #'
 #' @examples
-#' library(treeio)
 #' data(artiodactyla)
 #' library(ape)
-#' plot(artiodactyla@phylo)
+#' plot(artiodactyla)
 #' 
 "artiodactyla"

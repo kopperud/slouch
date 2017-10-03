@@ -12,10 +12,9 @@ data(artiodactyla)
 A phylogenetic tree of Artiodactyla (even-toed ungulates).
 }
 \examples{
-library(treeio)
 data(artiodactyla)
 library(ape)
-plot(artiodactyla@phylo)
+plot(artiodactyla)
 
 }
 \references{
