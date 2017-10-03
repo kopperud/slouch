@@ -5,12 +5,12 @@
 \title{Function to fit Ornstein-Uhlenbeck models}
 \usage{
 slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
-  response, me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
-  me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
-  me.random.cov = NULL, mecov.random.cov = NULL, estimate.Ya = FALSE,
-  estimate.bXa = FALSE, support = 2, convergence = 1e-06, nCores = 1,
-  hillclimb = FALSE, hillclimb_start = NULL, lower = c(0, 0),
-  upper = c(Inf, Inf), verbose = FALSE)
+  sigma2_y_values = NULL, response, me.response = NULL, fixed.fact = NULL,
+  fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
+  random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
+  estimate.Ya = FALSE, estimate.bXa = FALSE, model = "ou", support = 2,
+  convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = 0,
+  upper = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
@@ -20,6 +20,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \item{hl_values}{a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.}
 
 \item{vy_values}{a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.}
+
+\item{sigma2_y_values}{alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.}
 
 \item{response}{a numeric vector of a trait to be treated as response variable}
 
@@ -43,6 +45,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{estimate.bXa}{a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
 
+\item{model}{one of either c("ou", "bm") for either Ornstein-Uhlenbeck or Brownian Motion, respectively.}
+
 \item{support}{a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.}
 
 \item{convergence}{threshold of iterative GLS estimation for when beta is considered to be converged.}
@@ -50,8 +54,6 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \item{nCores}{number of CPU cores used in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. If performance is critical it is recommended to compile and link R to a multithreaded BLAS, since most of the heavy computations are common matrix operations. Even if a singlethreaded BLAS is used, this may or may not improve performance, and performance may vary with OS.}
 
 \item{hillclimb}{logical, whether to use hillclimb parameter estimation routine or not. This routine (L-BFGS-B from optim()) may be combined with the grid-search, in which case it will on default start on the sigma and halflife for the local ML found by the grid-search.}
-
-\item{hillclimb_start}{numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts.}
 
 \item{lower}{lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.}
 

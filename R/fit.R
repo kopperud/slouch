@@ -4,6 +4,7 @@
 #' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
 #' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
+#' @param sigma2_y_values alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.
 #' @param response a numeric vector of a trait to be treated as response variable
 #' @param me.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species squared standard error of the mean.
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
@@ -15,11 +16,11 @@
 #' @param mecov.random.cov .
 #' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
 #' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
+#' @param model one of either c("ou", "bm") for either Ornstein-Uhlenbeck or Brownian Motion, respectively.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
 #' @param nCores number of CPU cores used in grid-search. If 2 or more cores are used, all print statements are silenced during grid search. If performance is critical it is recommended to compile and link R to a multithreaded BLAS, since most of the heavy computations are common matrix operations. Even if a singlethreaded BLAS is used, this may or may not improve performance, and performance may vary with OS.
 #' @param hillclimb logical, whether to use hillclimb parameter estimation routine or not. This routine (L-BFGS-B from optim()) may be combined with the grid-search, in which case it will on default start on the sigma and halflife for the local ML found by the grid-search.
-#' @param hillclimb_start numeric vector of length 2, c(hl, vy), to specify where the hillclimber routine starts.
 #' @param lower lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.
 #' @param upper upper bounds for the optimization routine, defaults to c(Inf, Inf).
 #' @param verbose a logical value indicating whether to print a summary in each iteration of parameter search. May be useful when diagnosing unexpected behaviour or crashes.
@@ -42,6 +43,7 @@ slouch.fit<-function(phy,
                      species = NULL,
                      hl_values = NULL, 
                      vy_values = NULL, 
+                     sigma2_y_values = NULL,
                      response, 
                      me.response=NULL, 
                      fixed.fact=NULL,
@@ -53,13 +55,13 @@ slouch.fit<-function(phy,
                      mecov.random.cov=NULL,
                      estimate.Ya = FALSE,
                      estimate.bXa = FALSE,
+                     model = "ou",
                      support = 2, 
                      convergence = 0.000001,
                      nCores = 1,
                      hillclimb = FALSE,
-                     hillclimb_start = NULL,
-                     lower = c(0,0),
-                     upper = c(Inf, Inf),
+                     lower = 0,
+                     upper = NULL,
                      verbose = FALSE)
 {
   if(is.null(species)){
@@ -70,12 +72,25 @@ slouch.fit<-function(phy,
   }
   
   ## Checks, defensive conditions
-  #stopifnot(intercept == "root" | is.null(intercept))
   stopifnot(ape::is.rooted(phy))
-  stopifnot((is.numeric(hillclimb_start) & length(hillclimb_start) == 2) | is.null(hillclimb_start))
-  if((is.null(hl_values) | is.null(vy_values)) & !hillclimb){
-    stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
+  stopifnot(model %in% c("ou", "bm"))
+  if(model == "ou"){
+    if((sum(c(is.null(hl_values), is.null(vy_values), is.null(sigma2_y_values))) > 1) & !hillclimb){
+      stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
+    }
+  }else{
+    if(!is.null(vy_values)){
+      stop("Stationary variance does not exist for BM models, use \"sigma2_y_values\" instead of \"vy_values\".")
+    }
+    if(!is.null(hl_values)){
+      stop("Don't use \"hl_values\" for OU models.")
+    }
+    
+    if(is.null(sigma2_y_values) & !hillclimb){
+      stop("Choose at minimum a sigma2_y_values of length one or use the hillclimber routine.")
+    }
   }
+
   
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -113,10 +128,7 @@ slouch.fit<-function(phy,
   tia <- times[1:n] - ta
   tja <- t(tia)
   tij <- tja + tia
-  
-  h.lives<-matrix(data=0, nrow=length(hl_values), ncol=length(vy_values))
-  hl_values<-rev(hl_values)
-  
+
   ############################################################################
   
   ##          Make sure variable matrices are of correct dimensions         ##
@@ -187,43 +199,65 @@ slouch.fit<-function(phy,
                regimes = regimes)
   
   ## Cluster parameters concerning the type of model being run
-  pars <- list(response = response,
-               me.response = me.response,
-               fixed.fact = fixed.fact,
-               fixed.cov = fixed.cov,
-               mecov.fixed.cov = mecov.fixed.cov,
-               random.cov = random.cov,
-               mecov.random.cov = mecov.random.cov,
-               Y = Y,
-               names.fixed.cov = names.fixed.cov,
-               names.random.cov = names.random.cov,
-               closures = list(V_fixed_partial = memoise::memoise(function(a) (1 - exp(-2 * a * ta)) * exp(-a * tij))))
+  observations <- list(response = response,
+                       me.response = me.response,
+                       fixed.fact = fixed.fact,
+                       fixed.cov = fixed.cov,
+                       mecov.fixed.cov = mecov.fixed.cov,
+                       random.cov = random.cov,
+                       mecov.random.cov = mecov.random.cov,
+                       Y = Y,
+                       names.fixed.cov = names.fixed.cov,
+                       names.random.cov = names.random.cov,
+                       closures = list(V_fixed_partial = memoise::memoise(function(a) (1 - exp(-2 * a * ta)) * exp(-a * tij))))
   
   control <- list(verbose = verbose,
                   estimate.Ya = estimate.Ya,
                   estimate.bXa = estimate.bXa,
                   support = support,
-                  convergence = convergence)
+                  convergence = convergence,
+                  model = model)
   
   
   seed <- seed(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov)
-  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, pars, control, is.opt.reg = TRUE))
+  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, observations, control, is.opt.reg = TRUE))
   
   ## Uniform random start values for hl and vy, in case hillclimber is used
-  if (is.null(hl_values)){
-    hl_values <- stats::runif(1, 0, max(times))
+  if(model == "bm"){
+    if(is.null(sigma2_y_values)){
+      sigma2_y_values <- stats::runif(1, 0, stats::var(response))
+    }
+  }else{
+    ## Random numbers
+    if (is.null(vy_values) & is.null(sigma2_y_values)){
+      vy_values <- stats::runif(1, 0, stats::var(response))
+    }else{
+      
+    }
+    if (is.null(hl_values)){
+      hl_values <- stats::runif(1, 0, max(times))
+    }
   }
-  if (is.null(vy_values)){
-    vy_values <- stats::runif(1, 0, stats::var(response))
-  }
+
   
   if(verbose){
     message("GRID SEARCH PARAMETER SUPPORT")
-    cat(c("     hl     ", "vy    ", "support", c(coef.names), "\n"))
+    cat(c("     hl     ", if(model == "ou") "vy    " else "sigma2_y    ", "support", c(coef.names), "\n"))
   }
   
   #############
-  vector_hl_vy <- cbind(sort(rep(hl_values, length(vy_values)), decreasing = TRUE), rep(vy_values, length(hl_values)))
+  if(model == "bm"){
+    gridpar <- lapply(sigma2_y_values, function(e) list(sigma2_y = e
+                                                        ))
+  }else{
+    gridlist <- list(hl = hl_values,
+                     vy = vy_values,
+                     sigma2_y = sigma2_y_values)
+    gridlist[sapply(gridlist, is.null)] <- NULL ## Remove null entries
+    gridm <- expand.grid(gridlist)
+    gridpar <- apply(gridm, 1, function(e) as.list(e))
+  }
+  
   time0 <- Sys.time()
   
   if(nCores > 1 & nCores %% 1 == 0){
@@ -231,26 +265,36 @@ slouch.fit<-function(phy,
       stop("For multicore, please load package with library(parallel)")
     }
     if(.Platform$OS.type == "unix"){
-      list_hl_vy <- lapply(seq_len(nrow(vector_hl_vy)), function(e) vector_hl_vy[e,])
-      grid_support <- parallel::mclapply(list_hl_vy, 
-                                         function(e) reg(e, tree, pars, control, seed),
-                                         mc.cleanup = TRUE,
-                                         mc.cores = nCores)
+      #list_hl_vy <- lapply(seq_len(nrow(gridpar)), function(e) gridpar[e,])
+      grid <- parallel::mclapply(gridpar,
+                                 function(e) reg(e, tree, observations, control, seed),
+                                 mc.cleanup = TRUE,
+                                 mc.cores = nCores)
     }else{
       cl <- parallel::makeCluster(getOption("cl.cores", nCores))
       parallel::setDefaultCluster(cl)
-      parallel::clusterExport(cl, c("tree", "pars", "control", "seed"), envir = environment())
-      grid_support <- parallel::parApply(cl, vector_hl_vy, 1, function(e) reg(e, tree, pars, control, seed))
+      parallel::clusterExport(cl, c("tree", "observations", "control", "seed"), envir = environment())
+      grid <- parallel::parLapply(cl, gridpar, function(e) reg(e, tree, observations, control, seed))
       parallel::stopCluster(cl)
     }
   }else{
-    grid_support <- apply(vector_hl_vy, 1, reg, tree, pars, control, seed)
+    grid <- lapply(gridpar, reg, tree, observations, control, seed)
   }
   
-  sup2_grid <- sapply(grid_support, function(e) e$support)
-  ml_grid <- max(stats::na.exclude(sup2_grid))
+  sup2_grid <- sapply(grid, function(e) e$support)
+  which1 <- which.max(sup2_grid)
+  ml_grid <- grid[[which1]]$support
   
   if(hillclimb){
+    if(is.null(upper)){
+      if(model == "bm"){
+        upper <- 100*var(response)/max(T.term)
+      }else{
+        upper <- Inf
+      }
+
+    }
+    
     if(verbose){
       Sys.sleep(0.2)
       cat("\n")
@@ -261,56 +305,79 @@ slouch.fit<-function(phy,
     hcenv <- environment()
     hcenv$k <- 0
     climblog <- list()
-    if(is.null(hillclimb_start)){
-      hillclimb_start <- vector_hl_vy[which.max(sup2_grid),]
-    }
+    par <- grid[[which1]]$par
+
+
     hl_vy_est <- stats::optim(
-      par = hillclimb_start,
-      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, pars, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
+      par = par,
+      fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, observations, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
       lower = lower,
       upper = upper,
-      method = "L-BFGS-B",
+      method = if(model == "ou") "L-BFGS-B" else "Brent",
       control = list(parscale = c(max(T.term), var(response)),
                      fnscale = -0.1)
     )
     
+    climblog2 <- sapply(names(climblog[[1]]$par), 
+                function(x) sapply(climblog, 
+                                   function(e) e$par[[x]]),
+                USE.NAMES = TRUE,
+                simplify = FALSE)
+    climblog2[sapply(climblog2, is.null)] <- NULL
+    
     ## Matrix for plotting the route of hillclimber
-    climblog_matrix <- data.frame(index = 1:length(climblog), 
-                                  hl = sapply(climblog, function(e) e$hl_vy[[1]]), 
-                                  vy = sapply(climblog, function(e) e$hl_vy[2]), 
-                                  loglik = sapply(climblog, function(e) e$support))
+    climblog_df <- data.frame(index = seq_along(climblog),
+                              loglik = sapply(climblog, function(e) e$support),
+                              climblog2)
+
   }else{
-    climblog_matrix <- NULL
+    climblog_df <- NULL
     climblog <- NULL
   }
-  parameter_space <- c(grid_support, climblog)
+  parameter_space <- c(grid, climblog)
   sup2 <- sapply(parameter_space, function(e) e$support)
   ml <- max(sup2, na.rm = T)
   
-  gof <- matrix(sup2_grid, ncol=length(vy_values), byrow=TRUE, dimnames = list(hl_values, vy_values))
-  gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+  if (model == "ou"){
+    gof <- matrix(sup2_grid, 
+                  nrow = if(!is.null(hl_values)) length(hl_values) else 1, 
+                  byrow=TRUE, 
+                  dimnames = list(hl_values, vy_values))
+    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
+  }else{
+    
+  }
+
   
   
   ## Find the regression for which the support value is maximized
-  besthl_vy = parameter_space[[which.max(sup2)]]$hl_vy
+  par = parameter_space[[which.max(sup2)]]$par
   
   ## Repeat regression at a, vy for which logLik is maximized
-  fit <- reg(besthl_vy, tree, pars, control, seed, gridsearch=FALSE)
+  fit <- reg(par, tree, observations, control, seed, gridsearch=FALSE)
   
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
   }
   
   ############################
-  
-  alpha <- log(2) / fit$hl_vy[1]
 
-  oupar <- list(alpha = alpha,
-                hl = fit$hl_vy[1],
-                vy = fit$hl_vy[2],
-                rho_mean = mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))
-                )
+  if (model == "ou"){
+    alpha = log(2) / fit$par$hl
+    evolpar <- list(
+      alpha = alpha,
+      hl = fit$par$hl,
+      vy = fit$par$vy,
+      sigma2_y = fit$par$sigma2_y,
+      rho_mean = mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))
+    )
+  }else{
+    evolpar <- list(
+      sigma2_y <- fit$par$sigma2_y
+    )
+  }
+  
   
   if(!is.null(random.cov)){
     brownian_predictors <- matrix(data = rbind(seed$theta.X, seed$sigma_squared), 
@@ -323,7 +390,7 @@ slouch.fit<-function(phy,
     brownian_predictors <- NULL
   }
   
-  n.par <- length(coef.names) + 2
+  n.par <- length(coef.names) + if (model == "ou") 2 else 1
   
   aic = -2*ml+2*n.par
   aicc = aic + (2*n.par*(n.par+1))/(n-n.par-1)
@@ -338,47 +405,70 @@ slouch.fit<-function(phy,
                  SST = fit$sst,
                  SSE = fit$sse)
   
-  
-  if(length(hl_values) > 1 && length(vy_values) > 1){
-    ## All hl + vy in the support interval
-    hlsupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[1]))
-    vysupport <- ifelse(sup2_grid <= ml - support, NA, sapply(grid_support, function(e) e$hl_vy[2]))
-    
-    hlvy_grid_interval <- matrix(c(min(hlsupport, na.rm = TRUE), min(vysupport, na.rm = TRUE),
-                                   max(hlsupport, na.rm = TRUE), max(vysupport, na.rm = TRUE)),
-                                 ncol = 2, nrow = 2,
-                                 dimnames = list(c("Phylogenetic half-life", "Stationary variance"), c("Minimum", "Maximum")))
-    
-    if(!(all(is.na(gof) | is.infinite(gof)))){
-      h.lives <- matrix(0, nrow=length(hl_values), ncol=length(vy_values), dimnames = list(rev(hl_values), vy_values))
-      for(i in 1:length(vy_values)){
-        h.lives[,i]=rev(gof[,i])
-      }
+  if(model == "ou"){
+    if(length(hl_values) > 1 & length(c(vy_values, sigma2_y_values)) > 1){
       
-      supportplot = list(hl = rev(hl_values),
-                         vy = vy_values,
-                         z = h.lives)
+      if(!(all(is.na(gof) | is.infinite(gof)))){
+        z <- matrix(sapply(grid, function(e) e$support), ncol=length(hl_values), byrow=F)
+        z <- z - ml
+        z[abs(z) >= support] <- -2
+        
+        supportplot <- list(hl = hl_values,
+                           vy = vy_values,
+                           sigma2_y = sigma2_y_values,
+                           z = z)
+      }else{
+        warning("All support values in grid either NA or +/-Inf - Can't plot.")
+        supportplot <- NULL
+      }
     }else{
-      warning("All support values in grid either NA or +/-Inf - Can't plot.")
+      supportplot <- NULL
     }
   }else{
-    supportplot <- NULL
-    hlvy_grid_interval <- NULL
+    if(length(sigma2_y_values) > 1){
+      supportplot <- data.frame(sigma2_y = sapply(grid, function(e) e$par$sigma2_y),
+                                loglik = sapply(grid, function(e) e$support))
+
+    }else{
+      supportplot <- NULL
+    }
   }
+  supported_range <- support_interval(grid, ml, support)
+
   
   result <- list(parameter_space = parameter_space,
                  tree = tree,
                  modfit = modfit,
                  supportplot = supportplot,
-                 climblog_matrix = climblog_matrix,
+                 climblog_df = climblog_df,
                  brownian_predictors = brownian_predictors,
                  opt.reg = fit$opt.reg,
                  ev.reg = fit$ev.reg,
-                 oupar = oupar,
-                 hlvy_grid_interval = hlvy_grid_interval,
+                 evolpar = evolpar,
+                 supported_range = supported_range,
                  n.par = n.par,
                  V = fit$V,
-                 fixed.fact = fixed.fact)
+                 fixed.fact = fixed.fact,
+                 control = control)
   class(result) <- c("slouch", class(result))
   return(result)
+}
+
+support_interval <- function(grid, ml, support){
+  loglik <- sapply(grid, function(x) x$support)
+  supported <- grid[loglik >= ml - support]
+  
+  if (length(supported) > 0){
+    supported2 <- sapply(names(grid[[1]]$par), 
+                         function(x) sapply(grid, 
+                                            function(e) e$par[[x]]), 
+                         USE.NAMES = TRUE, 
+                         simplify = F)
+    supported2[is.null(supported2)] <- NULL
+    supported_range <- t(sapply(supported2, range))
+    colnames(supported_range) <- c("Minimum", "Maximum")
+  }else{
+    supported_range <- NULL
+  }
+  return(supported_range)
 }

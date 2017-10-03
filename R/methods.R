@@ -15,12 +15,16 @@ print.slouch <- function(x, ...){
           the true maximum likelihood, the model outputs will reflect this.")
   message("")
   message("Model parameters")
-  oupar <- matrix(x$oupar, ncol = 1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Phylogenetic correction factor"), "Estimate"))
-  print(oupar)
+  if(length(x$evolpar) > 1){
+    evolpar <- matrix(x$evolpar, ncol = 1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Sigma squared (y)","Phylogenetic correction factor"), "Estimate"))
+  }else{
+    evolpar <- matrix(x$evolpar, dimnames = list(c("Brownian sigma2 (y)"), "Estimate"))
+  }
+  print(evolpar)
   
-  if (!is.null(x$hlvy_grid_interval)){
+  if (!is.null(x$supported_range)){
     message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
-    print(x$hlvy_grid_interval)
+    print(x$supported_range)
   }
 
   message("Optimal regression")
@@ -57,67 +61,95 @@ print.slouch <- function(x, ...){
 #' @export
 plot.slouch <- function(x, ...){
   plotpars <- graphics::par()
-  if (!is.null(x$supportplot) & !is.null(x$climblog_matrix)){
+  if (!is.null(x$supportplot) & !is.null(x$climblog_df)){
     graphics::par(mfrow = c(1, 2))
   }
 
+  
   if (!is.null(x$supportplot)){
-    graphics::persp(x$supportplot$hl,
-          x$supportplot$vy,
-          x$supportplot$z,
-          theta = 30,
-          phi = 30, 
-          expand = 0.5, 
-          col = "NA",
-          ltheta = 120, 
-          shade = 0.75,
-          main = "Grid search",
-          ticktype = "detailed",
-          xlab = "Phylogenetic half-life", 
-          ylab = "Stationary variance", 
-          zlab = "Log-likelihood", 
-          zlim = c(min(x$supportplot$z), 0),
-          ...)
+    if(x$control$model == "ou"){
+      s3d <- if(!is.null(x$supportplot$vy)) x$supportplot$vy else x$supportplot$sigma2_y
+      graphics::persp(x$supportplot$hl,
+                      s3d,
+                      x$supportplot$z,
+                      theta = 30,
+                      phi = 30, 
+                      expand = 0.5, 
+                      col = "NA",
+                      ltheta = 120, 
+                      shade = 0.75,
+                      main = "Grid search",
+                      ticktype = "detailed",
+                      xlab = "Phylogenetic half-life", 
+                      ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Sigma squared (y)", 
+                      zlab = "Log-likelihood", 
+                      zlim = c(min(x$supportplot$z), 0),
+                      ...)
+    }else{
+      hline <- logLik(x) - x$control$support
+      graphics::plot(x = log(x$supportplot$sigma2_y),
+                     y = x$supportplot$loglik,
+                     pch = 19,
+                     xlab = "sigma squared (y)",
+                     ylab = "logL",
+                     xaxt = "n",
+                     ylim = c(min(hline, min(x$supportplot$loglik)), 
+                              max(c(x$supportplot$loglik, logLik(x)))),
+                     main = "Grid search")
+      graphics::axis(1, 
+                     at = log(x$supportplot$sigma2_y), 
+                     labels = round(x$supportplot$sigma2_y, 2))
+      
+      graphics::abline(h = hline, lwd = 2, col = "red")
+    }
   }
   
-  if (!is.null(x$climblog_matrix)){
-    hl <- x[["climblog_matrix"]][["hl"]]
-    vy <- x[["climblog_matrix"]][["vy"]]
-    index <- x[["climblog_matrix"]][["index"]]
+  if (!is.null(x$climblog_df)){
+    logL <- x$climblog_df$loglik
+    hl <- x$climblog_df$hl
+    vy <- x$climblog_df$vy
+    sigma2_y <- x$climblog_df$sigma2_y
+    index <- x$climblog_df$index
+    s <- if(!is.null(vy)) vy else sigma2_y
     
-    graphics::plot(x = hl, 
-         y = vy, 
-         main = "Path of hillclimber",
-         col = grDevices::gray.colors(length(index),
-                                      start = 0.8, end = 0.05, gamma = 1)[index],
-         pch = 19,
-         ylim = c(min(vy), max(vy)),
-         xlim = c(min(hl), max(hl)),
-         xlab = "Phylogenetic half-life",
-         ylab = "Stationary variance")
-    
-    # s <- seq(length(hl) - 1)
-    # x0 <- hl[s]
-    # y0 <- vy[s]
-    # x1 <- hl[s+1]
-    # y1 <- vy[s+1]
-    # 
-    # 
-    # ## All this to remove arrows with near zero-length distance, thus preventing warning()s.
-    # # eudlidean distance.
-    # distance <- function(a){
-    #   sqrt((a[1] - a[3])^2 + (a[2] - a[4])^2)
-    # }
-    # scale1 <- sqrt((max(range(hl)) - min(range(hl)))^2 +(max(range(vy)) - min(range(vy)))^2)
-    # dist1 <- apply(cbind(x0, y0, x1, y1), 1, distance)
-    # keep <- dist1 >= scale1*0.001
-    # arrows(x0[keep], y0[keep], x1[keep], y1[keep], length = 0.15)
-    
-    points(hl[length(hl)], vy[length(vy)], col = "red", pch = 19)
-    text(hl[1], vy[1], "Start")
-    text(hl[length(hl)], vy[length(vy)], "End")
+    if(x$control$model == "ou"){
+      graphics::plot(x = hl, 
+                     y = s, 
+                     main = "Path of hillclimber",
+                     col = grDevices::gray.colors(length(index),
+                                                  start = 0.8, end = 0.05, gamma = 1)[index],
+                     pch = 19,
+                     ylim = c(min(s), max(s)),
+                     xlim = c(min(hl), max(hl)),
+                     xlab = "Phylogenetic half-life",
+                     ylab = if(!is.null(vy)) "Stationary variance" else "Sigma squared (y)"
+                     )
+      
+      points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
+      text(hl[1], s[1], "Start")
+      text(hl[length(hl)], s[length(s)], "End")
+    }else{
+      graphics::plot(x = log(sigma2_y),
+                     y = logL,
+                     xlab = "sigma squared (y)", pch = 19,
+                     xaxt = "n",
+                     main = "Path of hillclimber")
+      graphics::axis(1, 
+                     at = log(x$climblog_df$sigma2_y), 
+                     labels = round(x$climblog_df$sigma2_y, 2))
+      points(log(tail(sigma2_y, n = 1)), 
+             tail(logL, n = 1),
+             pch = 19, col = "red")
+      points(log(head(sigma2_y, n = 1)), 
+             head(logL, n = 1),
+             pch = 19, col = "darkblue")
+      text(log(sigma2_y[1]), logL[1], "Start")
+      text(tail(log(sigma2_y), n = 1), tail(logL, n = 1), "End")
+    }
   }
-
+  
+  
+  
   graphics::par(mfrow = plotpars$mfrow)
 }
 
@@ -130,7 +162,7 @@ plot.slouch <- function(x, ...){
 #' @return An object of class 'logLik'
 #' @export
 logLik.slouch <- function(object, ...){
-  return(structure(object$modfit[1, 1], df = object$n.par, class = "logLik"))
+  return(structure(object$modfit$Support, df = object$n.par, class = "logLik"))
 }
 
 

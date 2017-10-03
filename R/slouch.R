@@ -3,10 +3,10 @@
 #'
 #'
 #'
-#'@importFrom stats lm.fit na.exclude optim runif var
+#'@importFrom stats lm.fit na.exclude optim runif var logLik
 #'@importFrom utils tail head
 #'@importFrom grDevices palette gray.colors
-#'@importFrom graphics plot text points
+#'@importFrom graphics plot text points axis
 #'
 #' @section References:
 #'
