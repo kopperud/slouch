@@ -3,6 +3,3 @@
 language: R
 sudo: false
 cache: packages
-install:
-  - ./travis-tool.sh install_r dplyr
-  - ./travis-tool.sh install_bioc treeio

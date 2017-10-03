@@ -32,35 +32,16 @@ knitr::opts_knit$set(global.par = TRUE)
 ```
 
 ```{r, warning=FALSE, echo = TRUE, message = FALSE, highlight = TRUE, fig.width = 7, fig.height = 5}
-## Package "treeio" can be installed from bioconductor by entering:
-## source("https://bioconductor.org/biocLite.R")
-## biocLite("treeio")
-
+# Load necessary packages
 library(ape)
 library(slouch)
-library(treeio)
-library(dplyr)
 
-data("artiodactyla")
+## Load the phylogenetic tree with annotation data
+data(artiodactyla)
+phy <- artiodactyla
 
-## Save and organize the annotation data included in the tree
-phy <- artiodactyla@phylo
-n <- length(phy$tip.label)
-nodes_internal <- (n+1):nrow(phy$edge)
-nodes_tip <- 1:n
-node_order <- order(as.numeric(artiodactyla@stats$node))
-diet <- data.frame(species = phy$tip.label,
-                   diet = artiodactyla@stats$diet[node_order][nodes_tip])
-phy$node.label <- artiodactyla@stats$diet[node_order][nodes_internal]
-
-## Load the neocortex dataset, add diet information for the terminal edges
+## Load the neocortex dataset
 data(neocortex)
-neocortex <- neocortex %>%
-  left_join(diet, by = "species")
-
-## Prune the phylogenetic tree for species without neocortex data
-ineligible <- !phy$tip.label %in% neocortex$species
-phy <- drop.tip(phy, tip = phy$tip.label[ineligible])
 
 ## Plot the tree
 par(mar = rep(0, 4))
@@ -94,14 +75,14 @@ Now we are ready to fit the first models, for which we will use the function `sl
 
 ```{r, fig.show='hold', fig.width=7, fig.height = 5, fig.cap = "Log likelihood surface for the OU model", highlight = TRUE, warning=FALSE}
 model0 <- slouch.fit(phy = phy,
-                     hl_values = seq(0, 12, length.out = 10),
+                     hl_values = seq(0.001, 12, length.out = 10),
                      vy_values = seq(0.1, 1, length.out = 10),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean)
 
 
 model1 <- slouch.fit(phy = phy,
-                     hl_values = seq(0, 150, length.out = 25),
+                     hl_values = seq(0.001, 150, length.out = 25),
                      vy_values = seq(0.1, 2.5, length.out = 25),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean)
@@ -135,7 +116,7 @@ model2 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      hillclimb = TRUE,
-                     lower = c(0, 0.01))
+                     lower = c(0.001, 0.01))
 plot(model2)
 ```
 
@@ -150,7 +131,7 @@ model3 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      fixed.cov = neocortex$brain_mass_g_log_mean,
-                     lower = c(0, 0.01),
+                     lower = c(0.001, 0.01),
                      hillclimb = TRUE)
 plot(model3)
 
@@ -178,7 +159,7 @@ model4 <-
              response = neocortex$neocortex_area_mm2_log_mean,
              fixed.cov = cbind(brain = neocortex$brain_mass_g_log_mean, 
                                body = neocortex$body_mass_g_log_mean),
-             lower = c(0, 0.01),
+             lower = c(0.001, 0.01),
              hillclimb = TRUE)
 plot(model4)
 ```
@@ -214,7 +195,7 @@ model5 <- slouch.fit(phy = phy,
                      fixed.cov = neocortex$brain_mass_g_log_mean,
                      fixed.fact = neocortex$diet,
                      hillclimb = TRUE,
-                     lower = c(0, 0.01))
+                     lower = c(0.001, 0.01))
 
 model5$opt.reg$coefficients
 ```
@@ -226,13 +207,13 @@ SLOUCH can also fit models with continuous covariates that themselves have a phy
 
 ```{r, fig.width = 7, fig.height = 5, highlight = TRUE}
 model6 <- slouch.fit(phy = phy,
-                     hl_values = seq(0, 5, length.out = 25),
+                     hl_values = seq(0.001, 5, length.out = 25),
                      vy_values = seq(0.001, 0.05, length.out = 25),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      random.cov = neocortex$brain_mass_g_log_mean,
                      hillclimb = TRUE,
-                     lower = c(0, 0.0005))
+                     lower = c(0.001, 0.0005))
 
 model6$opt.reg$coefficients
 plot(model6)
@@ -246,7 +227,7 @@ Slouch can incorporate estimates of observational error by specifying the within
 
 ```{r, fig.width = 7, fig.height = 5, highlight = TRUE}
 model7 <- slouch.fit(phy = phy,
-                     hl_values = seq(0, 4, length.out = 25),
+                     hl_values = seq(0.001, 4, length.out = 25),
                      vy_values = seq(0.001, 0.05, length.out = 25),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -254,7 +235,7 @@ model7 <- slouch.fit(phy = phy,
                      random.cov = neocortex$brain_mass_g_log_mean,
                      me.random.cov = neocortex$brain_se_squared,
                      hillclimb = TRUE,
-                     lower = c(0, 0.001))
+                     lower = c(0.001, 0.001))
 
 plot(model7)
 ```
