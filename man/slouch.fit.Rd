@@ -2,14 +2,14 @@
 % Please edit documentation in R/fit.R
 \name{slouch.fit}
 \alias{slouch.fit}
-\title{Function to fit Ornstein-Uhlenbeck models}
+\title{Function to fit Ornstein-Uhlenbeck and Brownian-motion models}
 \usage{
 slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
   sigma2_y_values = NULL, response, me.response = NULL, fixed.fact = NULL,
   fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
   random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
   estimate.Ya = FALSE, estimate.bXa = FALSE, model = "ou", support = 2,
-  convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = 0,
+  convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = 1e-09,
   upper = NULL, verbose = FALSE)
 }
 \arguments{
@@ -64,16 +64,34 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \value{
 An object of class 'slouch', essentially a list with the following fields:
 
-\item{parameter_space}{a list of the entire parameter space traversed by the grid search and the hillclimber as applicable}
-\item{tree}{a list including the following:
+\item{parameter_space}{a list of the entire parameter space traversed by the grid search and the hillclimber as applicable.}
+\item{tree}{a list of parameters concerning the tree:
 \itemize{
 \item{phy - an object of class 'phy'}
-\item{T.term - a numeric vector including the time from the root of the tree to the tip, for all taxa 1,2,3... n}
+\item{T.term - a numeric vector including the time from the root of the tree to the tip, for all taxa 1,2,3... n.}
+\item{ta - for all pairs of species, the time from their most recent common ancestor (mrca) to the root of the tree.}
+\item{tia - for all pairs of species, the time from their mrca to the tip of species i.}
+\item{tja - the transpose of tia.}
+\item{tij - for all pairs of species, the time from species i to their mrca, plus the time from their mrca to species j. In other words, tia + transpose(tia).}
+\item{times - for all nodes (1,2,3... n, root, root+1, ...) in the tree, the time from the root to said node.} 
+\item{lineages - for all species (1,2,3... n), a list of their branch times and regimes as painted on the tree.}
+\item{regimes - for all nodes (1,2,3... n, root, root+1, ...) in the tree, the respective regime as specified by "\code{phy$node.label}" and "\code{fixed.fact}".}
 
 }
 }
-\item{Lorem ipsum dolorem}{Yes \itemize{\item hello \item there}}
+\item{modfit}{a list of statistics to characterize model fit}
+\item{supportplot}{a list or matrix used to plot the grid search}
+\item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}
+\item{V}{the residual variance-covariance matrix for the maximum likelihood model as found by parameter search.}
+\item{evolpar}{maximum likelihood estimates of parameters under the chosen model.}
+\item{opt.reg}{regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.}
+\item{ev.reg}{under a random effect model, "ev.reg" is the evolutionary regression coefficients and associated objects.}
+\item{n.par}{number of free parameters with which the likelihood criteria are penalized.}
+\item{brownian_predictors}{under a random effect model, a matrix of means and standard errors for the independent Brownian motion variable(s). Not to be confused with the regression coefficients when the residuals are under a "bm" model.}
+\item{climblog_df}{a matrix of the path trajectory of the hillclimber routine.}
+\item{fixed.fact}{the respective regimes for all species (1,2,3... n).}
+\item{control}{internal parameters for control flow.}
 }
 \description{
-Function to fit Ornstein-Uhlenbeck models
+Function to fit Ornstein-Uhlenbeck and Brownian-motion models
 }

@@ -45,12 +45,12 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, is.opt.reg = 
     w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
     X <- cbind(w_regimes, bXa, covariates)
   }else{
-    if(!control$estimate.Ya){
-      K <- cbind(Intercept = rep(1, length(tree$phy$tip.label)), 
-                 bXa)
-    }else{
+    if(control$estimate.Ya){
       K <- cbind(Ya = exp(-a * tree$T.term),
                  b0 = 1-exp(-a * tree$T.term),
+                 bXa)
+    }else{
+      K <- cbind(K = rep(1, length(tree$phy$tip.label)), 
                  bXa)
     }
     X <- cbind(K, covariates)
@@ -260,7 +260,8 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     
     ## Following is less optimized, more identical to publication syntax because it only has to run once.
     V.inverse <- solve(V)
-    beta1.var <- solve(t(X)%*%V.inverse%*%X)
+    #beta1.var <- solve(t(X)%*%V.inverse%*%X)
+    beta1.var <- solve(crossprod(forwardsolve(L, X)))
     
 
     

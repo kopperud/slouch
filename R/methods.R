@@ -27,10 +27,10 @@ print.slouch <- function(x, ...){
     print(x$supported_range)
   }
 
-  message("Optimal regression")
+  if(x$control$model == "ou") message("Optimal regression") else message("Phylogenetic regression")
   print(x$opt.reg$coefficients)
 
-  message("Optimal regression - bias-corrected")
+  if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Phylogenetic regression - bias-corrected")
   print(x$opt.reg$coefficients_bias_corr)
 
   if (!is.null(x$ev.reg)){
@@ -98,7 +98,8 @@ plot.slouch <- function(x, ...){
                      main = "Grid search")
       graphics::axis(1, 
                      at = log(x$supportplot$sigma2_y), 
-                     labels = round(x$supportplot$sigma2_y, 2))
+                     labels = format(x$supportplot$sigma2_y, digits = 1),
+                     las = 1)
       
       graphics::abline(h = hline, lwd = 2, col = "red")
     }

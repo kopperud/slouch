@@ -1,4 +1,4 @@
-#' Function to fit Ornstein-Uhlenbeck models
+#' Function to fit Ornstein-Uhlenbeck and Brownian-motion models
 #'
 #' @param phy an object of class 'phylo', must be rooted.
 #' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
@@ -27,15 +27,34 @@
 #'
 #' @return An object of class 'slouch', essentially a list with the following fields:
 #' 
-#' \item{parameter_space}{a list of the entire parameter space traversed by the grid search and the hillclimber as applicable}
-#' \item{tree}{a list including the following:
+#' \item{parameter_space}{a list of the entire parameter space traversed by the grid search and the hillclimber as applicable.}
+#' \item{tree}{a list of parameters concerning the tree:
 #' \itemize{
 #' \item{phy - an object of class 'phy'}
-#' \item{T.term - a numeric vector including the time from the root of the tree to the tip, for all taxa 1,2,3... n}
+#' \item{T.term - a numeric vector including the time from the root of the tree to the tip, for all taxa 1,2,3... n.}
+#' \item{ta - for all pairs of species, the time from their most recent common ancestor (mrca) to the root of the tree.}
+#' \item{tia - for all pairs of species, the time from their mrca to the tip of species i.}
+#' \item{tja - the transpose of tia.}
+#' \item{tij - for all pairs of species, the time from species i to their mrca, plus the time from their mrca to species j. In other words, tia + transpose(tia).}
+#' \item{times - for all nodes (1,2,3... n, root, root+1, ...) in the tree, the time from the root to said node.} 
+#' \item{lineages - for all species (1,2,3... n), a list of their branch times and regimes as painted on the tree.}
+#' \item{regimes - for all nodes (1,2,3... n, root, root+1, ...) in the tree, the respective regime as specified by "\code{phy$node.label}" and "\code{fixed.fact}".}
 #' 
 #' }
 #' }
-#' \item{Lorem ipsum dolorem}{Yes \itemize{\item hello \item there}}
+# \item{Lorem ipsum dolorem}{Yes \itemize{\item hello \item there}}
+#' \item{modfit}{a list of statistics to characterize model fit}
+#' \item{supportplot}{a list or matrix used to plot the grid search}
+#' \item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}
+#' \item{V}{the residual variance-covariance matrix for the maximum likelihood model as found by parameter search.}
+#' \item{evolpar}{maximum likelihood estimates of parameters under the chosen model.}
+#' \item{opt.reg}{regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.}
+#' \item{ev.reg}{under a random effect model, "ev.reg" is the evolutionary regression coefficients and associated objects.}
+#' \item{n.par}{number of free parameters with which the likelihood criteria are penalized.}
+#' \item{brownian_predictors}{under a random effect model, a matrix of means and standard errors for the independent Brownian motion variable(s). Not to be confused with the regression coefficients when the residuals are under a "bm" model.}
+#' \item{climblog_df}{a matrix of the path trajectory of the hillclimber routine.}
+#' \item{fixed.fact}{the respective regimes for all species (1,2,3... n).}
+#' \item{control}{internal parameters for control flow.}
 #' 
 #' 
 #' @export
@@ -60,7 +79,7 @@ slouch.fit<-function(phy,
                      convergence = 0.000001,
                      nCores = 1,
                      hillclimb = FALSE,
-                     lower = 0,
+                     lower = 1e-9,
                      upper = NULL,
                      verbose = FALSE)
 {
@@ -78,19 +97,35 @@ slouch.fit<-function(phy,
     if((sum(c(is.null(hl_values), is.null(vy_values), is.null(sigma2_y_values))) > 1) & !hillclimb){
       stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
     }
+    if(!is.null(vy_values) & !is.null(sigma2_y_values)){
+      stop("Choose either \"vy_values\" or \"sigma2_y_values\", not both.")
+    }
   }else{
     if(!is.null(vy_values)){
       stop("Stationary variance does not exist for BM models, use \"sigma2_y_values\" instead of \"vy_values\".")
     }
-    if(!is.null(hl_values)){
-      stop("Don't use \"hl_values\" for OU models.")
+    if(!is.null(random.cov)){
+      stop("Random effect covariates not available for \"bm\" models.")
     }
-    
+    if(!is.null(fixed.fact)){
+      stop("Models with niches on the tree not available for \"bm\" models, as the weight matrix becomes singular. If you want a trend model, use model = \"ou\" with regimes on the tree, and evaluate models with long half-lives. The optima for the regimes can then be multiplied with the ML-estimate of alpha to calculate a trend for each regime.")
+    }
+    if(!is.null(hl_values)){
+      stop("Don't use \"hl_values\" for \"bm\" models.")
+    }
     if(is.null(sigma2_y_values) & !hillclimb){
       stop("Choose at minimum a sigma2_y_values of length one or use the hillclimber routine.")
     }
+    if(estimate.Ya){
+      stop("estimate.Ya is not available for \"bm\" models. Under pure Brownian motion there is no trend, and the ancestral state is the same as the phylogenetic mean.")
+    }
   }
-
+  
+  if(estimate.Ya | estimate.bXa){
+    if(ape::is.ultrametric(phy)){
+      warning("Your tree looks ultrametric - ancestral state coefficients may cause the model matrix to be singular. Consider not using \"estimate.Ya\" and\\or \"estimate.bXa\".")
+    }
+  }
   
   # SET DEFAULTS IF NOT SPECIFIED
   if(is.null(me.response)){
@@ -460,7 +495,7 @@ support_interval <- function(grid, ml, support){
   
   if (length(supported) > 0){
     supported2 <- sapply(names(grid[[1]]$par), 
-                         function(x) sapply(grid, 
+                         function(x) sapply(supported, 
                                             function(e) e$par[[x]]), 
                          USE.NAMES = TRUE, 
                          simplify = F)
