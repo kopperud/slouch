@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch)
+[![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch) [![codecov.io](https://codecov.io/github/kopperud/slouch/coverage.svg?branch=master)](https://codecov.io/github/kopperud/slouch?branch=master)
 
 # Install and load devtools
 

@@ -16,6 +16,7 @@
 #' @param mecov.random.cov .
 #' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
 #' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
+#' @param hessian use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.
 #' @param model one of either c("ou", "bm") for either Ornstein-Uhlenbeck or Brownian Motion, respectively.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
@@ -74,12 +75,13 @@ slouch.fit<-function(phy,
                      mecov.random.cov=NULL,
                      estimate.Ya = FALSE,
                      estimate.bXa = FALSE,
+                     hessian = F,
                      model = "ou",
                      support = 2, 
                      convergence = 0.000001,
                      nCores = 1,
                      hillclimb = FALSE,
-                     lower = 1e-9,
+                     lower = 1e-8,
                      upper = NULL,
                      verbose = FALSE)
 {
@@ -104,20 +106,14 @@ slouch.fit<-function(phy,
     if(!is.null(vy_values)){
       stop("Stationary variance does not exist for BM models, use \"sigma2_y_values\" instead of \"vy_values\".")
     }
-    if(!is.null(random.cov)){
-      stop("Random effect covariates not available for \"bm\" models.")
-    }
-    if(!is.null(fixed.fact)){
-      stop("Models with niches on the tree not available for \"bm\" models, as the weight matrix becomes singular. If you want a trend model, use model = \"ou\" with regimes on the tree, and evaluate models with long half-lives. The optima for the regimes can then be multiplied with the ML-estimate of alpha to calculate a trend for each regime.")
-    }
     if(!is.null(hl_values)){
       stop("Don't use \"hl_values\" for \"bm\" models.")
     }
     if(is.null(sigma2_y_values) & !hillclimb){
       stop("Choose at minimum a sigma2_y_values of length one or use the hillclimber routine.")
     }
-    if(estimate.Ya){
-      stop("estimate.Ya is not available for \"bm\" models. Under pure Brownian motion there is no trend, and the ancestral state is the same as the phylogenetic mean.")
+    if(estimate.bXa){
+      stop("estimate.bYa is not available for \"bm\" models. Under pure Brownian motion there is no trend, and the ancestral state is the same as the phylogenetic mean.")
     }
   }
   
@@ -143,7 +139,7 @@ slouch.fit<-function(phy,
     }
     
     regimes_internal <- phy$node.label
-    if(estimate.Ya){
+    if(estimate.Ya & model == "ou"){
       tmp <- as.character(regimes_internal)
       tmp[1] <- "Ya"
       regimes_internal <- factor(tmp)
@@ -255,7 +251,7 @@ slouch.fit<-function(phy,
   
   
   seed <- seed(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov)
-  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, observations, control, is.opt.reg = TRUE))
+  coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, observations, control, evolutionary = T))
   
   ## Uniform random start values for hl and vy, in case hillclimber is used
   if(model == "bm"){
@@ -323,35 +319,40 @@ slouch.fit<-function(phy,
   if(hillclimb){
     if(is.null(upper)){
       if(model == "bm"){
-        upper <- 100*var(response)/max(T.term)
+        upper <- 10*var(response)/max(T.term)
       }else{
         upper <- Inf
       }
-
     }
     
     if(verbose){
       Sys.sleep(0.2)
       cat("\n")
-      print("Start hillclimb parameter estimation routine, method L-BFGS-B")
+      print(paste("Start hillclimb parameter estimation routine, method", if(model == "ou") "L-BFGS-B." else "Brent."))
       cat("\n")
     }
     
     hcenv <- environment()
     hcenv$k <- 0
     climblog <- list()
-    par <- grid[[which1]]$par
+    par <- c(grid[[which1]]$par)
 
+    if(model == "ou"){
+      parscale <- c(max(T.term), var(response))
+    }else{
+      parscale <- var(response)
+    }
 
-    hl_vy_est <- stats::optim(
+    optimout <- stats::optim(
       par = par,
       fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, observations, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
       gridsearch = TRUE,
       lower = lower,
       upper = upper,
       method = if(model == "ou") "L-BFGS-B" else "Brent",
-      control = list(parscale = c(max(T.term), var(response)),
-                     fnscale = -0.1)
+      control = list(parscale = parscale,
+                     fnscale = -1),
+      hessian = hessian
     )
     
     climblog2 <- sapply(names(climblog[[1]]$par), 
@@ -367,6 +368,7 @@ slouch.fit<-function(phy,
                               climblog2)
 
   }else{
+    optimout <- NULL
     climblog_df <- NULL
     climblog <- NULL
   }
@@ -400,17 +402,19 @@ slouch.fit<-function(phy,
 
   if (model == "ou"){
     alpha = log(2) / fit$par$hl
-    evolpar <- list(
-      alpha = alpha,
-      hl = fit$par$hl,
-      vy = fit$par$vy,
-      sigma2_y = fit$par$sigma2_y,
-      rho_mean = mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))
-    )
+    # evolpar <- list(
+    #   alpha = alpha,
+    #   hl = fit$par$hl,
+    #   vy = fit$par$vy,
+    #   sigma2_y = fit$par$sigma2_y,
+    #   rho_mean = mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))
+    # )
+    evolpar <- par
   }else{
     evolpar <- list(
       sigma2_y <- fit$par$sigma2_y
     )
+    names(evolpar) <- "sigma2_y"
   }
   
   
@@ -484,7 +488,8 @@ slouch.fit<-function(phy,
                  n.par = n.par,
                  V = fit$V,
                  fixed.fact = fixed.fact,
-                 control = control)
+                 control = control,
+                 hessian = optimout$hessian)
   class(result) <- c("slouch", class(result))
   return(result)
 }

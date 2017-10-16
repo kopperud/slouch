@@ -22,11 +22,13 @@ lineage.constructor <- function(phy, e, regimes){
   timeflip <- nodes_time[1] - nodes_time ## Time from tip to node(s)
   t_end <- tail(timeflip, n = -1) ## Time from tip to end of segment(s)
   t_beginning <- head(timeflip, n = -1) ## Time from tip to beginning of segment(s)
+  regime_time <- c(t_end - t_beginning, 0)
   
   return(list(nodes = nodes, 
               nodes_time = nodes_time,
               t_end = t_end,
               t_beginning = t_beginning,
+              regime_time = regime_time,
               which.regimes = which.regimes))
 }
 
@@ -43,6 +45,11 @@ weights_regimes <- function(a, lineage) {
   return(w)
 }
 
+weights_regimes_brown <- function(lineage){
+  w <- sapply(lineage$which.regimes, function(e) sum(e*lineage$regime_time))
+  return(w)
+}
+
 weight.matrix <- function(phy, a, lineages){
   if(a > 300000000000) a <- 300000000000
   res <- t(vapply(lineages, function(x) weights_regimes(a, x), 
@@ -50,6 +57,11 @@ weight.matrix <- function(phy, a, lineages){
            )
 
   rownames(res) <- phy$tip.label
+  return(res)
+}
+
+weight.matrix.brown <- function(lineages){
+  res <- t(sapply(lineages, weights_regimes_brown))
   return(res)
 }
 

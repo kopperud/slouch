@@ -15,27 +15,45 @@ print.slouch <- function(x, ...){
           the true maximum likelihood, the model outputs will reflect this.")
   message("")
   message("Model parameters")
-  if(length(x$evolpar) > 1){
-    evolpar <- matrix(x$evolpar, ncol = 1, dimnames=list(c("Rate of adaptation", "Phylogenetic half-life", "Stationary variance", "Sigma squared (y)","Phylogenetic correction factor"), "Estimate"))
-  }else{
-    evolpar <- matrix(x$evolpar, dimnames = list(c("Brownian sigma2 (y)"), "Estimate"))
+  evolpar <- as.matrix(x$evolpar, ncol = 1)
+  rownames(evolpar) <- parnames(rownames(evolpar))
+  if(!is.null(x$hessian)){
+    evolpar <- cbind(evolpar, sqrt(diag(solve(-x$hessian))))
   }
+  colnames(evolpar) <- c("Estimate", "Approximate Std. error (using hessian)")[1:ncol(evolpar)]
   print(evolpar)
   
+  message("")
   if (!is.null(x$supported_range)){
     message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
+    rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
   }
 
-  if(x$control$model == "ou") message("Optimal regression") else message("Phylogenetic regression")
+  if(x$control$model == "ou"){
+    message("Optimal regression")
+  }else{
+    if(!is.null(x$opt.reg$trend_diff) & !x$control$estimate.Ya){
+      message("Primary regression (assuming Ya = 0)")
+    }else{
+      message("Primary regression")
+    }
+  }
   print(x$opt.reg$coefficients)
+  if(!is.null(x$opt.reg$trend_diff)){
+    message("Pairwise contrasts between trends")
+    print(x$opt.reg$trend_diff)
+  }
 
-  if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Phylogenetic regression - bias-corrected")
+  if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Primary regression - bias-corrected")
   print(x$opt.reg$coefficients_bias_corr)
 
   if (!is.null(x$ev.reg)){
     message("Evolutionary regression")
     print(x$ev.reg$coefficients)
+    
+    message("Evolutionary regression - bias-corrected")
+    print(x$ev.reg$coefficients_bias_corr)
   }
   
   if (!is.null(x$brownian_predictors)){
@@ -200,4 +218,13 @@ regimeplot.slouch <- function(x, ...){
 #' @export
 regimeplot <- function(x, ...){
   UseMethod("regimeplot")
+}
+
+
+parnames <- function(x){
+  x[x == "vy"] <- "Stationary variance"
+  x[x == "sigma2_y"] <- "Brownian sigma (y)"
+  x[x == "hl"] <- "Phylogenetic half-life"
+  x[x == "a"] <- "Rate of adaptation"
+  return(x)
 }

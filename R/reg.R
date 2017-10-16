@@ -11,22 +11,25 @@ pseudoinverse <-
   }
 
 ## Design matrix
-slouch.modelmatrix <- function(a, hl, tree, observations, control, is.opt.reg = TRUE){
+slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary= F){
 
-  
   n <- length(tree$phy$tip.label)
   
-  if(is.opt.reg == TRUE){
-    rho <- (1 - (1 - exp(-a * tree$T.term))/(a * tree$T.term))
-  }else{
-    rho <- 1
-  }
-  
   if(!is.null(observations$fixed.cov) | !is.null(observations$random.cov)){
+    if(evolutionary){
+      rho <- 1
+    }else{
+      if(control$model == "ou"){
+        rho <- (1 - (1 - exp(-a * tree$T.term))/(a * tree$T.term))
+      }else{
+        rho <- tree$T.term / 2
+      }
+    }
     covariates <- matrix(cbind(observations$fixed.cov, rho * observations$random.cov), 
                          nrow = n, 
                          dimnames = list(NULL, c(observations$names.fixed.cov, 
                                                  observations$names.random.cov)))
+    colnames(covariates) <- paste(colnames(covariates),  "(bm)")
   }else{
     covariates <- NULL
   }
@@ -42,8 +45,19 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, is.opt.reg = 
   }
   
   if(!is.null(observations$fixed.fact)){
-    w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
-    X <- cbind(w_regimes, bXa, covariates)
+    if(control$model == "ou"){
+      w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
+    }else{
+      w_regimes <- weight.matrix.brown(tree$lineages)
+      colnames(w_regimes) <- paste(colnames(w_regimes), "(trend)") 
+    }
+    if(control$model == "bm" & control$estimate.Ya){
+      X <- cbind(w_regimes,
+                 Ya = 1,
+                 covariates)
+    }else{
+      X <- cbind(w_regimes, bXa, covariates)
+    }
   }else{
     if(control$estimate.Ya){
       K <- cbind(Ya = exp(-a * tree$T.term),
@@ -59,7 +73,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, is.opt.reg = 
 }
 
 #varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response){
-varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed){
+varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed, control){
 
   tij <- tree$tij
   tja <- tree$tja
@@ -68,9 +82,14 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.c
   
   if (hl == 0){
     Vt <- diag(rep(sigma2_y, times = n))
-    #print(Vt)
   }else if (a < 1e-14){
-    Vt <- sigma2_y * ta
+    if (!is.null(observations$random.cov)){
+      s1 <- sum(seed$sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      Vt <- sigma2_y * ta + s1 * ta * ((ta^2)/12 + tja*t(tja)/4)
+    }else{
+      Vt <- sigma2_y * ta
+    }
+
   }else{
     if (!is.null(observations$random.cov)){
       s1 <- sum(seed$sigma_squared %*% ((beta1[which.random.cov, ])^2))
@@ -90,10 +109,14 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.c
   return(Vt)
 }
 
-varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov){
+varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov, control){
 
-
-  rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
+  if(control$model == "ou"){
+    rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
+  }else{
+    rho2 <- (T.term/2)^2
+  }
+  
   
   if(length(which.fixed.cov) > 0 | length(which.random.cov) > 0){
     ## Update measurement error in X.
@@ -111,13 +134,17 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.f
     if(sum(observations$mecov.random.cov) == 0){
       mcov <- 0
     }else{
-      mcov <- rowSums(matrix(data=as.numeric(observations$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol = ncol(observations$random.cov)))
+      mcov <- rowSums(matrix(data=as.numeric(observations$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],
+                                                                                        (1-(1-exp(-a*T.term))/(a*T.term)))), 
+                             ncol = ncol(observations$random.cov)))
     }
     
     if(sum(observations$mecov.fixed.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],(1-(1-exp(-a*T.term))/(a*T.term)))), ncol =  ncol(observations$fixed.cov)))
+      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],
+                                                                                             (1-(1-exp(-a*T.term))/(a*T.term)))), 
+                                   ncol =  ncol(observations$fixed.cov)))
     }
   }else{
     beta2_Vu_given_x <- 0
@@ -180,7 +207,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     cat(" ")
   }
   
-  X <- slouch.modelmatrix(a, hl, tree, observations, control, is.opt.reg = TRUE)
+  X <- slouch.modelmatrix(a, hl, tree, observations, control, evolutionary = F)
 
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
@@ -194,8 +221,8 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
   
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed)
-    V_me <- varcov_measurement(observations, seed, beta1, hl, a, tree$T.term, which.fixed.cov, which.random.cov)
+    Vt <- varcov_model(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed, control)
+    V_me <- varcov_measurement(observations, seed, beta1, hl, a, tree$T.term, which.fixed.cov, which.random.cov, control)
     V <- Vt + diag(V_me)
     
     L <- t(chol(V))
@@ -209,7 +236,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     # Linear transformation of both Y and model matrix, by the inverse of cholesky decomposition of V
     # With this method, the program will not crash even if X is singular. In this case, R's lm.fit() does not throw
     # error, but return coefficients that contain "NA", and subsequently the log-likelihood is evaluated as "NA".
-
+  
     fit <- lm.fit(backsolve(L, X, upper.tri = FALSE), 
                   matrix(backsolve(L, Y, upper.tri = FALSE), ncol=1))
     beta.i <- matrix(fit$coefficients, ncol=1)
@@ -249,8 +276,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     cat(as.numeric(round(cbind(sup1, t(beta1)), 4)))
     cat("\n")
   }
-  
-  
+
   if(gridsearch){
     return(list(support = sup1,
                 par = par
@@ -263,10 +289,18 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     #beta1.var <- solve(t(X)%*%V.inverse%*%X)
     beta1.var <- solve(crossprod(forwardsolve(L, X)))
     
+    if(control$model == "bm" & !is.null(observations$fixed.fact)){
+      which.trend <- seq_along(levels(tree$regimes))
+      trend_names <- colnames(X)[which.trend]
+      trend_diff <- trend_diff_foo(beta1, beta1.var, trend_names, which.trend)
+    }else{
+      trend_diff <- NULL
+    }
+
 
     
     ## Evolutionary regression
-    X0 <- slouch.modelmatrix(a = a, hl = hl, tree, observations, control, is.opt.reg = FALSE)
+    X0 <- slouch.modelmatrix(a = a, hl = hl, tree, observations, control, evolutionary = T)
     if(!is.null(observations$random.cov)){
       ev.beta1.var <- pseudoinverse(t(X0)%*%V.inverse%*%X0)
       ev.beta1 <- ev.beta1.var%*%(t(X0)%*%V.inverse%*%Y)
@@ -286,8 +320,9 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
                                             nrow=ncol(X), 
                                             dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                       X = X,
-                      residuals = Y - (X0 %*% beta1)),
-                 if (!is.null(observations$fixed.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
+                      residuals = Y - (X0 %*% beta1),
+                      trend_diff = trend_diff),
+                 if (!is.null(observations$fixed.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X0, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))
@@ -304,5 +339,24 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
                 sse = sse,
                 r.squared = r.squared))
   }
+}
+
+
+trend_diff_foo <- function(beta1, beta1.var, trend_names, which.trend = 1:3){
+  beta1 <- beta1[which.trend]
+  beta1.var <- beta1.var[which.trend, which.trend]
+  upper_tri <- upper.tri(beta1.var)
+  
+  se2 <- diag(beta1.var)
+  contrast <- sapply(beta1, function(e) e - beta1)
+  v <- sapply(se2, function(e) e + se2)
+  names_matrix <- sapply(trend_names, function(e) paste(e, "-", trend_names))
+  
+  se_contrast <- sqrt(v[upper_tri] -2*beta1.var[upper_tri])
+  res <- cbind("Contrast" = contrast[upper_tri],
+               "Std. error" = se_contrast)
+  rownames(res) <- names_matrix[upper_tri]
+  
+  return(res)
 }
 

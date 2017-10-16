@@ -8,9 +8,9 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
   sigma2_y_values = NULL, response, me.response = NULL, fixed.fact = NULL,
   fixed.cov = NULL, me.fixed.cov = NULL, mecov.fixed.cov = NULL,
   random.cov = NULL, me.random.cov = NULL, mecov.random.cov = NULL,
-  estimate.Ya = FALSE, estimate.bXa = FALSE, model = "ou", support = 2,
-  convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = 1e-09,
-  upper = NULL, verbose = FALSE)
+  estimate.Ya = FALSE, estimate.bXa = FALSE, hessian = F, model = "ou",
+  support = 2, convergence = 1e-06, nCores = 1, hillclimb = FALSE,
+  lower = 1e-08, upper = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
@@ -44,6 +44,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 
 \item{estimate.bXa}{a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
+
+\item{hessian}{use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.}
 
 \item{model}{one of either c("ou", "bm") for either Ornstein-Uhlenbeck or Brownian Motion, respectively.}
 
