@@ -92,6 +92,22 @@ slouch.fit <- function(phy,
     stop("Choose either \"vy_values\" or \"sigma2_y_values\", not both.")
   }
   
+  if(!is.null(random.cov)){
+    if(ncol(as.matrix(random.cov))==1) {
+      names.random.cov <- deparse(substitute(random.cov))
+    }else{
+      names.random.cov <- colnames(random.cov)
+    }
+  }
+  
+  if(!is.null(fixed.cov)){
+    if(ncol(as.matrix(fixed.cov))==1) {
+      names.fixed.cov <- deparse(substitute(fixed.cov))
+    }else{
+      names.fixed.cov <- colnames(fixed.cov)
+    }
+  }
+  
   .slouch.fit(phy = phy,
               species = species,
               hl_values = hl_values, 
@@ -116,7 +132,9 @@ slouch.fit <- function(phy,
               hillclimb = hillclimb,
               lower = lower,
               upper = upper,
-              verbose = verbose)
+              verbose = verbose,
+              names.fixed.cov = names.fixed.cov,
+              names.random.cov = names.random.cov)
 }
 
 #' Function to fit Brownian-motion models of trait evolution
@@ -129,7 +147,8 @@ slouch.fit <- function(phy,
 #' 
 #' @param sigma2_y_values a vector of one or more candidates for sigma squared (y) to be evaluated in grid search.
 #' @param estimate.Ya independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).
-#' 
+#' @param lower lower bounds for the optimization routine, defaults to 1e-8. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the sigma squared, since the residual variance-covariance matrix is degenerate when sigma = 0.
+#' @param upper upper bounds for the optimization routine, defaults to 10 * var(response) * max(treeheight).
 #' 
 #' @export
 brown.fit <- function(phy,
@@ -161,6 +180,22 @@ brown.fit <- function(phy,
     upper <- 10 * stats::var(response) / max(ape::node.depth.edgelength(phy))
   }
   
+  if(!is.null(random.cov)){
+    if(ncol(as.matrix(random.cov))==1) {
+      names.random.cov <- deparse(substitute(random.cov))
+    }else{
+      names.random.cov <- colnames(random.cov)
+    }
+  }
+  
+  if(!is.null(fixed.cov)){
+    if(ncol(as.matrix(fixed.cov))==1) {
+      names.fixed.cov <- deparse(substitute(fixed.cov))
+    }else{
+      names.fixed.cov <- colnames(fixed.cov)
+    }
+  }
+  
   .slouch.fit(phy = phy,
               species = species,
               sigma2_y_values = sigma2_y_values,
@@ -183,5 +218,7 @@ brown.fit <- function(phy,
               hillclimb = hillclimb,
               lower = lower,
               upper = upper,
-              verbose = verbose)
+              verbose = verbose,
+              names.fixed.cov = names.fixed.cov,
+              names.random.cov = names.random.cov)
 }

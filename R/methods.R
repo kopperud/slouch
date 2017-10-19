@@ -223,7 +223,7 @@ regimeplot <- function(x, ...){
 
 parnames <- function(x){
   x[x == "vy"] <- "Stationary variance"
-  x[x == "sigma2_y"] <- "Brownian sigma (y)"
+  x[x == "sigma2_y"] <- "Sigma squared (y)"
   x[x == "hl"] <- "Phylogenetic half-life"
   x[x == "a"] <- "Rate of adaptation"
   return(x)

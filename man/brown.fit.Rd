@@ -48,9 +48,9 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
 
 \item{hillclimb}{logical, whether to use hillclimb parameter estimation routine or not. This routine (L-BFGS-B from optim()) may be combined with the grid-search, in which case it will on default start on the sigma and halflife for the local ML found by the grid-search.}
 
-\item{lower}{lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.}
+\item{lower}{lower bounds for the optimization routine, defaults to 1e-8. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the sigma squared, since the residual variance-covariance matrix is degenerate when sigma = 0.}
 
-\item{upper}{upper bounds for the optimization routine, defaults to c(Inf, Inf).}
+\item{upper}{upper bounds for the optimization routine, defaults to 10 * var(response) * max(treeheight).}
 
 \item{verbose}{a logical value indicating whether to print a summary in each iteration of parameter search. May be useful when diagnosing unexpected behaviour or crashes.}
 }

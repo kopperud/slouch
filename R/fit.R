@@ -23,7 +23,9 @@
                         hillclimb,
                         lower,
                         upper,
-                        verbose)
+                        verbose,
+                        names.fixed.cov,
+                        names.random.cov)
 {
   if(is.null(species)){
     stop("Use argument \"species\" to make sure the order of the data correctly lines up with the tree. See example.")
@@ -86,13 +88,13 @@
   
   if(!is.null(fixed.cov)){
     if(ncol(as.matrix(fixed.cov))==1) {
-      names.fixed.cov <- deparse(substitute(fixed.cov))
+      #names.fixed.cov <- deparse(substitute(fixed.cov))
       fixed.cov <- matrix(fixed.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.fixed.cov))
       
     }else{
       fixed.cov <- as.matrix(fixed.cov)
       stopifnot(!is.null(colnames(fixed.cov)))
-      names.fixed.cov <- colnames(fixed.cov)
+      #names.fixed.cov <- colnames(fixed.cov)
     }
     if(is.null(me.fixed.cov)){
       me.fixed.cov <- matrix(0, nrow = n, ncol = ncol(fixed.cov))
@@ -112,13 +114,13 @@
   
   if(!is.null(random.cov)){
     if(ncol(as.matrix(random.cov)) == 1) {
-      names.random.cov <- deparse(substitute(random.cov))
+      #names.random.cov <- deparse(substitute(random.cov))
       random.cov <- matrix(random.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.random.cov))
     }
     else{
       random.cov <- as.matrix(random.cov)
       stopifnot(!is.null(colnames(random.cov)))
-      names.random.cov <- colnames(random.cov)
+      #names.random.cov <- colnames(random.cov)
     }
     if(is.null(me.random.cov)){
       me.random.cov <- matrix(0, nrow = n, ncol = ncol(random.cov))
