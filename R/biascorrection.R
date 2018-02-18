@@ -39,13 +39,15 @@ bias_correction <- function(beta1, beta1.var, Y, X, V, which.fixed.cov, which.ra
   
   coefficients_bias_corr <- K%*%beta1
   #coefficients_var_bias_corr <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))
-  coefficients_var_bias_corr <- solve(K)%*%beta1.var%*%t(solve(K))
+  vcov_bias_corr <- solve(K)%*%beta1.var%*%t(solve(K))
+  dimnames(vcov_bias_corr) <- list(colnames(X), colnames(X))
   
   res <- list(coefficients_bias_corr = matrix(cbind(coefficients_bias_corr, 
-                                                    sqrt(diag(coefficients_var_bias_corr))),
+                                                    sqrt(diag(vcov_bias_corr))),
                                               nrow = ncol(X),
                                               dimnames = list(colnames(X), c("Estimates", "Std. error"))),
               residuals_bias_corr = Y - (X %*% coefficients_bias_corr),
+              vcov_bias_corr = vcov_bias_corr,
               K = K)
   return(res)
 }

@@ -33,7 +33,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Bjørn Tore Kopperud \email{bjorntko@student.ibv.uio.no}
+\strong{Maintainer}: Bjørn Tore Kopperud \email{b.t.kopperud@nhm.uio.no}
 
 Authors:
 \itemize{

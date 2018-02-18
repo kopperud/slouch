@@ -29,7 +29,24 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
                          nrow = n, 
                          dimnames = list(NULL, c(observations$names.fixed.cov, 
                                                  observations$names.random.cov)))
-    colnames(covariates) <- paste(colnames(covariates),  "(bm)")
+    
+    ## Sugar, append "(bm)" to the continuous explanatory variable names that are modelled as a brownian motion
+    if(!is.null(observations$random.cov)){
+      i <- length(observations$names.fixed.cov)
+      k <- i + seq_along(observations$names.random.cov)
+      
+      if (control$model == "bm"){
+        if (evolutionary){
+          s <- ("(bm)")
+        }else{
+          s <- "(bm, trend)"
+        }
+      }else if (control$model == "ou"){
+        s <- ("(bm)")
+      }
+      colnames(covariates)[k] <- paste(colnames(covariates)[k],  s)
+    }
+    #colnames(covariates) <- paste(colnames(covariates),  "(bm)")
   }else{
     covariates <- NULL
   }
@@ -288,6 +305,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     V.inverse <- solve(V)
     #beta1.var <- solve(t(X)%*%V.inverse%*%X)
     beta1.var <- solve(crossprod(forwardsolve(L, X)))
+    dimnames(beta1.var) <- list(colnames(X), colnames(X))
     
     if(control$model == "bm" & !is.null(observations$fixed.fact)){
       which.trend <- seq_along(levels(tree$regimes))
@@ -303,11 +321,16 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     X0 <- slouch.modelmatrix(a = a, hl = hl, tree, observations, control, evolutionary = T)
     if(!is.null(observations$random.cov)){
       ev.beta1.var <- pseudoinverse(t(X0)%*%V.inverse%*%X0)
+      dimnames(ev.beta1.var) <- list(colnames(X0), colnames(X0))
+      
       ev.beta1 <- ev.beta1.var%*%(t(X0)%*%V.inverse%*%Y)
+      
+      
       ev.reg <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
                                              nrow=ncol(X0), 
                                              dimnames = list(colnames(X0), c("Estimates", "Std. error"))),
                        X = X0,
+                       vcov = ev.beta1.var,
                        residuals = Y - (X0 %*% ev.beta1)),
                   bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, which.fixed.cov, which.random.cov, seed))
     }else{
@@ -321,8 +344,9 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
                                             dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                       X = X,
                       residuals = Y - (X0 %*% beta1),
-                      trend_diff = trend_diff),
-                 if (!is.null(observations$fixed.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X0, V, which.fixed.cov, which.random.cov, seed) else NULL)
+                      trend_diff = trend_diff,
+                      vcov = beta1.var),
+                 if (!is.null(observations$fixed.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))

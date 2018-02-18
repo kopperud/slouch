@@ -45,15 +45,19 @@ print.slouch <- function(x, ...){
     print(x$opt.reg$trend_diff)
   }
 
-  if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Primary regression - bias-corrected")
-  print(x$opt.reg$coefficients_bias_corr)
+  if(!is.null(x$opt.reg$coefficients_bias_corr)){
+    if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Primary regression - bias-corrected")
+    print(x$opt.reg$coefficients_bias_corr)
+  }
 
   if (!is.null(x$ev.reg)){
     message("Evolutionary regression")
     print(x$ev.reg$coefficients)
     
-    message("Evolutionary regression - bias-corrected")
-    print(x$ev.reg$coefficients_bias_corr)
+    if(!is.null(x$ev.reg$coefficients_bias_corr)){
+      message("Evolutionary regression - bias-corrected")
+      print(x$ev.reg$coefficients_bias_corr)
+    }
   }
   
   if (!is.null(x$brownian_predictors)){

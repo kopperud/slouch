@@ -3,7 +3,7 @@ Type: Package
 Title: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
 Version: 2.0.0.9000
 Date: 2017-10-01
-Authors@R: c(person("Bjørn Tore", "Kopperud", role =c("aut", "cre"), email = "bjorntko@student.ibv.uio.no"),
+Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "b.t.kopperud@nhm.uio.no"),
              person("Jason", "Pienaar", role = c("aut")),
              person("Kjetil Lysne", "Voje", role = c("aut")),
              person("Mark", "Grabowski", role = c("ctb")))
@@ -28,3 +28,4 @@ URL: http://github.com/kopperud/slouch
 BugReports: http://github.com/kopperud/slouch/issues
 VignetteBuilder: knitr
 Encoding: UTF-8
+
