@@ -222,3 +222,21 @@ brown.fit <- function(phy,
               names.fixed.cov = names.fixed.cov,
               names.random.cov = names.random.cov)
 }
+
+
+#' Logarithmically spaced sequence
+#'
+#' @param from the starting value of the sequence. Must be positive.
+#' @param to the terminal value of the sequence. Must be larger than input to "from".
+#' @param length.out desired length of the sequence. Must not be negative.
+#'
+#' @return A sequence of logarithmically spaced numbers.
+#' @export
+#'
+#' @examples
+#' lseq(1, 1000, length.out = 4)
+lseq <- function(from=1, to=100000, length.out=6) {
+  # logarithmic spaced sequence
+  # blatantly stolen from library("emdbook"), because need only this
+  exp(seq(log(from), log(to), length.out = length.out))
+}
