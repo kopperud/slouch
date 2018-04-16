@@ -1,51 +1,26 @@
 [![Build Status](https://travis-ci.org/kopperud/slouch.svg?branch=master)](https://travis-ci.org/kopperud/slouch) [![codecov.io](https://codecov.io/github/kopperud/slouch/coverage.svg?branch=master)](https://codecov.io/github/kopperud/slouch?branch=master)
 
-# Install and load devtools
+# SLOUCH: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
 
-Devtools makes it much easier to install R packages straight from github
+SLOUCH is an R-package implementation of some statistical models that are used in evolutionary biology, more specifically phylogenetic comparative methods. Given a phylogenetic tree and a comparative dataset, SLOUCH allows the user to fit models that are conceptually consistent with adaptation towards an optimal state, and includes options to incorporate observational or measurement error in regression analyses. See Hansen *et al.* (2008) for the original presentation of SLOUCH.
+
+# Install instructions
+
+The R-package `devtools` makes it easy to install R packages straight from github.
 ```
 install.packages("devtools")
 library(devtools)
-```
 
-# Install and load slouch
-```
 devtools::install_github("kopperud/slouch")
 library(slouch)
 ```
 
+
 # Documentation
 
-There is a **vignette** written as a short introduction to the syntax of the main functions in this package. The vignette can be viewed either in R along with the regular R documentation by typing the command `?slouch`, or at [the package website](https://kopperud.github.io/slouch/articles/introduction.html).
-
-# Notable changes since v2.*
-
-### Bugfixes:
-* Regression coefficients now correctly start with an OLS estimate instead of using the GLS-estimate for the previous iteration in the gridsearch, for categorical models
-* For categorical models: Seeding OLS regression is now correctly done for every iteration in grid search, for every model matrix X, instead of an invariate model matrix X whose alpha is arbitrary (e.g a = 10)
-* Most if not all model combinations should now support multiple continuous covariates, e.g fixed.cov = cbind(X, Z, ...), without crashing before returning model outputs.
-* Vectorize the code calculating residual var-cov matrix for models with brownian covariates, thus fixing one index typo. Bug was only relevant for non-ultrametric trees.
-* Fix incorrect calculation of branch lengths "tja" and "tia" for non-ultrametric trees, see below for new tree format
-* The weight matrix generated with categorical covariates is no longer sorted by columns, the order is now invariant with respect to alpha. This was not strictly a bug but if the coefficient labels are not rearranged in the same way, output will be wrong & misleading.
+Standard R-package documentation can be seen by entering the command `?slouch`, or visiting the package website [the package website](https://kopperud.github.io/slouch/articles/introduction.html).
 
 
-### Structural changes
-* Code duplication largely removed, R-code reduced from about 4k to 1k lines.
-* SLOUCH now uses Git version control.
-* Direct effect models now about 4x faster. Models with categorical and/or brownian covariates are now estimated nearly as fast as direct effect models.
-* Grid-search now has support for using multiple CPU cores, currently only for windows.
-* A hillclimber routine (L-BFGS) implemented in R base `optim()` is implemented. This routine can be used standalone or combined with the hillclimber, where the hillclimber starts at the best ML-estimate from the grid-search.
-* The format used to display trees in OUCH/SLOUCH is now scrapped in favor of package `ape`. Calculation of branch lengths is now dependent on this package, and the weight matrix functions have been rewritten from scratch to accomodate the new format. SLOUCH is now technically no longer an extension of OUCH.
-* Inner "workhorse" loop of the weight matrix functions is rewritten in C++
-* Because of this, functions for simulating OU traits, plotting the tree, and the Fitch algorithm for reconstructing ancestral states have been scrapped.
-* SLOUCH now depends on packages `parallel`, `ape`, `Rcpp`.
-* Model outputs are no longer printed directly in the console, but returned as a composite object of class `slouch`, essentially a list with lots of information and methods for printing and plotting.
-* Arguments `intercept` and `ultrametric` are misleading. Changed to `estimate.Ya` and `estimate.bXa`, see docstrings.
-* SLOUCH now has one unit test, should be many more
+### References
 
-### Other changes
-* For grid-search, the marginal support set for alpha and sigma are now calculated and given in a table.
-* The GLS estimator is now not used as-is to calculate regression coefficients. Instead, the lower triangular matrix of the cholesky factorization of $V = C^TC$, $L = C^T$ is used to "transform" $X_{*} = L^{-1}X$ and $Y_{*} = L^{-1}Y$. Next, $X_*$ and $Y_*$ are fed to R's `lm.fit()`, which uses QR-decomposition to calculate coefficients. This makes for about a 4x speedup. Also if X is singular, the program will now not crash but return "NA" in the regression coefficients.
-* Calculation of $log(det(V))$ is now done differently, both to increase speed and numerical stability (not returning `Inf`) when N is large.
-* Docstrings are now available, though crude.
-
+* Hansen, T. F., Pienaar, J., & Orzack, S. H. (2008). A comparative method for studying adaptation to a randomly evolving environment. Evolution, 62(8), 1965-1977.
