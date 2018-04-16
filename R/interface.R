@@ -2,20 +2,20 @@
 #'
 #' 
 #' @param phy an object of class 'phylo', must be rooted.
-#' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
+#' @param species a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label
 #' @param sigma2_y_values alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.
 #' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
 #' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
 #' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
 #' @param response a numeric vector of a trait to be treated as response variable
-#' @param me.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species squared standard error of the mean.
+#' @param mv.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, mv.response is the within-species squared standard error of the mean.
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
-#' @param fixed.cov Direct effect independent variables
-#' @param me.fixed.cov Observational variances for direct effect independent variables. Must be the same shape as fixed.cov
-#' @param mecov.fixed.cov .
+#' @param direct.cov Direct effect independent variables
+#' @param mv.direct.cov Observational variances for direct effect independent variables. Must be the same shape as direct.cov
+#' @param mecov.direct.cov .
 #' @param random.cov Independent variables each modeled as a brownian motion
-#' @param me.random.cov Observational variances for the brownian covariates. Must be the same shape as random.cov
+#' @param mv.random.cov Observational variances for the brownian covariates. Must be the same shape as random.cov
 #' @param mecov.random.cov .
 #' @param hessian use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
@@ -66,13 +66,13 @@ slouch.fit <- function(phy,
                        vy_values = NULL, 
                        sigma2_y_values = NULL,
                        response, 
-                       me.response=NULL, 
+                       mv.response=NULL, 
                        fixed.fact=NULL,
-                       fixed.cov=NULL, 
-                       me.fixed.cov=NULL, 
-                       mecov.fixed.cov=NULL, 
+                       direct.cov=NULL, 
+                       mv.direct.cov=NULL, 
+                       mecov.direct.cov=NULL, 
                        random.cov=NULL, 
-                       me.random.cov=NULL, 
+                       mv.random.cov=NULL, 
                        mecov.random.cov=NULL,
                        estimate.Ya = FALSE,
                        estimate.bXa = FALSE,
@@ -100,11 +100,11 @@ slouch.fit <- function(phy,
     }
   }
   
-  if(!is.null(fixed.cov)){
-    if(ncol(as.matrix(fixed.cov))==1) {
-      names.fixed.cov <- deparse(substitute(fixed.cov))
+  if(!is.null(direct.cov)){
+    if(ncol(as.matrix(direct.cov))==1) {
+      names.direct.cov <- deparse(substitute(direct.cov))
     }else{
-      names.fixed.cov <- colnames(fixed.cov)
+      names.direct.cov <- colnames(direct.cov)
     }
   }
   
@@ -114,13 +114,13 @@ slouch.fit <- function(phy,
               vy_values = vy_values, 
               sigma2_y_values = sigma2_y_values,
               response = response, 
-              me.response = me.response, 
+              mv.response = mv.response, 
               fixed.fact = fixed.fact,
-              fixed.cov = fixed.cov, 
-              me.fixed.cov = me.fixed.cov, 
-              mecov.fixed.cov = mecov.fixed.cov, 
+              direct.cov = direct.cov, 
+              mv.direct.cov = mv.direct.cov, 
+              mecov.direct.cov = mecov.direct.cov, 
               random.cov = random.cov, 
-              me.random.cov = me.random.cov, 
+              mv.random.cov = mv.random.cov, 
               mecov.random.cov = mecov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = estimate.bXa,
@@ -133,7 +133,7 @@ slouch.fit <- function(phy,
               lower = lower,
               upper = upper,
               verbose = verbose,
-              names.fixed.cov = names.fixed.cov,
+              names.direct.cov = names.direct.cov,
               names.random.cov = names.random.cov)
 }
 
@@ -155,13 +155,13 @@ brown.fit <- function(phy,
                       species = NULL,
                       sigma2_y_values = NULL,
                       response, 
-                      me.response = NULL, 
+                      mv.response = NULL, 
                       fixed.fact = NULL,
-                      fixed.cov = NULL, 
-                      me.fixed.cov = NULL, 
-                      mecov.fixed.cov = NULL, 
+                      direct.cov = NULL, 
+                      mv.direct.cov = NULL, 
+                      mecov.direct.cov = NULL, 
                       random.cov = NULL, 
-                      me.random.cov = NULL, 
+                      mv.random.cov = NULL, 
                       mecov.random.cov = NULL,
                       estimate.Ya = FALSE,
                       hessian = FALSE,
@@ -188,11 +188,11 @@ brown.fit <- function(phy,
     }
   }
   
-  if(!is.null(fixed.cov)){
-    if(ncol(as.matrix(fixed.cov))==1) {
-      names.fixed.cov <- deparse(substitute(fixed.cov))
+  if(!is.null(direct.cov)){
+    if(ncol(as.matrix(direct.cov))==1) {
+      names.direct.cov <- deparse(substitute(direct.cov))
     }else{
-      names.fixed.cov <- colnames(fixed.cov)
+      names.direct.cov <- colnames(direct.cov)
     }
   }
   
@@ -200,13 +200,13 @@ brown.fit <- function(phy,
               species = species,
               sigma2_y_values = sigma2_y_values,
               response = response, 
-              me.response = me.response, 
+              mv.response = mv.response, 
               fixed.fact = fixed.fact,
-              fixed.cov = fixed.cov, 
-              me.fixed.cov = me.fixed.cov, 
-              mecov.fixed.cov = mecov.fixed.cov, 
+              direct.cov = direct.cov, 
+              mv.direct.cov = mv.direct.cov, 
+              mecov.direct.cov = mecov.direct.cov, 
               random.cov = random.cov, 
-              me.random.cov = me.random.cov, 
+              mv.random.cov = mv.random.cov, 
               mecov.random.cov = mecov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = FALSE,
@@ -219,7 +219,7 @@ brown.fit <- function(phy,
               lower = lower,
               upper = upper,
               verbose = verbose,
-              names.fixed.cov = names.fixed.cov,
+              names.direct.cov = names.direct.cov,
               names.random.cov = names.random.cov)
 }
 

@@ -27,7 +27,7 @@ m1 <- slouch.fit(phy,
                      hl_values = seq(0,0.4, length.out = 15),
                      vy_values = seq(0.05,0.15, length.out = 15),
                      response = trait_1,
-                     me.response = trait_1_SE_sq,
+                     mv.response = trait_1_SE_sq,
                      fixed.fact = regimes_tip)
 
 

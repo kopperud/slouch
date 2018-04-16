@@ -87,7 +87,7 @@ print.slouch <- function(x, ...){
 #'m0 <- slouch.fit(phy = artiodactyla,
 #'                 species = neocortex$species,
 #'                 response = neocortex$neocortex_area_mm2_log_mean,
-#'                 me.response = neocortex$neocortex_se_squared,
+#'                 mv.response = neocortex$neocortex_se_squared,
 #'                 hillclimb = TRUE)
 #'                 
 #'hillclimbplot(m0)

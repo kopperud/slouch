@@ -1,4 +1,4 @@
-bias_correction <- function(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed){
+bias_correction <- function(beta1, beta1.var, Y, X, V, which.direct.cov, which.random.cov, seed){
   ## ###################################################################### ##
   ##                                                                        ##
   ##                            Bias correction                             ##
@@ -9,18 +9,18 @@ bias_correction <- function(beta1, beta1.var, Y, X, V, which.fixed.cov, which.ra
   n <- nrow(X)
   
   ## Redefine Vu and Vd as square block-matrices of size (n*ncol(X)).
-  zeros <- rep(0, n*length(beta1[-c(which.fixed.cov, which.random.cov),]))
+  zeros <- rep(0, n*length(beta1[-c(which.direct.cov, which.random.cov),]))
   Vu <- diag(c(zeros, sapply(seed$Vu, diag)))
   Vd <- diag(c(zeros, sapply(seed$Vd, diag)))
   
-  a_intercept <- X[, -c(which.fixed.cov, which.random.cov), drop = FALSE]
+  a_intercept <- X[, -c(which.direct.cov, which.random.cov), drop = FALSE]
   
-  if(length(which.fixed.cov) > 0){
-    a_fixed <- matrix(apply(X[,which.fixed.cov, drop = FALSE], 
+  if(length(which.direct.cov) > 0){
+    a_fixed <- matrix(apply(X[,which.direct.cov, drop = FALSE], 
                             2, 
                             function(e) mean(e)), 
                       byrow = TRUE, nrow = nrow(X), 
-                      ncol = length(which.fixed.cov))
+                      ncol = length(which.direct.cov))
   }else{
     a_fixed <- NULL
   }

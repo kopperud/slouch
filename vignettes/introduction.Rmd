@@ -57,7 +57,7 @@ neocortex$species == phy$tip.label
 ```
 
 
-Unsurprisingly, not all of the species are in their correct places; we will have to reorder the data frame. Here is one way to do it.
+Unsurprisingly, not all of the species are in their correct places; we will have to reorder the data framv. Here is one way to do it.
 
 
 ```{r, highlight = TRUE}
@@ -130,7 +130,7 @@ SLOUCH can also fit the optimum as a linear regression with one or more continuo
 model3 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
-                     fixed.cov = neocortex$brain_mass_g_log_mean,
+                     direct.cov = neocortex$brain_mass_g_log_mean,
                      lower = c(0.001, 0.01),
                      hillclimb = TRUE)
 plot(model3)
@@ -150,14 +150,14 @@ model3$opt.reg$coefficients
 ```
 
 
-While the single-optimum model showed a very strong phylogenetic inertia, in this model it is somewhat lower with a phylogenetic half-life ($t_{1/2}$) of 16.9 myr. In this case, the regression line estimated using ordinary least squares is almost indistinguishable from the Ornstein-Uhlenbeck optimal regression. It is also possible to fit a model with multiple continuous covariates, however the input to `fixed.cov` must be a matrix or data frame that has column names.
+While the single-optimum model showed a very strong phylogenetic inertia, in this model it is somewhat lower with a phylogenetic half-life ($t_{1/2}$) of 16.9 myr. In this case, the regression line estimated using ordinary least squares is almost indistinguishable from the Ornstein-Uhlenbeck optimal regression. It is also possible to fit a model with multiple continuous covariates, however the input to `direct.cov` must be a matrix or data frame that has column names.
 
 ```{r, highlight = TRUE, fig.width=7, fig.height = 5}
 model4 <- 
   slouch.fit(phy = phy,
              species = neocortex$species,
              response = neocortex$neocortex_area_mm2_log_mean,
-             fixed.cov = cbind(brain = neocortex$brain_mass_g_log_mean, 
+             direct.cov = cbind(brain = neocortex$brain_mass_g_log_mean, 
                                body = neocortex$body_mass_g_log_mean),
              lower = c(0.001, 0.01),
              hillclimb = TRUE)
@@ -192,7 +192,7 @@ If it looks like there are no visible mistakes, we can go ahead and fit the mode
 model5 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
-                     fixed.cov = neocortex$brain_mass_g_log_mean,
+                     direct.cov = neocortex$brain_mass_g_log_mean,
                      fixed.fact = neocortex$diet,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.01))
@@ -231,9 +231,9 @@ model7 <- slouch.fit(phy = phy,
                      vy_values = seq(0.001, 0.05, length.out = 25),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
-                     me.response = neocortex$neocortex_se_squared,
+                     mv.response = neocortex$neocortex_se_squared,
                      random.cov = neocortex$brain_mass_g_log_mean,
-                     me.random.cov = neocortex$brain_se_squared,
+                     mv.random.cov = neocortex$brain_se_squared,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.001))
 

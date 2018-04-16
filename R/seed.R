@@ -4,13 +4,13 @@
 ## ------------------------------------------ ##
 
 
-seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
+seed <- function(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov){
   n <- length(phy$tip.label)
   
   if(!is.null(random.cov)){
     brownian <- mapply(function(y, y_me) sigma.X.estimate(phy, ta, y, y_me),
                        y = split(t(random.cov), colnames(random.cov)),
-                       y_me = split(t(me.random.cov), colnames(random.cov)),
+                       y_me = split(t(mv.random.cov), colnames(random.cov)),
                        SIMPLIFY = FALSE)
     
     sigma_squared <- sapply(brownian, function(x) x$sigma_squared)
@@ -27,13 +27,13 @@ seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
   ##                                                         ##
   ## ------------------------------------------------------- ##
 
-  if(!is.null(fixed.cov)){
+  if(!is.null(direct.cov)){
     Vd_fixed <- list()
     Vu_fixed <- list()
-    for (i in 1:ncol(fixed.cov))
+    for (i in 1:ncol(direct.cov))
     {
-      Vu_fixed[[i]] <- diag(me.fixed.cov[,i])
-      Vd_fixed[[i]] <- diag(rep(stats::var(fixed.cov[,i]), n)) - Vu_fixed[[i]]
+      Vu_fixed[[i]] <- diag(mv.direct.cov[,i])
+      Vd_fixed[[i]] <- diag(rep(stats::var(direct.cov[,i]), n)) - Vu_fixed[[i]]
       if(any(Vd_fixed[[i]] < 0)){
         Vd_fixed[[i]][Vd_fixed[[i]] < 0] <- 0
         warning("Vd contains negative variances, scaled up to 0. Does one or more predictor variables have a larger within-species measurement error than their among-species trait variance?")
@@ -48,7 +48,7 @@ seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
     Vu_random <- list()
     Vd_random <- lapply(sigma_squared, function(e) ta*e)
     for(i in seq_along(sigma_squared)){
-      Vu_random[[i]] <- diag(me.random.cov[,i])
+      Vu_random[[i]] <- diag(mv.random.cov[,i])
     }
   }else{
     Vd_random <- NULL
@@ -58,7 +58,7 @@ seed <- function(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov){
   Vu <- c(Vu_fixed, Vu_random)
   Vd <- c(Vd_fixed, Vd_random)
   
-  if(!is.null(random.cov) | !is.null(fixed.cov)){
+  if(!is.null(random.cov) | !is.null(direct.cov)){
     Vu_given_x <- list()
     Vx <- list()
     for (i in 1:length(Vd)){

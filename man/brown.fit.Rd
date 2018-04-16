@@ -5,34 +5,34 @@
 \title{Function to fit Brownian-motion models of trait evolution}
 \usage{
 brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
-  me.response = NULL, fixed.fact = NULL, fixed.cov = NULL,
-  me.fixed.cov = NULL, mecov.fixed.cov = NULL, random.cov = NULL,
-  me.random.cov = NULL, mecov.random.cov = NULL, estimate.Ya = FALSE,
+  mv.response = NULL, fixed.fact = NULL, direct.cov = NULL,
+  mv.direct.cov = NULL, mecov.direct.cov = NULL, random.cov = NULL,
+  mv.random.cov = NULL, mecov.random.cov = NULL, estimate.Ya = FALSE,
   hessian = FALSE, support = 2, convergence = 1e-06, nCores = 1,
   hillclimb = FALSE, lower = 1e-08, upper = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
-\item{species}{a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label}
+\item{species}{a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label}
 
 \item{sigma2_y_values}{a vector of one or more candidates for sigma squared (y) to be evaluated in grid search.}
 
 \item{response}{a numeric vector of a trait to be treated as response variable}
 
-\item{me.response}{numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, me.response is the within-species squared standard error of the mean.}
+\item{mv.response}{numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, mv.response is the within-species squared standard error of the mean.}
 
 \item{fixed.fact}{factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...}
 
-\item{fixed.cov}{Direct effect independent variables}
+\item{direct.cov}{Direct effect independent variables}
 
-\item{me.fixed.cov}{Observational variances for direct effect independent variables. Must be the same shape as fixed.cov}
+\item{mv.direct.cov}{Observational variances for direct effect independent variables. Must be the same shape as direct.cov}
 
-\item{mecov.fixed.cov}{.}
+\item{mecov.direct.cov}{.}
 
 \item{random.cov}{Independent variables each modeled as a brownian motion}
 
-\item{me.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
+\item{mv.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
 
 \item{mecov.random.cov}{.}
 

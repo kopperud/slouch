@@ -15,7 +15,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
 
   n <- length(tree$phy$tip.label)
   
-  if(!is.null(observations$fixed.cov) | !is.null(observations$random.cov)){
+  if(!is.null(observations$direct.cov) | !is.null(observations$random.cov)){
     if(evolutionary){
       rho <- 1
     }else{
@@ -25,14 +25,14 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
         rho <- tree$T.term / 2
       }
     }
-    covariates <- matrix(cbind(observations$fixed.cov, rho * observations$random.cov), 
+    covariates <- matrix(cbind(observations$direct.cov, rho * observations$random.cov), 
                          nrow = n, 
-                         dimnames = list(NULL, c(observations$names.fixed.cov, 
+                         dimnames = list(NULL, c(observations$names.direct.cov, 
                                                  observations$names.random.cov)))
     
     ## Sugar, append "(bm)" to the continuous explanatory variable names that are modelled as a brownian motion
     if(!is.null(observations$random.cov)){
-      i <- length(observations$names.fixed.cov)
+      i <- length(observations$names.direct.cov)
       k <- i + seq_along(observations$names.random.cov)
       
       if (control$model == "bm"){
@@ -52,7 +52,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
   }
 
   if(control$estimate.bXa){
-    if (!is.null(observations$random.cov) | !is.null(observations$fixed.cov)){
+    if (!is.null(observations$random.cov) | !is.null(observations$direct.cov)){
       bXa <- c(bXa = 1 - exp(-a * tree$T.term) - (1 - (1 - exp(-a * tree$T.term))/(a * tree$T.term)))
     }else{
       stop("bXa can not be estimated without continuous covariates.")
@@ -89,8 +89,8 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
   return(X)
 }
 
-#varcov_model <- function(hl, vy, a, beta1, which.fixed.cov, which.random.cov, random.cov, T.term, fixed.cov, Vu_given_x, mecov.random.cov, mecov.fixed.cov, n, sigma_squared, phy, ta, tij, tja, me.response){
-varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed, control){
+#varcov_model <- function(hl, vy, a, beta1, which.direct.cov, which.random.cov, random.cov, T.term, direct.cov, Vu_given_x, mecov.random.cov, mecov.direct.cov, n, sigma_squared, phy, ta, tij, tja, mv.response){
+varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.cov, tree, observations, seed, control){
 
   tij <- tree$tij
   tja <- tree$tja
@@ -126,7 +126,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.c
   return(Vt)
 }
 
-varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.fixed.cov, which.random.cov, control){
+varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.direct.cov, which.random.cov, control){
 
   if(control$model == "ou"){
     rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
@@ -135,13 +135,13 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.f
   }
   
   
-  if(length(which.fixed.cov) > 0 | length(which.random.cov) > 0){
+  if(length(which.direct.cov) > 0 | length(which.random.cov) > 0){
     ## Update measurement error in X.
     ## Measurement error in predictor - take 2]
     beta2_Vu_given_x_list <-  mapply(function(Vu_given_xi, b, rho_squared) {Vu_given_xi * b^2 * rho_squared} , 
                                      Vu_given_xi = seed$Vu_given_x, 
-                                     b = beta1[c(which.fixed.cov, which.random.cov),], 
-                                     rho_squared = c(lapply(seq_along(beta1[which.fixed.cov, ]), function(e) 1),
+                                     b = beta1[c(which.direct.cov, which.random.cov),], 
+                                     rho_squared = c(lapply(seq_along(beta1[which.direct.cov, ]), function(e) 1),
                                                      lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
                                      SIMPLIFY = FALSE)
     beta2_Vu_given_x <- Reduce("+", beta2_Vu_given_x_list)
@@ -156,12 +156,12 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.f
                              ncol = ncol(observations$random.cov)))
     }
     
-    if(sum(observations$mecov.fixed.cov) == 0){
+    if(sum(observations$mecov.direct.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mecov.fixed.cov)*t(kronecker(2*beta1[which.fixed.cov,],
+      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mecov.direct.cov)*t(kronecker(2*beta1[which.direct.cov,],
                                                                                              (1-(1-exp(-a*T.term))/(a*T.term)))), 
-                                   ncol =  ncol(observations$fixed.cov)))
+                                   ncol =  ncol(observations$direct.cov)))
     }
   }else{
     beta2_Vu_given_x <- 0
@@ -169,7 +169,7 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.f
     mcov.fixed <- 0
   }
   
-  V_me <- observations$me.response + beta2_Vu_given_x - mcov - mcov.fixed
+  V_me <- observations$mv.response + beta2_Vu_given_x - mcov - mcov.fixed
   return(V_me)
 }
 
@@ -229,17 +229,17 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
   beta1 <- matrix(stats::lm.fit(X, Y)$coefficients, ncol=1)
-  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(observations$names.fixed.cov) - length(observations$names.random.cov)),
-                        rep("Instantaneous cov", length(observations$names.fixed.cov)),
+  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(observations$names.direct.cov) - length(observations$names.random.cov)),
+                        rep("Instantaneous cov", length(observations$names.direct.cov)),
                         rep("Random cov", length(observations$names.random.cov)))
-  which.fixed.cov <- which(beta1.descriptor == "Instantaneous cov")
+  which.direct.cov <- which(beta1.descriptor == "Instantaneous cov")
   which.random.cov <- which(beta1.descriptor == "Random cov")
 
   
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, sigma2_y, a, beta1, which.fixed.cov, which.random.cov, tree, observations, seed, control)
-    V_me <- varcov_measurement(observations, seed, beta1, hl, a, tree$T.term, which.fixed.cov, which.random.cov, control)
+    Vt <- varcov_model(hl, sigma2_y, a, beta1, which.direct.cov, which.random.cov, tree, observations, seed, control)
+    V_me <- varcov_measurement(observations, seed, beta1, hl, a, tree$T.term, which.direct.cov, which.random.cov, control)
     V <- Vt + diag(V_me)
     
     L <- t(chol(V))
@@ -259,7 +259,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     beta.i <- matrix(fit$coefficients, ncol=1)
     
     ## Defensive & debug conditions
-    if(any(is.na(beta.i[c(which.fixed.cov, which.random.cov), ]))) {
+    if(any(is.na(beta.i[c(which.direct.cov, which.random.cov), ]))) {
       cat("\n")
       print(beta.i)
       warning("For hl = ", hl," and vy = ", vy," the gls estimate of beta contains \"NA\". Consider using different hl or vy.")
@@ -332,7 +332,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
                        X = X0,
                        vcov = ev.beta1.var,
                        residuals = Y - (X0 %*% ev.beta1)),
-                  bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, which.fixed.cov, which.random.cov, seed))
+                  bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, which.direct.cov, which.random.cov, seed))
     }else{
       ev.beta1.var <- NULL
       ev.beta1 <- NULL
@@ -346,7 +346,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
                       residuals = Y - (X0 %*% beta1),
                       trend_diff = trend_diff,
                       vcov = beta1.var),
-                 if (!is.null(observations$fixed.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.fixed.cov, which.random.cov, seed) else NULL)
+                 if (!is.null(observations$direct.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.direct.cov, which.random.cov, seed) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))

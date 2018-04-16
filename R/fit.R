@@ -5,13 +5,13 @@
                         vy_values, 
                         sigma2_y_values,
                         response, 
-                        me.response, 
+                        mv.response, 
                         fixed.fact,
-                        fixed.cov, 
-                        me.fixed.cov, 
-                        mecov.fixed.cov, 
+                        direct.cov, 
+                        mv.direct.cov, 
+                        mecov.direct.cov, 
                         random.cov, 
-                        me.random.cov, 
+                        mv.random.cov, 
                         mecov.random.cov,
                         estimate.Ya,
                         estimate.bXa,
@@ -24,7 +24,7 @@
                         lower,
                         upper,
                         verbose,
-                        names.fixed.cov,
+                        names.direct.cov,
                         names.random.cov)
 {
   if(is.null(species)){
@@ -44,8 +44,8 @@
   }
   
   # SET DEFAULTS IF NOT SPECIFIED
-  if(is.null(me.response)){
-    me.response <- rep(0, times= length(response))
+  if(is.null(mv.response)){
+    mv.response <- rep(0, times= length(response))
   }
   
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
@@ -86,30 +86,30 @@
   
   ############################################################################
   
-  if(!is.null(fixed.cov)){
-    if(ncol(as.matrix(fixed.cov))==1) {
-      #names.fixed.cov <- deparse(substitute(fixed.cov))
-      fixed.cov <- matrix(fixed.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.fixed.cov))
+  if(!is.null(direct.cov)){
+    if(ncol(as.matrix(direct.cov))==1) {
+      #names.direct.cov <- deparse(substitute(direct.cov))
+      direct.cov <- matrix(direct.cov, nrow = length(phy$tip.label), dimnames = list(NULL, names.direct.cov))
       
     }else{
-      fixed.cov <- as.matrix(fixed.cov)
-      stopifnot(!is.null(colnames(fixed.cov)))
-      #names.fixed.cov <- colnames(fixed.cov)
+      direct.cov <- as.matrix(direct.cov)
+      stopifnot(!is.null(colnames(direct.cov)))
+      #names.direct.cov <- colnames(direct.cov)
     }
-    if(is.null(me.fixed.cov)){
-      me.fixed.cov <- matrix(0, nrow = n, ncol = ncol(fixed.cov))
+    if(is.null(mv.direct.cov)){
+      mv.direct.cov <- matrix(0, nrow = n, ncol = ncol(direct.cov))
     }else{
-      me.fixed.cov <- cbind(me.fixed.cov)
+      mv.direct.cov <- cbind(mv.direct.cov)
     }
     
-    if(is.null(mecov.fixed.cov)){
-      mecov.fixed.cov <- matrix(data = 0, nrow = n, ncol = ncol(fixed.cov))
+    if(is.null(mecov.direct.cov)){
+      mecov.direct.cov <- matrix(data = 0, nrow = n, ncol = ncol(direct.cov))
     }else{
-      mecov.fixed.cov <- as.matrix(mecov.fixed.cov)
+      mecov.direct.cov <- as.matrix(mecov.direct.cov)
     }
     
   }else{
-    names.fixed.cov <- NULL
+    names.direct.cov <- NULL
   }
   
   if(!is.null(random.cov)){
@@ -122,10 +122,10 @@
       stopifnot(!is.null(colnames(random.cov)))
       #names.random.cov <- colnames(random.cov)
     }
-    if(is.null(me.random.cov)){
-      me.random.cov <- matrix(0, nrow = n, ncol = ncol(random.cov))
+    if(is.null(mv.random.cov)){
+      mv.random.cov <- matrix(0, nrow = n, ncol = ncol(random.cov))
     }else{
-      me.random.cov <- cbind(me.random.cov)
+      mv.random.cov <- cbind(mv.random.cov)
     }
     
     if(is.null(mecov.random.cov)){
@@ -151,14 +151,14 @@
   
   ## Cluster parameters concerning the type of model being run
   observations <- list(response = response,
-                       me.response = me.response,
+                       mv.response = mv.response,
                        fixed.fact = fixed.fact,
-                       fixed.cov = fixed.cov,
-                       mecov.fixed.cov = mecov.fixed.cov,
+                       direct.cov = direct.cov,
+                       mecov.direct.cov = mecov.direct.cov,
                        random.cov = random.cov,
                        mecov.random.cov = mecov.random.cov,
                        Y = Y,
-                       names.fixed.cov = names.fixed.cov,
+                       names.direct.cov = names.direct.cov,
                        names.random.cov = names.random.cov,
                        closures = list(V_fixed_partial = memoise::memoise(function(a) (1 - exp(-2 * a * ta)) * exp(-a * tij))))
   
@@ -170,7 +170,7 @@
                   model = model)
   
   
-  seed <- seed(phy, ta, fixed.cov, me.fixed.cov, random.cov, me.random.cov)
+  seed <- seed(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov)
   coef.names <- colnames(slouch.modelmatrix(a = 1, hl = 1, tree, observations, control, evolutionary = T))
   
   ## Uniform random start values for hl and vy, in case hillclimber is used

@@ -1,13 +1,13 @@
 ## Extra functions
 
 sigma.X.estimate <-
-  function (phy, ta, predictor, me.predictor) {
+  function (phy, ta, predictor, mv.predictor) {
     predictor <- matrix(predictor, nrow = length(phy$tip.label))
     
     N <- length(phy$tip.label)
     v <- ta # Time from root to most recent ancestor
     w <- matrix(data = 1, nrow = N, ncol = 1)
-    me <- diag(me.predictor)
+    me <- diag(mv.predictor)
     dat <- predictor
     beta <- solve(t(w) %*% solve(v) %*% w) %*% (t(w) %*% solve(v) %*% dat)
     e <- dat - c(beta)
