@@ -6,6 +6,8 @@ Date: 2017-10-01
 Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "b.t.kopperud@nhm.uio.no"),
              person("Jason", "Pienaar", role = c("aut")),
              person("Kjetil Lysne", "Voje", role = c("aut")),
+             person("Steven Hecht", "Orzack", role = c("aut")),
+             person("Thomas F.", "Hansen", role = c("aut")),
              person("Mark", "Grabowski", role = c("ctb")))
 Description: An implementation of a phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves towards a primary optimum. The optimum can be modelled as a single parameter, as multiple discrete regimes on the phylogenetic tree, and/or with continuous covariates.
 License: GPL-2

@@ -31,37 +31,37 @@ print.slouch <- function(x, ...){
   }
 
   if(x$control$model == "ou"){
-    message("Optimal regression")
+    message("Coefficients")
   }else{
     if(!is.null(x$opt.reg$trend_diff) & !x$control$estimate.Ya){
-      message("Primary regression (assuming Ya = 0)")
+      message("Coefficients (assuming Ya = 0)")
     }else{
-      message("Primary regression")
+      message("Coefficients")
     }
   }
   print(x$opt.reg$coefficients)
   if(!is.null(x$opt.reg$trend_diff)){
-    message("Pairwise contrasts between trends")
+    message("Pairwise contrasts among trends")
     print(x$opt.reg$trend_diff)
   }
 
   if(!is.null(x$opt.reg$coefficients_bias_corr)){
-    if(x$control$model == "ou") message("Optimal regression - bias-corrected") else message("Primary regression - bias-corrected")
+    message("Coefficients - bias-corrected")
     print(x$opt.reg$coefficients_bias_corr)
   }
 
   if (!is.null(x$ev.reg)){
-    message("Evolutionary regression")
+    message("Coefficients (rho = 1)")
     print(x$ev.reg$coefficients)
     
     if(!is.null(x$ev.reg$coefficients_bias_corr)){
-      message("Evolutionary regression - bias-corrected")
+      message("Coefficients (rho = 1) - bias-corrected")
       print(x$ev.reg$coefficients_bias_corr)
     }
   }
   
   if (!is.null(x$brownian_predictors)){
-    message("Stochastic predictor")
+    message("Stochastic predictor(s)")
     print(x$brownian_predictors)
   }
   
@@ -73,6 +73,84 @@ print.slouch <- function(x, ...){
   plot(x)
 }
 
+#' @inherit hillclimbplot.slouch
+#' @export
+#' @examples 
+#'library(slouch)
+#'library(ape)
+#'
+#'data(neocortex)
+#'data(artiodactyla)
+#'
+#'neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#'
+#'m0 <- slouch.fit(phy = artiodactyla,
+#'                 species = neocortex$species,
+#'                 response = neocortex$neocortex_area_mm2_log_mean,
+#'                 me.response = neocortex$neocortex_se_squared,
+#'                 hillclimb = TRUE)
+#'                 
+#'hillclimbplot(m0)
+hillclimbplot <- function (x, ...) {
+  UseMethod("hillclimbplot", x)
+}
+
+#' Plot the hillclimber trajectory
+#'
+#' @param x An object of class 'slouch'
+#' @param ... Additional arguments passed to 'plot.default(...)'
+#'
+#' @export
+hillclimbplot.slouch <- function(x,...){
+  
+  if (!is.null(x$climblog_df)){
+    logL <- x$climblog_df$loglik
+    hl <- x$climblog_df$hl
+    vy <- x$climblog_df$vy
+    sigma2_y <- x$climblog_df$sigma2_y
+    index <- x$climblog_df$index
+    s <- if(!is.null(vy)) vy else sigma2_y
+    
+    if(x$control$model == "ou"){
+      graphics::plot(x = hl, 
+                     y = s, 
+                     main = "Path of hillclimber",
+                     col = grDevices::gray.colors(length(index),
+                                                  start = 0.8, end = 0.05, gamma = 1)[index],
+                     pch = 19,
+                     ylim = c(min(s), max(s)),
+                     xlim = c(min(hl), max(hl)),
+                     xlab = "Phylogenetic half-life",
+                     ylab = if(!is.null(vy)) "Stationary variance" else "Sigma squared (y)"
+      )
+      
+      points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
+      text(hl[1], s[1], "Start")
+      text(hl[length(hl)], s[length(s)], "End")
+    }else{
+      graphics::plot(x = log(sigma2_y),
+                     y = logL,
+                     xlab = "sigma squared (y)", pch = 19,
+                     xaxt = "n",
+                     main = "Path of hillclimber")
+      graphics::axis(1, 
+                     at = log(x$climblog_df$sigma2_y), 
+                     labels = round(x$climblog_df$sigma2_y, 2))
+      points(log(tail(sigma2_y, n = 1)), 
+             tail(logL, n = 1),
+             pch = 19, col = "red")
+      points(log(head(sigma2_y, n = 1)), 
+             head(logL, n = 1),
+             pch = 19, col = "darkblue")
+      text(log(sigma2_y[1]), logL[1], "Start")
+      text(tail(log(sigma2_y), n = 1), tail(logL, n = 1), "End")
+    }
+  }else{
+    stop("Your model was not fitted using the hillclimber.")
+  }
+  
+}
+
 
 #' Plot slouch-objects
 #' @description Graphical plot of parameter space traversed in order to find ML-estimate of the model.
@@ -82,12 +160,7 @@ print.slouch <- function(x, ...){
 #'
 #' @export
 plot.slouch <- function(x, ...){
-  plotpars <- graphics::par()
-  if (!is.null(x$supportplot) & !is.null(x$climblog_df)){
-    graphics::par(mfrow = c(1, 2))
-  }
 
-  
   if (!is.null(x$supportplot)){
     if(x$control$model == "ou"){
       s3d <- if(!is.null(x$supportplot$vy)) x$supportplot$vy else x$supportplot$sigma2_y
@@ -127,53 +200,6 @@ plot.slouch <- function(x, ...){
     }
   }
   
-  if (!is.null(x$climblog_df)){
-    logL <- x$climblog_df$loglik
-    hl <- x$climblog_df$hl
-    vy <- x$climblog_df$vy
-    sigma2_y <- x$climblog_df$sigma2_y
-    index <- x$climblog_df$index
-    s <- if(!is.null(vy)) vy else sigma2_y
-    
-    if(x$control$model == "ou"){
-      graphics::plot(x = hl, 
-                     y = s, 
-                     main = "Path of hillclimber",
-                     col = grDevices::gray.colors(length(index),
-                                                  start = 0.8, end = 0.05, gamma = 1)[index],
-                     pch = 19,
-                     ylim = c(min(s), max(s)),
-                     xlim = c(min(hl), max(hl)),
-                     xlab = "Phylogenetic half-life",
-                     ylab = if(!is.null(vy)) "Stationary variance" else "Sigma squared (y)"
-                     )
-      
-      points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
-      text(hl[1], s[1], "Start")
-      text(hl[length(hl)], s[length(s)], "End")
-    }else{
-      graphics::plot(x = log(sigma2_y),
-                     y = logL,
-                     xlab = "sigma squared (y)", pch = 19,
-                     xaxt = "n",
-                     main = "Path of hillclimber")
-      graphics::axis(1, 
-                     at = log(x$climblog_df$sigma2_y), 
-                     labels = round(x$climblog_df$sigma2_y, 2))
-      points(log(tail(sigma2_y, n = 1)), 
-             tail(logL, n = 1),
-             pch = 19, col = "red")
-      points(log(head(sigma2_y, n = 1)), 
-             head(logL, n = 1),
-             pch = 19, col = "darkblue")
-      text(log(sigma2_y[1]), logL[1], "Start")
-      text(tail(log(sigma2_y), n = 1), tail(logL, n = 1), "End")
-    }
-  }
-  
-  
-  
-  graphics::par(mfrow = plotpars$mfrow)
 }
 
 
@@ -191,12 +217,7 @@ logLik.slouch <- function(object, ...){
 
 
 
-#' Plot the internal regimes for a given fitted model
-#'
-#' @param x an object of class 'slouch'
-#' @param ... additional parameters passed to plot.phylo(...)
-#'
-#' @return nothing
+#' @inherit regimeplot
 #' @export
 regimeplot.slouch <- function(x, ...){
   stopifnot(!is.null(x$fixed.fact))
@@ -213,10 +234,10 @@ regimeplot.slouch <- function(x, ...){
   }
 }
 
-#' Title
+#' Plot the internal regimes for a given fitted model
 #'
 #' @param x an object of class 'slouch'
-#' @param ... additional parameters
+#' @param ... additional parameters passed to plot.phylo(...)
 #'
 #' @return nothing
 #' @export

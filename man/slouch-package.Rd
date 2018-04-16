@@ -39,6 +39,8 @@ Authors:
 \itemize{
   \item Jason Pienaar
   \item Kjetil Lysne Voje
+  \item Steven Hecht Orzack
+  \item Thomas F. Hansen
 }
 
 Other contributors:

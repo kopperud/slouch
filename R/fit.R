@@ -335,7 +335,7 @@
     brownian_predictors <- matrix(data = rbind(seed$theta.X, seed$sigma_squared), 
                                   nrow = 2, 
                                   ncol = ncol(random.cov), 
-                                  dimnames = list(c("Predictor theta", "Predictor variance"), 
+                                  dimnames = list(c("Phylogenetic mean", "Variance"), 
                                                   names.random.cov)
     )
   }else{

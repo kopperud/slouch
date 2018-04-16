@@ -81,7 +81,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
                  b0 = 1-exp(-a * tree$T.term),
                  bXa)
     }else{
-      K <- cbind(K = rep(1, length(tree$phy$tip.label)), 
+      K <- cbind("(Intercept)" = rep(1, length(tree$phy$tip.label)), 
                  bXa)
     }
     X <- cbind(K, covariates)

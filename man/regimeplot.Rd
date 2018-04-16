@@ -2,18 +2,18 @@
 % Please edit documentation in R/methods.R
 \name{regimeplot}
 \alias{regimeplot}
-\title{Title}
+\title{Plot the internal regimes for a given fitted model}
 \usage{
 regimeplot(x, ...)
 }
 \arguments{
 \item{x}{an object of class 'slouch'}
 
-\item{...}{additional parameters}
+\item{...}{additional parameters passed to plot.phylo(...)}
 }
 \value{
 nothing
 }
 \description{
-Title
+Plot the internal regimes for a given fitted model
 }
