@@ -6,8 +6,8 @@
 \usage{
 slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
   sigma2_y_values = NULL, response, mv.response = NULL, fixed.fact = NULL,
-  direct.cov = NULL, mv.direct.cov = NULL, mecov.direct.cov = NULL,
-  random.cov = NULL, mv.random.cov = NULL, mecov.random.cov = NULL,
+  direct.cov = NULL, mv.direct.cov = NULL, mvcov.direct.cov = NULL,
+  random.cov = NULL, mv.random.cov = NULL, mvcov.random.cov = NULL,
   estimate.Ya = FALSE, estimate.bXa = FALSE, hessian = F, support = 2,
   convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = c(1e-08,
   1e-08), upper = Inf, verbose = FALSE)
@@ -33,13 +33,13 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{mv.direct.cov}{Observational variances for direct effect independent variables. Must be the same shape as direct.cov}
 
-\item{mecov.direct.cov}{.}
+\item{mvcov.direct.cov}{.}
 
 \item{random.cov}{Independent variables each modeled as a brownian motion}
 
 \item{mv.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
 
-\item{mecov.random.cov}{.}
+\item{mvcov.random.cov}{.}
 
 \item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 

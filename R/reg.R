@@ -89,7 +89,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
   return(X)
 }
 
-#varcov_model <- function(hl, vy, a, beta1, which.direct.cov, which.random.cov, random.cov, T.term, direct.cov, Vu_given_x, mecov.random.cov, mecov.direct.cov, n, sigma_squared, phy, ta, tij, tja, mv.response){
+#varcov_model <- function(hl, vy, a, beta1, which.direct.cov, which.random.cov, random.cov, T.term, direct.cov, Vu_given_x, mvcov.random.cov, mvcov.direct.cov, n, sigma_squared, phy, ta, tij, tja, mv.response){
 varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.cov, tree, observations, seed, control){
 
   tij <- tree$tij
@@ -148,18 +148,18 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
     
     # ## BROKEN!? Needs test.
     # calculate covariances between response and the stochastic predictor, to be subtracted in the diagonal of V
-    if(sum(observations$mecov.random.cov) == 0){
+    if(sum(observations$mvcov.random.cov) == 0){
       mcov <- 0
     }else{
-      mcov <- rowSums(matrix(data=as.numeric(observations$mecov.random.cov)*t(kronecker(2*beta1[which.random.cov,],
+      mcov <- rowSums(matrix(data=as.numeric(observations$mvcov.random.cov)*t(kronecker(2*beta1[which.random.cov,],
                                                                                         (1-(1-exp(-a*T.term))/(a*T.term)))), 
                              ncol = ncol(observations$random.cov)))
     }
     
-    if(sum(observations$mecov.direct.cov) == 0){
+    if(sum(observations$mvcov.direct.cov) == 0){
       mcov.fixed <- 0
     }else{
-      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mecov.direct.cov)*t(kronecker(2*beta1[which.direct.cov,],
+      mcov.fixed <- rowSums(matrix(data=as.numeric(observations$mvcov.direct.cov)*t(kronecker(2*beta1[which.direct.cov,],
                                                                                              (1-(1-exp(-a*T.term))/(a*T.term)))), 
                                    ncol =  ncol(observations$direct.cov)))
     }

@@ -13,10 +13,10 @@
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
 #' @param direct.cov Direct effect independent variables
 #' @param mv.direct.cov Observational variances for direct effect independent variables. Must be the same shape as direct.cov
-#' @param mecov.direct.cov .
+#' @param mvcov.direct.cov .
 #' @param random.cov Independent variables each modeled as a brownian motion
 #' @param mv.random.cov Observational variances for the brownian covariates. Must be the same shape as random.cov
-#' @param mecov.random.cov .
+#' @param mvcov.random.cov .
 #' @param hessian use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
@@ -70,10 +70,10 @@ slouch.fit <- function(phy,
                        fixed.fact=NULL,
                        direct.cov=NULL, 
                        mv.direct.cov=NULL, 
-                       mecov.direct.cov=NULL, 
+                       mvcov.direct.cov=NULL, 
                        random.cov=NULL, 
                        mv.random.cov=NULL, 
-                       mecov.random.cov=NULL,
+                       mvcov.random.cov=NULL,
                        estimate.Ya = FALSE,
                        estimate.bXa = FALSE,
                        hessian = F,
@@ -118,10 +118,10 @@ slouch.fit <- function(phy,
               fixed.fact = fixed.fact,
               direct.cov = direct.cov, 
               mv.direct.cov = mv.direct.cov, 
-              mecov.direct.cov = mecov.direct.cov, 
+              mvcov.direct.cov = mvcov.direct.cov, 
               random.cov = random.cov, 
               mv.random.cov = mv.random.cov, 
-              mecov.random.cov = mecov.random.cov,
+              mvcov.random.cov = mvcov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = estimate.bXa,
               hessian = hessian,
@@ -159,10 +159,10 @@ brown.fit <- function(phy,
                       fixed.fact = NULL,
                       direct.cov = NULL, 
                       mv.direct.cov = NULL, 
-                      mecov.direct.cov = NULL, 
+                      mvcov.direct.cov = NULL, 
                       random.cov = NULL, 
                       mv.random.cov = NULL, 
-                      mecov.random.cov = NULL,
+                      mvcov.random.cov = NULL,
                       estimate.Ya = FALSE,
                       hessian = FALSE,
                       support = 2, 
@@ -204,10 +204,10 @@ brown.fit <- function(phy,
               fixed.fact = fixed.fact,
               direct.cov = direct.cov, 
               mv.direct.cov = mv.direct.cov, 
-              mecov.direct.cov = mecov.direct.cov, 
+              mvcov.direct.cov = mvcov.direct.cov, 
               random.cov = random.cov, 
               mv.random.cov = mv.random.cov, 
-              mecov.random.cov = mecov.random.cov,
+              mvcov.random.cov = mvcov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = FALSE,
               hessian = hessian,

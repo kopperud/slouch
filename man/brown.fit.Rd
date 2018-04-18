@@ -6,8 +6,8 @@
 \usage{
 brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
   mv.response = NULL, fixed.fact = NULL, direct.cov = NULL,
-  mv.direct.cov = NULL, mecov.direct.cov = NULL, random.cov = NULL,
-  mv.random.cov = NULL, mecov.random.cov = NULL, estimate.Ya = FALSE,
+  mv.direct.cov = NULL, mvcov.direct.cov = NULL, random.cov = NULL,
+  mv.random.cov = NULL, mvcov.random.cov = NULL, estimate.Ya = FALSE,
   hessian = FALSE, support = 2, convergence = 1e-06, nCores = 1,
   hillclimb = FALSE, lower = 1e-08, upper = NULL, verbose = FALSE)
 }
@@ -28,13 +28,13 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
 
 \item{mv.direct.cov}{Observational variances for direct effect independent variables. Must be the same shape as direct.cov}
 
-\item{mecov.direct.cov}{.}
+\item{mvcov.direct.cov}{.}
 
 \item{random.cov}{Independent variables each modeled as a brownian motion}
 
 \item{mv.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
 
-\item{mecov.random.cov}{.}
+\item{mvcov.random.cov}{.}
 
 \item{estimate.Ya}{independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).}
 

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function to fit Ornstein-Uhlenbeck models of trait evolution — slouch.fit • slouch</title>
+<title>Function to fit Brownian-motion models of trait evolution — brown.fit • slouch</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -25,9 +25,9 @@
 <link href="../pkgdown.css" rel="stylesheet">
 <script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
-<meta property="og:title" content="Function to fit Ornstein-Uhlenbeck models of trait evolution — slouch.fit" />
+<meta property="og:title" content="Function to fit Brownian-motion models of trait evolution — brown.fit" />
 
-<meta property="og:description" content="Function to fit Ornstein-Uhlenbeck models of trait evolution" />
+<meta property="og:description" content="Function to fit Brownian-motion models of trait evolution" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -108,22 +108,21 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Function to fit Ornstein-Uhlenbeck models of trait evolution</h1>
+    <h1>Function to fit Brownian-motion models of trait evolution</h1>
     <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/interface.R'><code>R/interface.R</code></a></small>
-    <div class="hidden name"><code>slouch.fit.Rd</code></div>
+    <div class="hidden name"><code>brown.fit.Rd</code></div>
     </div>
 
     
-    <p>Function to fit Ornstein-Uhlenbeck models of trait evolution</p>
+    <p>Function to fit Brownian-motion models of trait evolution</p>
     
 
-    <pre class="usage"><span class='fu'>slouch.fit</span>(<span class='no'>phy</span>, <span class='kw'>species</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sigma2_y_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>response</span>, <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>estimate.bXa</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>hessian</span> <span class='kw'>=</span> <span class='no'>F</span>, <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>2</span>,
-  <span class='kw'>convergence</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>nCores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>lower</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>1e-08</span>,
-  <span class='fl'>1e-08</span>), <span class='kw'>upper</span> <span class='kw'>=</span> <span class='fl'>Inf</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>brown.fit</span>(<span class='no'>phy</span>, <span class='kw'>species</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>sigma2_y_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>response</span>,
+  <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>hessian</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>convergence</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>nCores</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>lower</span> <span class='kw'>=</span> <span class='fl'>1e-08</span>, <span class='kw'>upper</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -137,16 +136,8 @@
       <td><p>a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label</p></td>
     </tr>
     <tr>
-      <th>hl_values</th>
-      <td><p>a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.</p></td>
-    </tr>
-    <tr>
-      <th>vy_values</th>
-      <td><p>a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.</p></td>
-    </tr>
-    <tr>
       <th>sigma2_y_values</th>
-      <td><p>alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.</p></td>
+      <td><p>a vector of one or more candidates for sigma squared (y) to be evaluated in grid search.</p></td>
     </tr>
     <tr>
       <th>response</th>
@@ -186,11 +177,7 @@
     </tr>
     <tr>
       <th>estimate.Ya</th>
-      <td><p>a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.</p></td>
-    </tr>
-    <tr>
-      <th>estimate.bXa</th>
-      <td><p>a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.</p></td>
+      <td><p>independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).</p></td>
     </tr>
     <tr>
       <th>hessian</th>
@@ -214,11 +201,11 @@
     </tr>
     <tr>
       <th>lower</th>
-      <td><p>lower bounds for the optimization routine, defaults to c(0,0). First entry in vector is half-life, second is stationary variance. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the stationary variance, e.g c(0, 0.001), since the residual variance-covariance matrix is degenerate when sigma = 0.</p></td>
+      <td><p>lower bounds for the optimization routine, defaults to 1e-8. When running direct effect models without observational error, it may be useful to specify a positive lower bounds for the sigma squared, since the residual variance-covariance matrix is degenerate when sigma = 0.</p></td>
     </tr>
     <tr>
       <th>upper</th>
-      <td><p>upper bounds for the optimization routine, defaults to c(Inf, Inf).</p></td>
+      <td><p>upper bounds for the optimization routine, defaults to 10 * var(response) * max(treeheight).</p></td>
     </tr>
     <tr>
       <th>verbose</th>

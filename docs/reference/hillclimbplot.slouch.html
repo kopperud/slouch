@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • slouch</title>
+<title>Plot the hillclimber trajectory — hillclimbplot.slouch • slouch</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -25,7 +25,10 @@
 <link href="../pkgdown.css" rel="stylesheet">
 <script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Plot the hillclimber trajectory — hillclimbplot.slouch" />
+
+<meta property="og:description" content="Plot the hillclimber trajectory" />
+<meta name="twitter:card" content="summary" />
 
 
 <!-- mathjax -->
@@ -42,7 +45,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -103,113 +106,41 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Plot the hillclimber trajectory</h1>
+    <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
+    <div class="hidden name"><code>hillclimbplot.slouch.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    
+    <p>Plot the hillclimber trajectory</p>
+    
 
-    <colgroup>
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        <!--  -->
-        <td>
-          <p><code><a href="artiodactyla.html">artiodactyla</a></code> </p>
-        </td>
-        <td><p>Artiodactyla</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="brown.fit.html">brown.fit()</a></code> </p>
-        </td>
-        <td><p>Function to fit Brownian-motion models of trait evolution</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="hillclimbplot.html">hillclimbplot()</a></code> </p>
-        </td>
-        <td><p>Plot the hillclimber trajectory</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="hillclimbplot.slouch.html">hillclimbplot(<i>&lt;slouch&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Plot the hillclimber trajectory</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="logLik.slouch.html">logLik(<i>&lt;slouch&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Extract Log-Likelihood</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="lseq.html">lseq()</a></code> </p>
-        </td>
-        <td><p>Logarithmically spaced sequence</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="neocortex.html">neocortex</a></code> </p>
-        </td>
-        <td><p>Artiodactyl brain data</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="plot.slouch.html">plot(<i>&lt;slouch&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Plot slouch-objects</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="print.slouch.html">print(<i>&lt;slouch&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Print slouch-objects</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="regimeplot.html">regimeplot()</a></code> </p>
-        </td>
-        <td><p>Plot the internal regimes for a given fitted model</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="regimeplot.slouch.html">regimeplot(<i>&lt;slouch&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Plot the internal regimes for a given fitted model</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="slouch-package.html">slouch-package</a></code> </p>
-        </td>
-        <td><p>SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses</p></td>
-      </tr><tr>
-        <!--  -->
-        <td>
-          <p><code><a href="slouch.fit.html">slouch.fit()</a></code> </p>
-        </td>
-        <td><p>Function to fit Ornstein-Uhlenbeck models of trait evolution</p></td>
-      </tr>
-    </tbody>
+    <pre class="usage"><span class='co'># S3 method for slouch</span>
+<span class='fu'><a href='hillclimbplot.html'>hillclimbplot</a></span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>x</th>
+      <td><p>An object of class 'slouch'</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Additional arguments passed to 'plot.default(...)'</p></td>
+    </tr>
     </table>
-  </div>
+    
 
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
-    </ul>
+      <li><a href="#arguments">Arguments</a></li>
+                </ul>
+
   </div>
 </div>
 
