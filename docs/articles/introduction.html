@@ -82,7 +82,7 @@
       <h1>Slouch introduction</h1>
                         <h4 class="author">Bjørn Tore Kopperud</h4>
             
-            <h4 class="date">2018-04-18</h4>
+            <h4 class="date">2018-04-19</h4>
       
       <small>Source: <a href="http://github.com/kopperud/slouch/blob/master/vignettes/introduction.Rmd"><code>vignettes/introduction.Rmd</code></a></small>
       <div class="hidden name"><code>introduction.Rmd</code></div>
@@ -222,8 +222,8 @@ p</code></pre></div>
        <span class="dt">col =</span> <span class="st">"orange"</span>, <span class="dt">lwd =</span> <span class="dv">2</span>)
 model3<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                                 Estimates Std. error
-## (Intercept)                     5.4488683 0.23769229
-## neocortex$brain_mass_g_log_mean 0.8339189 0.04414703</code></pre>
+## (Intercept)                     5.4488647 0.23767997
+## neocortex$brain_mass_g_log_mean 0.8339193 0.04414496</code></pre>
 <p><img src="introduction_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
 <p>While the single-optimum model showed a very strong phylogenetic inertia, in this model it is somewhat lower with a phylogenetic half-life (<span class="math inline">\(t_{1/2}\)</span>) of 16.9 myr. In this case, the regression line estimated using ordinary least squares is almost indistinguishable from the Ornstein-Uhlenbeck optimal regression. It is also possible to fit a model with multiple continuous covariates, however the input to <code>direct.cov</code> must be a matrix or data frame that has column names.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model4 &lt;-<span class="st"> </span>
@@ -267,10 +267,10 @@ edge_regimes &lt;-<span class="st"> </span><span class="kw">factor</span>(regime
 
 model5<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                                 Estimates Std. error
-## Br                              5.3746627 0.22276529
-## Gr                              5.6045139 0.30280262
-## MF                              5.5558924 0.22390082
-## neocortex$brain_mass_g_log_mean 0.8203544 0.04314232</code></pre>
+## Br                              5.3746697 0.22271817
+## Gr                              5.6044369 0.30270232
+## MF                              5.5558559 0.22385800
+## neocortex$brain_mass_g_log_mean 0.8203596 0.04313639</code></pre>
 </div>
 <div id="adaptation-model" class="section level3">
 <h3 class="hasAnchor">

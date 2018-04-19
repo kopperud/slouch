@@ -2,9 +2,12 @@
 % Please edit documentation in R/methods.R
 \name{hillclimbplot}
 \alias{hillclimbplot}
+\alias{hillclimbplot.slouch}
 \title{Plot the hillclimber trajectory}
 \usage{
 hillclimbplot(x, ...)
+
+\method{hillclimbplot}{slouch}(x, ...)
 }
 \arguments{
 \item{x}{An object of class 'slouch'}
@@ -14,6 +17,11 @@ hillclimbplot(x, ...)
 \description{
 Plot the hillclimber trajectory
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{slouch}: Hillclimbplot for the 'slouch object'
+}}
+
 \examples{
 library(slouch)
 library(ape)
@@ -30,4 +38,12 @@ m0 <- slouch.fit(phy = artiodactyla,
                 hillclimb = TRUE)
                 
 hillclimbplot(m0)
+
+m1 <- brown.fit(phy = artiodactyla,
+               species = neocortex$species,
+               response = neocortex$neocortex_area_mm2_log_mean,
+               mv.response = neocortex$neocortex_se_squared,
+               hillclimb = TRUE)
+               
+hillclimbplot(m1)
 }

@@ -14,7 +14,7 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
-\item{species}{a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label}
+\item{species}{a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label}
 
 \item{sigma2_y_values}{a vector of one or more candidates for sigma squared (y) to be evaluated in grid search.}
 
@@ -26,15 +26,15 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
 
 \item{direct.cov}{Direct effect independent variables}
 
-\item{mv.direct.cov}{Observational variances for direct effect independent variables. Must be the same shape as direct.cov}
+\item{mv.direct.cov}{Estimation variances for direct effect independent variables. Must be the same shape as direct.cov}
 
-\item{mvcov.direct.cov}{.}
+\item{mvcov.direct.cov}{Estimation covariances between the response variable and direct effect independent variables. Most be the same shape as direct.cov}
 
 \item{random.cov}{Independent variables each modeled as a brownian motion}
 
-\item{mv.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
+\item{mv.random.cov}{Estimation variances for the brownian covariates. Must be the same shape as random.cov}
 
-\item{mvcov.random.cov}{.}
+\item{mvcov.random.cov}{Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov}
 
 \item{estimate.Ya}{independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).}
 
@@ -72,6 +72,7 @@ An object of class 'slouch', essentially a list with the following fields:
 
 }
 }
+
 \item{modfit}{a list of statistics to characterize model fit}
 \item{supportplot}{a list or matrix used to plot the grid search}
 \item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}

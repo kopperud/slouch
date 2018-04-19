@@ -15,7 +15,7 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
 
-\item{species}{a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label}
+\item{species}{a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label}
 
 \item{hl_values}{a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.}
 
@@ -31,15 +31,15 @@ slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
 
 \item{direct.cov}{Direct effect independent variables}
 
-\item{mv.direct.cov}{Observational variances for direct effect independent variables. Must be the same shape as direct.cov}
+\item{mv.direct.cov}{Estimation variances for direct effect independent variables. Must be the same shape as direct.cov}
 
-\item{mvcov.direct.cov}{.}
+\item{mvcov.direct.cov}{Estimation covariances between the response variable and direct effect independent variables. Most be the same shape as direct.cov}
 
 \item{random.cov}{Independent variables each modeled as a brownian motion}
 
-\item{mv.random.cov}{Observational variances for the brownian covariates. Must be the same shape as random.cov}
+\item{mv.random.cov}{Estimation variances for the brownian covariates. Must be the same shape as random.cov}
 
-\item{mvcov.random.cov}{.}
+\item{mvcov.random.cov}{Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov}
 
 \item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 
@@ -79,6 +79,7 @@ An object of class 'slouch', essentially a list with the following fields:
 
 }
 }
+
 \item{modfit}{a list of statistics to characterize model fit}
 \item{supportplot}{a list or matrix used to plot the grid search}
 \item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}

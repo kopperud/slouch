@@ -2,15 +2,32 @@
 % Please edit documentation in R/methods.R
 \name{plot.slouch}
 \alias{plot.slouch}
-\title{Plot slouch-objects}
+\title{Plot Grid Search}
 \usage{
 \method{plot}{slouch}(x, ...)
 }
 \arguments{
 \item{x}{An object of class 'slouch'}
 
-\item{...}{Additional parameters passed to persp()}
+\item{...}{Additional parameters passed to persp(...) or plot(...)}
 }
 \description{
-Graphical plot of parameter space traversed in order to find ML-estimate of the model.
+Graphical plot of parameter space traversed by the grid search.
+}
+\examples{
+
+data(artiodactyla)
+data(neocortex)
+
+neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+
+m0 <- slouch.fit(phy = artiodactyla,
+                 hl_values = seq(0.001, 50, length.out = 15),
+                 vy_values = seq(0.001, 3, length.out = 15),
+                 species = neocortex$species,
+                 response = neocortex$body_mass_g_log_mean,
+                 mv.response = neocortex$body_mass_g_log_varmean,
+                 fixed.fact = neocortex$diet)
+                 
+plot(m0)
 }

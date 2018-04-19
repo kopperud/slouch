@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Print slouch-objects — print.slouch • slouch</title>
+<title>Print Model Summary — print.slouch • slouch</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -25,9 +25,9 @@
 <link href="../pkgdown.css" rel="stylesheet">
 <script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
-<meta property="og:title" content="Print slouch-objects — print.slouch" />
+<meta property="og:title" content="Print Model Summary — print.slouch" />
 
-<meta property="og:description" content="Print slouch-objects" />
+<meta property="og:description" content="Print Model Summary" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -108,13 +108,13 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Print slouch-objects</h1>
+    <h1>Print Model Summary</h1>
     <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
     <div class="hidden name"><code>print.slouch.Rd</code></div>
     </div>
 
     
-    <p>Print slouch-objects</p>
+    <p>Print Model Summary</p>
     
 
     <pre class="usage"><span class='co'># S3 method for slouch</span>
@@ -134,12 +134,45 @@
     </table>
     
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='fu'>data</span>(<span class='no'>artiodactyla</span>)
+<span class='fu'>data</span>(<span class='no'>neocortex</span>)
+
+<span class='no'>neocortex</span> <span class='kw'>&lt;-</span> <span class='no'>neocortex</span>[<span class='fu'>match</span>(<span class='no'>artiodactyla</span>$<span class='no'>tip.label</span>, <span class='no'>neocortex</span>$<span class='no'>species</span>), ]
+
+<span class='no'>m0</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='slouch.fit.html'>slouch.fit</a></span>(<span class='kw'>phy</span> <span class='kw'>=</span> <span class='no'>artiodactyla</span>,
+                 <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>50</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
+                 <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>3</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
+                 <span class='kw'>species</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>species</span>,
+                 <span class='kw'>response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_mean</span>,
+                 <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_varmean</span>,
+                 <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>diet</span>)
+
+<span class='fu'>print</span>(<span class='no'>m0</span>)</div><div class='output co'>#&gt; <span class='message'>Important - Always inspect the likelihood surface of the model parameters in the 3D-grid</span>
+#&gt; <span class='message'>          before evaluating model fit &amp; results. If the likelihood search space does not contain</span>
+#&gt; <span class='message'>          the true maximum likelihood, the model outputs will reflect this.</span></div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Model parameters</span></div><div class='output co'>#&gt;                        Estimate
+#&gt; Phylogenetic half-life 42.85729
+#&gt; Stationary variance    3       </div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)</span></div><div class='output co'>#&gt;                          Minimum Maximum
+#&gt; Phylogenetic half-life 10.715071      50
+#&gt; Stationary variance     1.286286       3</div><div class='output co'>#&gt; <span class='message'>Coefficients</span></div><div class='output co'>#&gt;    Estimates Std. error
+#&gt; Br  8.168138  1.9603048
+#&gt; Gr 16.525746  3.2664721
+#&gt; MF 11.389154  0.6332073</div><div class='output co'>#&gt; <span class='message'>Model fit</span></div><div class='output co'>#&gt;           Values   
+#&gt; Support   -59.83444
+#&gt; AIC       129.6689 
+#&gt; AICc      131.2905 
+#&gt; SIC       138.4749 
+#&gt; R squared 11.64168 
+#&gt; SST       50.49254 
+#&gt; SSE       44.61436 </div><div class='img'><img src='print.slouch-1.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-                </ul>
+            
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

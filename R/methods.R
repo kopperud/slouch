@@ -3,11 +3,26 @@
 
 
 
-#' Print slouch-objects
+#' Print Model Summary
 #' 
 #' @param x An object of class 'slouch'
 #' @param ... Additional arguments, unused.
+#'
+#' @examples 
+#' data(artiodactyla)
+#' data(neocortex)
 #' 
+#' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#' 
+#' m0 <- slouch.fit(phy = artiodactyla,
+#'                  hl_values = seq(0.001, 50, length.out = 15),
+#'                  vy_values = seq(0.001, 3, length.out = 15),
+#'                  species = neocortex$species,
+#'                  response = neocortex$body_mass_g_log_mean,
+#'                  mv.response = neocortex$body_mass_g_log_varmean,
+#'                  fixed.fact = neocortex$diet)
+#'                  
+#' print(m0) 
 #' @export
 print.slouch <- function(x, ...){
   message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid
@@ -73,7 +88,12 @@ print.slouch <- function(x, ...){
   plot(x)
 }
 
-#' @inherit hillclimbplot.slouch
+
+#' Plot the hillclimber trajectory
+#'
+#' @param x An object of class 'slouch'
+#' @param ... Additional arguments passed to 'plot.default(...)'
+#'
 #' @export
 #' @examples 
 #'library(slouch)
@@ -91,15 +111,20 @@ print.slouch <- function(x, ...){
 #'                 hillclimb = TRUE)
 #'                 
 #'hillclimbplot(m0)
+#'
+#'m1 <- brown.fit(phy = artiodactyla,
+#'                species = neocortex$species,
+#'                response = neocortex$neocortex_area_mm2_log_mean,
+#'                mv.response = neocortex$neocortex_se_squared,
+#'                hillclimb = TRUE)
+#'                
+#'hillclimbplot(m1)
 hillclimbplot <- function (x, ...) {
   UseMethod("hillclimbplot", x)
 }
 
-#' Plot the hillclimber trajectory
-#'
-#' @param x An object of class 'slouch'
-#' @param ... Additional arguments passed to 'plot.default(...)'
-#'
+
+#' @describeIn hillclimbplot Hillclimbplot for the 'slouch object'
 #' @export
 hillclimbplot.slouch <- function(x,...){
   
@@ -152,12 +177,28 @@ hillclimbplot.slouch <- function(x,...){
 }
 
 
-#' Plot slouch-objects
-#' @description Graphical plot of parameter space traversed in order to find ML-estimate of the model.
+#' Plot Grid Search
+#' @description Graphical plot of parameter space traversed by the grid search.
 #'
 #' @param x An object of class 'slouch'
-#' @param ... Additional parameters passed to persp()
+#' @param ... Additional parameters passed to persp(...) or plot(...)
 #'
+#' @examples 
+#' 
+#' data(artiodactyla)
+#' data(neocortex)
+#' 
+#' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#' 
+#' m0 <- slouch.fit(phy = artiodactyla,
+#'                  hl_values = seq(0.001, 50, length.out = 15),
+#'                  vy_values = seq(0.001, 3, length.out = 15),
+#'                  species = neocortex$species,
+#'                  response = neocortex$body_mass_g_log_mean,
+#'                  mv.response = neocortex$body_mass_g_log_varmean,
+#'                  fixed.fact = neocortex$diet)
+#'                  
+#' plot(m0)
 #' @export
 plot.slouch <- function(x, ...){
 
@@ -209,6 +250,20 @@ plot.slouch <- function(x, ...){
 #' @param ... Additional arguments.
 #'
 #' @return An object of class 'logLik'
+#' @examples 
+#' data(artiodactyla)
+#' data(neocortex)
+#' 
+#' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#' 
+#' m0 <- slouch.fit(phy = artiodactyla,
+#'                  species = neocortex$species,
+#'                  response = neocortex$body_mass_g_log_mean,
+#'                  mv.response = neocortex$body_mass_g_log_varmean,
+#'                  fixed.fact = neocortex$diet,
+#'                  hillclimb = TRUE)
+#'                  
+#' logLik(m0)
 #' @export
 logLik.slouch <- function(object, ...){
   return(structure(object$modfit$Support, df = object$n.par, class = "logLik"))
@@ -217,7 +272,7 @@ logLik.slouch <- function(object, ...){
 
 
 
-#' @inherit regimeplot
+#' @describeIn regimeplot Regimeplot for the 'slouch' object
 #' @export
 regimeplot.slouch <- function(x, ...){
   stopifnot(!is.null(x$fixed.fact))
@@ -240,6 +295,22 @@ regimeplot.slouch <- function(x, ...){
 #' @param ... additional parameters passed to plot.phylo(...)
 #'
 #' @return nothing
+#' @examples 
+#' 
+#' data(artiodactyla)
+#' data(neocortex)
+#' 
+#' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#' 
+#' m0 <- slouch.fit(phy = artiodactyla,
+#'                  species = neocortex$species,
+#'                  response = neocortex$body_mass_g_log_mean,
+#'                  mv.response = neocortex$body_mass_g_log_varmean,
+#'                  fixed.fact = neocortex$diet,
+#'                  hillclimb = TRUE)
+#'                  
+#' regimeplot(m0)
+#' 
 #' @export
 regimeplot <- function(x, ...){
   UseMethod("regimeplot")

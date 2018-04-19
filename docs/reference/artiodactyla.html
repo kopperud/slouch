@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Artiodactyla — artiodactyla • slouch</title>
+<title>Artiodactyla Phylogeny — artiodactyla • slouch</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -25,7 +25,7 @@
 <link href="../pkgdown.css" rel="stylesheet">
 <script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
-<meta property="og:title" content="Artiodactyla — artiodactyla" />
+<meta property="og:title" content="Artiodactyla Phylogeny — artiodactyla" />
 
 <meta property="og:description" content="A phylogenetic tree of Artiodactyla (even-toed ungulates)." />
 <meta name="twitter:card" content="summary" />
@@ -108,7 +108,7 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Artiodactyla</h1>
+    <h1>Artiodactyla Phylogeny</h1>
     <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/data.R'><code>R/data.R</code></a></small>
     <div class="hidden name"><code>artiodactyla.Rd</code></div>
     </div>
@@ -121,7 +121,7 @@
         
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
-    <p>An object of class <code>"beast"</code>, from package <code>"treeio"</code>.</p>
+    <p>An object of class <code>"phylo"</code>, from package <code>"ape"</code>.</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
@@ -135,6 +135,10 @@
     <pre class="examples"><div class='input'><span class='fu'>data</span>(<span class='no'>artiodactyla</span>)
 <span class='fu'>library</span>(<span class='no'>ape</span>)
 <span class='fu'>plot</span>(<span class='no'>artiodactyla</span>)</div><div class='img'><img src='artiodactyla-1.png' alt='' width='700' height='433' /></div><div class='input'>
+<span class='co'># Note: This tree also has regime information for each internal node in the tree:</span>
+<span class='fu'>print</span>(<span class='no'>artiodactyla</span>$<span class='no'>node.label</span>)</div><div class='output co'>#&gt;  [1] "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "Gr" "Gr" "Gr"
+#&gt; [16] "MF" "Br" "Br" "Br" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF"
+#&gt; [31] "MF" "MF" "Gr" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "MF" "Br"</div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

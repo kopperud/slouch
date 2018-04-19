@@ -3,8 +3,8 @@
 \docType{data}
 \name{artiodactyla}
 \alias{artiodactyla}
-\title{Artiodactyla}
-\format{An object of class \code{"beast"}, from package \code{"treeio"}.}
+\title{Artiodactyla Phylogeny}
+\format{An object of class \code{"phylo"}, from package \code{"ape"}.}
 \usage{
 data(artiodactyla)
 }
@@ -15,6 +15,9 @@ A phylogenetic tree of Artiodactyla (even-toed ungulates).
 data(artiodactyla)
 library(ape)
 plot(artiodactyla)
+
+# Note: This tree also has regime information for each internal node in the tree:
+print(artiodactyla$node.label)
 
 }
 \references{

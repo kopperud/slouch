@@ -43,7 +43,7 @@
 "neocortex"
 
 
-#' Artiodactyla
+#' Artiodactyla Phylogeny
 #'
 #' A phylogenetic tree of Artiodactyla (even-toed ungulates).
 #'
@@ -51,7 +51,7 @@
 #'
 #' @usage data(artiodactyla)
 #'
-#' @format An object of class \code{"beast"}, from package \code{"treeio"}.
+#' @format An object of class \code{"phylo"}, from package \code{"ape"}.
 #'
 #' @keywords datasets
 #'
@@ -68,5 +68,8 @@
 #' data(artiodactyla)
 #' library(ape)
 #' plot(artiodactyla)
+#' 
+#' # Note: This tree also has regime information for each internal node in the tree:
+#' print(artiodactyla$node.label)
 #' 
 "artiodactyla"

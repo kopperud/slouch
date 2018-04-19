@@ -2,7 +2,7 @@
 #'
 #' 
 #' @param phy an object of class 'phylo', must be rooted.
-#' @param species a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label
+#' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
 #' @param sigma2_y_values alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.
 #' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
@@ -12,11 +12,11 @@
 #' @param mv.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, mv.response is the within-species squared standard error of the mean.
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
 #' @param direct.cov Direct effect independent variables
-#' @param mv.direct.cov Observational variances for direct effect independent variables. Must be the same shape as direct.cov
-#' @param mvcov.direct.cov .
+#' @param mv.direct.cov Estimation variances for direct effect independent variables. Must be the same shape as direct.cov
+#' @param mvcov.direct.cov Estimation covariances between the response variable and direct effect independent variables. Most be the same shape as direct.cov
 #' @param random.cov Independent variables each modeled as a brownian motion
-#' @param mv.random.cov Observational variances for the brownian covariates. Must be the same shape as random.cov
-#' @param mvcov.random.cov .
+#' @param mv.random.cov Estimation variances for the brownian covariates. Must be the same shape as random.cov
+#' @param mvcov.random.cov Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov
 #' @param hessian use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
@@ -44,7 +44,7 @@
 #' 
 #' }
 #' }
-# \item{Lorem ipsum dolorem}{Yes \itemize{\item hello \item there}}
+#' 
 #' \item{modfit}{a list of statistics to characterize model fit}
 #' \item{supportplot}{a list or matrix used to plot the grid search}
 #' \item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}

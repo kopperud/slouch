@@ -82,7 +82,7 @@
       <h1>Manual</h1>
                         <h4 class="author">–</h4>
             
-            <h4 class="date">2018-04-18</h4>
+            <h4 class="date">2018-04-19</h4>
       
       <small>Source: <a href="http://github.com/kopperud/slouch/blob/master/vignettes/manual.Rmd"><code>vignettes/manual.Rmd</code></a></small>
       <div class="hidden name"><code>manual.Rmd</code></div>
@@ -365,8 +365,8 @@ The evolutionary (black) and optimal (orange) regression lines for the model of 
 </div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model3<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                    Estimates Std. error
-## (Intercept)         9.668006 0.03719028
-## braincentered (bm)  0.919891 0.03892695</code></pre>
+## (Intercept)         9.668006 0.03718931
+## braincentered (bm)  0.919889 0.03892640</code></pre>
 <p>While the single-optimum model showed a very strong phylogenetic signal, this model exhibits much less phylogenetic inertia, with best estimate of the phylogenetic half-life (<span class="math inline">\(t_{1/2}\)</span>) being 1 myr. Here, the optimal regression is steeper than the evolutionary regression. It is also possible to fit a model with multiple continuous covariates, however the input to <code>random.cov</code> must be a matrix or data frame that has column names, and the observational error passed to <code>mv.random.cov</code> must be a matrix or data frame of the same shape as <code>random.cov</code>.</p>
 
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">bodycentered &lt;-<span class="st"> </span>neocortex<span class="op">$</span>body_mass_g_log_mean <span class="op">-</span><span class="st"> </span><span class="kw">mean</span>(neocortex<span class="op">$</span>body_mass_g_log_mean)
@@ -439,10 +439,10 @@ edge_regimes &lt;-<span class="st"> </span><span class="kw">factor</span>(regime
 
 model6<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                                 Estimates Std. error
-## Br                              5.3746627 0.22276575
-## Gr                              5.6045135 0.30280304
-## MF                              5.5558922 0.22390131
-## neocortex$brain_mass_g_log_mean 0.8203544 0.04314243</code></pre>
+## Br                              5.3746627 0.22276581
+## Gr                              5.6045135 0.30280314
+## MF                              5.5558922 0.22390136
+## neocortex$brain_mass_g_log_mean 0.8203544 0.04314244</code></pre>
 </div>
 <div id="direct-effect-predictors" class="section level2">
 <h2 class="hasAnchor">
