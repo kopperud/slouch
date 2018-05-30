@@ -216,20 +216,19 @@
       stop("For multicore, please load package with library(parallel)")
     }
     if(.Platform$OS.type == "unix"){
-      #list_hl_vy <- lapply(seq_len(nrow(gridpar)), function(e) gridpar[e,])
       grid <- parallel::mclapply(gridpar,
-                                 function(e) reg(e, tree, observations, control, seed),
+                                 function(e) reg(e, tree, observations, control, seed, gridsearch = TRUE),
                                  mc.cleanup = TRUE,
                                  mc.cores = nCores)
     }else{
       cl <- parallel::makeCluster(getOption("cl.cores", nCores))
       parallel::setDefaultCluster(cl)
       parallel::clusterExport(cl, c("tree", "observations", "control", "seed"), envir = environment())
-      grid <- parallel::parLapply(cl, gridpar, function(e) reg(e, tree, observations, control, seed))
+      grid <- parallel::parLapply(cl, gridpar, function(e) reg(e, tree, observations, control, seed, gridsearch = TRUE))
       parallel::stopCluster(cl)
     }
   }else{
-    grid <- lapply(gridpar, reg, tree, observations, control, seed)
+    grid <- lapply(gridpar, reg, tree, observations, control, seed, gridsearch = TRUE)
   }
   
   sup2_grid <- sapply(grid, function(e) e$support)
@@ -259,7 +258,7 @@
     optimout <- stats::optim(
       par = par,
       fn = function(e, ...){hcenv$k <- hcenv$k +1; tmp <- reg(e, tree, observations, control, seed, ...); hcenv$climblog[[toString(hcenv$k)]] <- tmp; return(tmp$support) }, ## Ugly environment hack to log the hillclimber. Impure function
-      gridsearch = TRUE,
+      parameter_search = TRUE,
       lower = lower,
       upper = upper,
       method = if(model == "ou") "L-BFGS-B" else "Brent",
@@ -289,23 +288,12 @@
   sup2 <- sapply(parameter_space, function(e) e$support)
   ml <- max(sup2, na.rm = T)
   
-  if (model == "ou"){
-    gof <- matrix(sup2_grid, 
-                  nrow = if(!is.null(hl_values)) length(hl_values) else 1, 
-                  byrow=TRUE, 
-                  dimnames = list(hl_values, vy_values))
-    gof <- ifelse(gof <= ml-support, ml-support, gof) - ml
-  }else{
-    
-  }
-  
-  
   
   ## Find the regression for which the support value is maximized
   par = parameter_space[[which.max(sup2)]]$par
   
   ## Repeat regression at a, vy for which logLik is maximized
-  fit <- reg(par, tree, observations, control, seed, gridsearch=FALSE)
+  fit <- reg(par, tree, observations, control, seed, parameter_search = FALSE)
   
   if(verbose){
     print(paste0("Parameter search done after ",round((Sys.time() - time0), 3)," s."))
@@ -315,13 +303,6 @@
   
   if (model == "ou"){
     alpha = log(2) / fit$par$hl
-    # evolpar <- list(
-    #   alpha = alpha,
-    #   hl = fit$par$hl,
-    #   vy = fit$par$vy,
-    #   sigma2_y = fit$par$sigma2_y,
-    #   rho_mean = mean((1-(1-exp(-alpha*T.term))/(alpha*T.term)))
-    # )
     evolpar <- par
   }else{
     evolpar <- list(
@@ -332,11 +313,11 @@
   
   
   if(!is.null(random.cov)){
-    brownian_predictors <- matrix(data = rbind(seed$theta.X, seed$sigma_squared), 
-                                  nrow = 2, 
-                                  ncol = ncol(random.cov), 
-                                  dimnames = list(c("Phylogenetic mean", "Variance"), 
-                                                  names.random.cov)
+    brownian_predictors <- matrix(data = rbind(seed$brownian_mean, seed$brownian_sigma_squared), 
+                                  byrow = TRUE,
+                                  ncol = 2, 
+                                  dimnames = list(names.random.cov,
+                                                  c("Phylogenetic mean", "Variance"))
     )
   }else{
     brownian_predictors <- NULL
@@ -358,24 +339,29 @@
                  SSE = fit$sse)
   
   if(model == "ou"){
-    if(length(hl_values) > 1 & length(c(vy_values, sigma2_y_values)) > 1){
-      
-      if(!(all(is.na(gof) | is.infinite(gof)))){
-        z <- matrix(sapply(grid, function(e) e$support), ncol=length(hl_values), byrow=F)
-        z <- z - ml
-        z[abs(z) >= support] <- -2
+    if(!is.null(hl_values) & !is.null(c(vy_values, sigma2_y_values))){
+      if(length(hl_values) > 1 | length(c(vy_values, sigma2_y_values)) > 1){
         
-        supportplot <- list(hl = hl_values,
-                            vy = vy_values,
-                            sigma2_y = sigma2_y_values,
-                            z = z)
+        z <- matrix(sapply(grid, function(e) e$support), nrow=length(hl_values), byrow=F)
+        if(!(all(is.na(z) | is.infinite(z)))){
+          z <- z - ml
+          z[abs(z) >= support] <- -2
+          
+          supportplot <- list(hl = hl_values,
+                              vy = vy_values,
+                              sigma2_y = sigma2_y_values,
+                              z = z)
+        }else{
+          warning("All support values in grid either NA or +/-Inf - Can't plot.")
+          supportplot <- NULL
+        }
       }else{
-        warning("All support values in grid either NA or +/-Inf - Can't plot.")
         supportplot <- NULL
       }
     }else{
       supportplot <- NULL
     }
+    
   }else{
     if(length(sigma2_y_values) > 1){
       supportplot <- data.frame(sigma2_y = sapply(grid, function(e) e$par$sigma2_y),
@@ -394,15 +380,16 @@
                  supportplot = supportplot,
                  climblog_df = climblog_df,
                  brownian_predictors = brownian_predictors,
-                 opt.reg = fit$opt.reg,
-                 ev.reg = fit$ev.reg,
+                 beta_primary = fit$beta_primary,
+                 beta_evolutionary = fit$beta_evolutionary,
                  evolpar = evolpar,
                  supported_range = supported_range,
                  n.par = n.par,
                  V = fit$V,
                  fixed.fact = fixed.fact,
                  control = control,
-                 hessian = optimout$hessian)
+                 hessian = optimout$hessian,
+                 w_beta = fit$w_beta)
   class(result) <- c("slouch", class(result))
   return(result)
   

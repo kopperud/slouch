@@ -14,10 +14,10 @@ seed <- function(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov){
                        SIMPLIFY = FALSE)
     
     sigma_squared <- sapply(brownian, function(x) x$sigma_squared)
-    theta.X <- sapply(brownian, function(x) x$mean)
+    brownian_mean <- sapply(brownian, function(x) x$mean)
   }else{
     sigma_squared <- NULL
-    theta.X <- NULL
+    brownian_mean <- NULL
   }
 
   ## ------------------------------------------------------- ##
@@ -70,8 +70,8 @@ seed <- function(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov){
     Vx <- NULL
   }
   
-  list(sigma_squared = sigma_squared,
-       theta.X = theta.X,
+  list(brownian_sigma_squared = sigma_squared,
+       brownian_mean = brownian_mean,
        Vu_given_x = Vu_given_x,
        Vu = Vu,
        Vx = Vx,

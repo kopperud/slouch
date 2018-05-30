@@ -26,7 +26,7 @@ bias_correction <- function(beta1, beta1.var, Y, X, V, which.direct.cov, which.r
   }
   
   if(length(which.random.cov) > 0){
-    a_random <- matrix(seed$theta.X, ncol=length(seed$theta.X), nrow = nrow(X), byrow = TRUE)
+    a_random <- matrix(seed$brownian_mean, ncol=length(seed$brownian_mean), nrow = nrow(X), byrow = TRUE)
   }else{
     a_random <- NULL
   }
@@ -36,6 +36,7 @@ bias_correction <- function(beta1, beta1.var, Y, X, V, which.direct.cov, which.r
   bias_corr <- pseudoinverse(t(X)%*%solve(V, X))%*%t(X)%*%solve(V, correction)
   m<-length(beta1)
   K <- solve(diag(1,m,m)-bias_corr)
+  colnames(K) <- rownames(K) <- colnames(X)
   
   coefficients_bias_corr <- K%*%beta1
   #coefficients_var_bias_corr <- solve(K)%*%beta1.var%*%t(pseudoinverse(K))

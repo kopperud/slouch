@@ -101,7 +101,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.
     Vt <- diag(rep(sigma2_y, times = n))
   }else if (a < 1e-14){
     if (!is.null(observations$random.cov)){
-      s1 <- sum(seed$sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[which.random.cov, ])^2))
       Vt <- sigma2_y * ta + s1 * ta * ((ta^2)/12 + tja*t(tja)/4)
     }else{
       Vt <- sigma2_y * ta
@@ -109,7 +109,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.
 
   }else{
     if (!is.null(observations$random.cov)){
-      s1 <- sum(seed$sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[which.random.cov, ])^2))
       ti <- matrix(rep(tree$T.term, n), nrow=length(tree$phy$tip.label))
       
       term0 <- ((s1 + sigma2_y) / (2 * a)) * (1 - exp( -2 * a * ta)) * exp(-a * tij)
@@ -173,7 +173,7 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
   return(V_me)
 }
 
-reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
+reg <- function(par, tree, observations, control, seed, parameter_search = TRUE, gridsearch = FALSE){
   Y <- observations$Y
 
   if(is.numeric(par)){
@@ -229,12 +229,27 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
 
   ## Initial OLS estimate of beta, disregarding variance covariance matrix
   beta1 <- matrix(stats::lm.fit(X, Y)$coefficients, ncol=1)
-  beta1.descriptor <- c(rep("Intercept", length(beta1) - length(observations$names.direct.cov) - length(observations$names.random.cov)),
-                        rep("Instantaneous cov", length(observations$names.direct.cov)),
-                        rep("Random cov", length(observations$names.random.cov)))
+  
+  n_direct <- length(observations$names.direct.cov)
+  n_random <- length(observations$names.random.cov)
+  regimes_all <- concat.factor(observations$fixed.fact, tree$regimes)
+  n_regimes <- length(levels(regimes_all))
+  
+  
+  beta1.descriptor <- c(rep("Intercept", length(beta1) - n_regimes - n_direct - n_random),
+                        rep("regime", n_regimes),
+                        rep("Instantaneous cov", n_direct),
+                        rep("Random cov", n_random))
+  
+  which.intercepts <- which(beta1.descriptor == "Intercept")
+  which.regimes <- which(beta1.descriptor == "regime")
   which.direct.cov <- which(beta1.descriptor == "Instantaneous cov")
   which.random.cov <- which(beta1.descriptor == "Random cov")
 
+  w_beta <- list(which.intercepts = which.intercepts,
+                 which.regimes = which.regimes,
+                 which.random.cov = which.random.cov,
+                 which.direct.cov = which.direct.cov)
   
   con.count <- 0
   repeat{
@@ -294,9 +309,10 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     cat("\n")
   }
 
-  if(gridsearch){
+  if(parameter_search){
     return(list(support = sup1,
-                par = par
+                par = par,
+                gridsearch = gridsearch
                 #V = V # This will cause memory overflow when n or Grid is large, or when less memory is available. O(n^2) + O(grid.vy * grid.hl)
                 ))
   }else{
@@ -326,7 +342,7 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
       ev.beta1 <- ev.beta1.var%*%(t(X0)%*%V.inverse%*%Y)
       
       
-      ev.reg <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
+      beta_evolutionary <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
                                              nrow=ncol(X0), 
                                              dimnames = list(colnames(X0), c("Estimates", "Std. error"))),
                        X = X0,
@@ -336,10 +352,10 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     }else{
       ev.beta1.var <- NULL
       ev.beta1 <- NULL
-      ev.reg <- NULL
+      beta_evolutionary <- NULL
     }
     
-    opt.reg <- c(list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
+    beta_primary <- c(list(coefficients = matrix(cbind(beta1, sqrt(diag(beta1.var))), 
                                             nrow=ncol(X), 
                                             dimnames = list(colnames(X), c("Estimates", "Std. error"))),
                       X = X,
@@ -357,16 +373,17 @@ reg <- function(par, tree, observations, control, seed, gridsearch = TRUE){
     return(list(support = sup1,
                 par = par,
                 V = V, 
-                opt.reg = opt.reg,
-                ev.reg = ev.reg,
+                beta_primary = beta_primary,
+                beta_evolutionary = beta_evolutionary,
                 sst = sst,
                 sse = sse,
-                r.squared = r.squared))
+                r.squared = r.squared,
+                w_beta = w_beta))
   }
 }
 
 
-trend_diff_foo <- function(beta1, beta1.var, trend_names, which.trend = 1:3){
+trend_diff_foo <- function(beta1, beta1.var, trend_names, which.trend){
   beta1 <- beta1[which.trend]
   beta1.var <- beta1.var[which.trend, which.trend]
   upper_tri <- upper.tri(beta1.var)
@@ -384,3 +401,6 @@ trend_diff_foo <- function(beta1, beta1.var, trend_names, which.trend = 1:3){
   return(res)
 }
 
+is.diag <- function(m){
+  all(m[lower.tri(m)] == 0, m[upper.tri(m)] == 0)
+}

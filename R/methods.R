@@ -15,63 +15,129 @@
 #' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
 #' 
 #' m0 <- slouch.fit(phy = artiodactyla,
-#'                  hl_values = seq(0.001, 50, length.out = 15),
-#'                  vy_values = seq(0.001, 3, length.out = 15),
+#'                  hl_values = seq(0.001, 4, length.out = 15),
+#'                  vy_values = seq(0.001, 0.05, length.out = 15),
 #'                  species = neocortex$species,
-#'                  response = neocortex$body_mass_g_log_mean,
-#'                  mv.response = neocortex$body_mass_g_log_varmean,
+#'                  response = neocortex$neocortex_area_mm2_log_mean,
+#'                  mv.response = neocortex$neocortex_se_squared,
+#'                  random.cov = neocortex$brain_mass_g_log_mean,
+#'                  mv.random.cov = neocortex$brain_se_squared,
 #'                  fixed.fact = neocortex$diet)
 #'                  
 #' print(m0) 
+#' 
+#' plot(m0, theta = 150)
 #' @export
 print.slouch <- function(x, ...){
   message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid
           before evaluating model fit & results. If the likelihood search space does not contain
           the true maximum likelihood, the model outputs will reflect this.")
   message("")
-  message("Model parameters")
+  message("Maximum-likelihood estimates")
   evolpar <- as.matrix(x$evolpar, ncol = 1)
   rownames(evolpar) <- parnames(rownames(evolpar))
   if(!is.null(x$hessian)){
     evolpar <- cbind(evolpar, sqrt(diag(solve(-x$hessian))))
   }
   colnames(evolpar) <- c("Estimate", "Approximate Std. error (using hessian)")[1:ncol(evolpar)]
-  print(evolpar)
   
-  message("")
+  if(!is.null(x$supportplot)){
+    evolpar_names = c()
+    for (m in names(x$evolpar)){
+      par_range <- range(sapply(x$parameter_space, function(e) if(e$gridsearch) e$par[[m]] else NA), na.rm = T)
+      
+      p <- x$evolpar[[m]]
+      
+      if(p < par_range[1] | p > par_range[2]){
+        evolpar_names = append(evolpar_names, paste(parnames(m), "(warning: outside grid)"))
+      }else{
+        evolpar_names = append(evolpar_names, parnames(m))
+      }
+    }
+    rownames(evolpar) <- evolpar_names
+  }
+  
+  print(evolpar)
+
+  if(x$control$model == "ou"){
+    hl <- x$evolpar$hl
+    a <- log(2) / hl
+    
+    if(!is.null(x$evolpar$vy)){
+      vy <- x$evolpar$vy
+      sigma2_y <- vy*2*a
+    }else{
+      vy <- x$evolpar$sigma2_y / (2 * a)
+      sigma2_y <- x$evolpar$sigma2_y
+    }
+    
+    rho <- mean(1 - (1 - exp(-a * x$tree$T.term)) / (a * x$tree$T.term))
+    inferred <- list("Rate of adaptation" = a,
+                     "Mean phylogenetic correction factor (rho)" = rho)
+    
+    if(!is.null(x$evolpar$vy)){
+      inferred["Sigma squared (y)"] <- sigma2_y
+    }
+    if(!is.null(x$evolpar$sigma2_y)){
+      inferred["Stationary variance"] <- vy
+    }
+    
+  }else{
+    inferred <- list()
+    
+    if(length(c(x$w_beta$which.regimes, x$w_beta$which.random.cov)) > 0){
+      rho <- mean(x$tree$T.term / 2)
+      inferred[["Mean phylogenetic correction factor (rho)"]] <- rho
+    }
+  }
+  
+  if (length(inferred) > 0){
+    message("Inferred maximum-likelihood parameters")
+    inferred_matrix <- matrix(inferred, ncol = 1, dimnames = list(names(inferred), "Value"))
+    print(inferred_matrix)
+  }
+  
   if (!is.null(x$supported_range)){
     message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
     rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
   }
 
-  if(x$control$model == "ou"){
-    message("Coefficients")
-  }else{
-    if(!is.null(x$opt.reg$trend_diff) & !x$control$estimate.Ya){
-      message("Coefficients (assuming Ya = 0)")
-    }else{
-      message("Coefficients")
+  
+  foo <- function(w, title){
+    if(length(w) > 0){
+      if(title == "Regime-dependent trends"){
+        if(!x$control$estimate.Ya){
+          title <- paste(title, "(assuming Ya = 0)")
+        }
+      }
+      message(title)
+      print(x$beta_primary$coefficients[w, ,drop=FALSE])
+      
+      if(title == "Optimal regression slope" | title == "Trend covariates"){
+        message("Evolutionary regression slope (rho = 1)")
+        print(x$beta_evolutionary$coefficients[w, ,drop = FALSE])
+      }
+      
+      if(grepl("Regime-dependent trends", title)){
+        message("Pairwise contrasts among trends:")
+        print(x$beta_primary$trend_diff)
+      }
     }
   }
-  print(x$opt.reg$coefficients)
-  if(!is.null(x$opt.reg$trend_diff)){
-    message("Pairwise contrasts among trends")
-    print(x$opt.reg$trend_diff)
+  
+  if(x$control$model == "ou"){
+    printnames <- c("Intercepts", "Optimal niches", "Optimal regression slope", "Direct-effect slope")
+  }else{
+    printnames <- c("Intercepts", "Regime-dependent trends", "Trend covariates", "Direct-effect slope")
   }
-
-  if(!is.null(x$opt.reg$coefficients_bias_corr)){
-    message("Coefficients - bias-corrected")
-    print(x$opt.reg$coefficients_bias_corr)
-  }
-
-  if (!is.null(x$ev.reg)){
-    message("Coefficients (rho = 1)")
-    print(x$ev.reg$coefficients)
-    
-    if(!is.null(x$ev.reg$coefficients_bias_corr)){
-      message("Coefficients (rho = 1) - bias-corrected")
-      print(x$ev.reg$coefficients_bias_corr)
+  
+  mapply(foo, w = x$w_beta, title = printnames)
+  
+  if(!is.null(x$beta_primary$K)){
+    if(!is.diag(x$beta_primary$K)){
+      message("Attenuation factor K. Linear model coefficients (above) are not corrected for bias.")
+      print(x$beta_primary$K)
     }
   }
   
@@ -80,7 +146,7 @@ print.slouch <- function(x, ...){
     print(x$brownian_predictors)
   }
   
-  message("Model fit")
+  message("Model fit summary")
   m <- as.matrix(x$modfit)
   colnames(m) <- "Values"
   print(m)
@@ -152,6 +218,7 @@ hillclimbplot.slouch <- function(x,...){
       points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
       text(hl[1], s[1], "Start")
       text(hl[length(hl)], s[length(s)], "End")
+      
     }else{
       graphics::plot(x = log(sigma2_y),
                      y = logL,
@@ -182,6 +249,8 @@ hillclimbplot.slouch <- function(x,...){
 #'
 #' @param x An object of class 'slouch'
 #' @param ... Additional parameters passed to persp(...) or plot(...)
+#' 
+#' @inheritParams graphics::persp
 #'
 #' @examples 
 #' 
@@ -200,27 +269,66 @@ hillclimbplot.slouch <- function(x,...){
 #'                  
 #' plot(m0)
 #' @export
-plot.slouch <- function(x, ...){
+plot.slouch <- function(x, 
+                        theta = 30,
+                        phi = 30, 
+                        expand = 0.5, 
+                        ltheta = 120, 
+                        shade = 0.75,
+                        ...){
 
   if (!is.null(x$supportplot)){
     if(x$control$model == "ou"){
       s3d <- if(!is.null(x$supportplot$vy)) x$supportplot$vy else x$supportplot$sigma2_y
-      graphics::persp(x$supportplot$hl,
-                      s3d,
-                      x$supportplot$z,
-                      theta = 30,
-                      phi = 30, 
-                      expand = 0.5, 
-                      col = "NA",
-                      ltheta = 120, 
-                      shade = 0.75,
-                      main = "Grid search",
-                      ticktype = "detailed",
-                      xlab = "Phylogenetic half-life", 
-                      ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Sigma squared (y)", 
-                      zlab = "Log-likelihood", 
-                      zlim = c(min(x$supportplot$z), 0),
-                      ...)
+
+      if(all(dim(x$supportplot$z) > 1)){
+        graphics::persp(x = x$supportplot$hl,
+                        y = s3d,
+                        z = x$supportplot$z,
+                        theta = theta,
+                        phi = phi, 
+                        expand = expand, 
+                        ltheta = ltheta, 
+                        shade = shade,
+                        col = "NA",
+                        main = "Grid search",
+                        ticktype = "detailed",
+                        xlab = "Phylogenetic half-life", 
+                        ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Sigma squared (y)", 
+                        zlab = "Log-likelihood", 
+                        zlim = c(min(x$supportplot$z), 0),
+                        ...)
+      }else{
+        hline <- logLik(x) - x$control$support
+        parnames <- c("hl", "vy", "sigma2_y")
+        which_one <- sapply(x$supportplot[parnames], function(e) length(e) == 1)
+        which_variable <- sapply(x$supportplot[parnames], function(e) length(e) > 1)
+        map <- stats::setNames(c("Phylogenetic half-life", "Stationary variance", "Sigma squared (y)"), parnames)
+        
+        xvar <- x$supportplot[parnames][which_variable]
+        
+        hline <- logLik(x) - x$control$support
+        graphics::plot(x = xvar[[1]],
+                       y = stats::na.omit(sapply(x$parameter_space, function(e) if(e$gridsearch) e$support else NA)),
+                       pch = 19,
+                       xlab = map[names(xvar)],
+                       ylab = "logL",
+                       xaxt = "n",
+                       ylim = c(min(hline, min(x$supportplot$z)), 
+                                max(c(x$supportplot$z, logLik(x)))),
+                       main = paste0("Grid search", 
+                                     " (at ", 
+                                     parnames[which_one], 
+                                     " = ", 
+                                     x$supportplot[parnames][which_one][[1]], 
+                                     ")"))
+        graphics::axis(1, 
+                       at = xvar[[1]], 
+                       labels = format(xvar[[1]], digits = 1),
+                       las = 1)
+        graphics::abline(h = hline, lwd = 2, col = "red")
+      }
+
     }else{
       hline <- logLik(x) - x$control$support
       graphics::plot(x = log(x$supportplot$sigma2_y),

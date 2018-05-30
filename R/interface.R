@@ -50,8 +50,8 @@
 #' \item{supported_range}{a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.}
 #' \item{V}{the residual variance-covariance matrix for the maximum likelihood model as found by parameter search.}
 #' \item{evolpar}{maximum likelihood estimates of parameters under the chosen model.}
-#' \item{opt.reg}{regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.}
-#' \item{ev.reg}{under a random effect model, "ev.reg" is the evolutionary regression coefficients and associated objects.}
+#' \item{beta_primary}{regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.}
+#' \item{beta_evolutionary}{under a random effect model, "beta_evolutionary" is the evolutionary regression coefficients and associated objects.}
 #' \item{n.par}{number of free parameters with which the likelihood criteria are penalized.}
 #' \item{brownian_predictors}{under a random effect model, a matrix of means and standard errors for the independent Brownian motion variable(s). Not to be confused with the regression coefficients when the residuals are under a "bm" model.}
 #' \item{climblog_df}{a matrix of the path trajectory of the hillclimber routine.}

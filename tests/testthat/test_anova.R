@@ -37,6 +37,6 @@ test_that("No errors ANOVA", {
   expect_equal(structure(c(0.421599539503631, 0.481516052311344, 0.0453131399491333, 
                            0.050412202001475), .Dim = c(2L, 2L), .Dimnames = list(c("A", 
                                                                                     "B"), c("Estimates", "Std. error"))),
-               m1$opt.reg$coefficients,
+               m1$beta_primary$coefficients,
                tolerance = 9e-07)
 })
