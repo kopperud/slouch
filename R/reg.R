@@ -169,7 +169,7 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
     mcov.direct <- 0
   }
   
-  V_me <- observations$mv.response + beta2_Vu_given_x - mcov.random - mcov.fixed
+  V_me <- observations$mv.response + beta2_Vu_given_x - mcov.random - mcov.direct
   return(V_me)
 }
 
