@@ -92,12 +92,14 @@ print.slouch <- function(x, ...){
   }
   
   if (length(inferred) > 0){
+    cat("\n")
     message("Inferred maximum-likelihood parameters")
     inferred_matrix <- matrix(inferred, ncol = 1, dimnames = list(names(inferred), "Value"))
     print(inferred_matrix)
   }
   
   if (!is.null(x$supported_range)){
+    cat("\n")
     message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
     rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
@@ -106,6 +108,7 @@ print.slouch <- function(x, ...){
   
   foo <- function(w, title){
     if(length(w) > 0){
+      cat("\n")
       if(title == "Regime-dependent trends"){
         if(!x$control$estimate.Ya){
           title <- paste(title, "(assuming Ya = 0)")
@@ -115,11 +118,13 @@ print.slouch <- function(x, ...){
       print(x$beta_primary$coefficients[w, ,drop=FALSE])
       
       if(title == "Optimal regression slope" | title == "Trend covariates"){
+        cat("\n")
         message("Evolutionary regression slope (rho = 1)")
         print(x$beta_evolutionary$coefficients[w, ,drop = FALSE])
       }
       
       if(grepl("Regime-dependent trends", title)){
+        cat("\n")
         message("Pairwise contrasts among trends:")
         print(x$beta_primary$trend_diff)
       }
@@ -136,16 +141,19 @@ print.slouch <- function(x, ...){
   
   if(!is.null(x$beta_primary$K)){
     if(!is.diag(x$beta_primary$K)){
+      cat("\n")
       message("Attenuation factor K. Linear model coefficients (above) are not corrected for bias.")
       print(x$beta_primary$K)
     }
   }
   
   if (!is.null(x$brownian_predictors)){
+    cat("\n")
     message("Stochastic predictor(s)")
     print(x$brownian_predictors)
   }
   
+  cat("\n")
   message("Model fit summary")
   m <- as.matrix(x$modfit)
   colnames(m) <- "Values"

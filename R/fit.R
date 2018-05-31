@@ -9,10 +9,10 @@
                         fixed.fact,
                         direct.cov, 
                         mv.direct.cov, 
-                        mvcov.direct.cov, 
+                        mcov.direct.cov, 
                         random.cov, 
                         mv.random.cov, 
-                        mvcov.random.cov,
+                        mcov.random.cov,
                         estimate.Ya,
                         estimate.bXa,
                         hessian,
@@ -102,10 +102,10 @@
       mv.direct.cov <- cbind(mv.direct.cov)
     }
     
-    if(is.null(mvcov.direct.cov)){
-      mvcov.direct.cov <- matrix(data = 0, nrow = n, ncol = ncol(direct.cov))
+    if(is.null(mcov.direct.cov)){
+      mcov.direct.cov <- matrix(data = 0, nrow = n, ncol = ncol(direct.cov))
     }else{
-      mvcov.direct.cov <- as.matrix(mvcov.direct.cov)
+      mcov.direct.cov <- as.matrix(mcov.direct.cov)
     }
     
   }else{
@@ -128,10 +128,10 @@
       mv.random.cov <- cbind(mv.random.cov)
     }
     
-    if(is.null(mvcov.random.cov)){
-      mvcov.random.cov <- matrix(data = 0, nrow = n, ncol = ncol(random.cov))
+    if(is.null(mcov.random.cov)){
+      mcov.random.cov <- matrix(data = 0, nrow = n, ncol = ncol(random.cov))
     }else{
-      mvcov.random.cov <- as.matrix(mvcov.random.cov)
+      mcov.random.cov <- as.matrix(mcov.random.cov)
     }
   }else{
     names.random.cov <- NULL
@@ -154,9 +154,9 @@
                        mv.response = mv.response,
                        fixed.fact = fixed.fact,
                        direct.cov = direct.cov,
-                       mvcov.direct.cov = mvcov.direct.cov,
+                       mcov.direct.cov = mcov.direct.cov,
                        random.cov = random.cov,
-                       mvcov.random.cov = mvcov.random.cov,
+                       mcov.random.cov = mcov.random.cov,
                        Y = Y,
                        names.direct.cov = names.direct.cov,
                        names.random.cov = names.random.cov,
