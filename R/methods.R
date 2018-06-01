@@ -58,6 +58,12 @@ print.slouch <- function(x, ...){
   }
   
   print(evolpar)
+  
+  if (!is.null(x$brownian_predictors)){
+    cat("\n")
+    message("Stochastic predictor(s)")
+    print(x$brownian_predictors)
+  }
 
   if(x$control$model == "ou"){
     hl <- x$evolpar$hl
@@ -73,10 +79,10 @@ print.slouch <- function(x, ...){
     
     rho <- mean(1 - (1 - exp(-a * x$tree$T.term)) / (a * x$tree$T.term))
     inferred <- list("Rate of adaptation" = a,
-                     "Mean phylogenetic correction factor (rho)" = rho)
+                     "Mean phylogenetic correction factor" = rho)
     
     if(!is.null(x$evolpar$vy)){
-      inferred["Sigma squared (y)"] <- sigma2_y
+      inferred["Diffusion variance"] <- sigma2_y
     }
     if(!is.null(x$evolpar$sigma2_y)){
       inferred["Stationary variance"] <- vy
@@ -87,7 +93,7 @@ print.slouch <- function(x, ...){
     
     if(length(c(x$w_beta$which.regimes, x$w_beta$which.random.cov)) > 0){
       rho <- mean(x$tree$T.term / 2)
-      inferred[["Mean phylogenetic correction factor (rho)"]] <- rho
+      inferred[["Mean phylogenetic correction factor"]] <- rho
     }
   }
   
@@ -100,7 +106,7 @@ print.slouch <- function(x, ...){
   
   if (!is.null(x$supported_range)){
     cat("\n")
-    message("Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)")
+    message("Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)")
     rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
   }
@@ -119,11 +125,11 @@ print.slouch <- function(x, ...){
       
       if(title == "Optimal regression slope" | title == "Trend covariates"){
         cat("\n")
-        message("Evolutionary regression slope (rho = 1)")
+        message("Evolutionary regression slope")
         print(x$beta_evolutionary$coefficients[w, ,drop = FALSE])
       }
       
-      if(grepl("Regime-dependent trends", title)){
+      if(grepl("Regime trends", title)){
         cat("\n")
         message("Pairwise contrasts among trends:")
         print(x$beta_primary$trend_diff)
@@ -132,9 +138,9 @@ print.slouch <- function(x, ...){
   }
   
   if(x$control$model == "ou"){
-    printnames <- c("Intercepts", "Optimal niches", "Optimal regression slope", "Direct-effect slope")
+    printnames <- c("Intercepts", "Regime optima", "Optimal regression slope", "Direct-effect slope")
   }else{
-    printnames <- c("Intercepts", "Regime-dependent trends", "Trend covariates", "Direct-effect slope")
+    printnames <- c("Intercepts", "Regime trends", "Trend covariates", "Direct-effect slope")
   }
   
   mapply(foo, w = x$w_beta, title = printnames)
@@ -142,20 +148,15 @@ print.slouch <- function(x, ...){
   if(!is.null(x$beta_primary$K)){
     if(!is.diag(x$beta_primary$K)){
       cat("\n")
-      message("Attenuation factor K. Linear model coefficients (above) are not corrected for bias.")
-      print(x$beta_primary$K)
+      message("Attenuation factor. Linear model coefficients (above) are not corrected for bias.")
+      m <- signif(x$beta_primary$K, 3)
+      prmatrix(m, collab = rep_len("", ncol(m)))
     }
   }
-  
-  if (!is.null(x$brownian_predictors)){
-    cat("\n")
-    message("Stochastic predictor(s)")
-    print(x$brownian_predictors)
-  }
-  
+
   cat("\n")
   message("Model fit summary")
-  m <- as.matrix(x$modfit)
+  m <- as.matrix(sapply(x$modfit, signif, 3))
   colnames(m) <- "Values"
   print(m)
   
@@ -220,7 +221,7 @@ hillclimbplot.slouch <- function(x,...){
                      ylim = c(min(s), max(s)),
                      xlim = c(min(hl), max(hl)),
                      xlab = "Phylogenetic half-life",
-                     ylab = if(!is.null(vy)) "Stationary variance" else "Sigma squared (y)"
+                     ylab = if(!is.null(vy)) "Stationary variance" else "Diffusion variance"
       )
       
       points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
@@ -230,7 +231,7 @@ hillclimbplot.slouch <- function(x,...){
     }else{
       graphics::plot(x = log(sigma2_y),
                      y = logL,
-                     xlab = "sigma squared (y)", pch = 19,
+                     xlab = "Diffusion variance", pch = 19,
                      xaxt = "n",
                      main = "Path of hillclimber")
       graphics::axis(1, 
@@ -302,7 +303,7 @@ plot.slouch <- function(x,
                         main = "Grid search",
                         ticktype = "detailed",
                         xlab = "Phylogenetic half-life", 
-                        ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Sigma squared (y)", 
+                        ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Diffusion variance", 
                         zlab = "Log-likelihood", 
                         zlim = c(min(x$supportplot$z), 0),
                         ...)
@@ -311,7 +312,7 @@ plot.slouch <- function(x,
         parnames <- c("hl", "vy", "sigma2_y")
         which_one <- sapply(x$supportplot[parnames], function(e) length(e) == 1)
         which_variable <- sapply(x$supportplot[parnames], function(e) length(e) > 1)
-        map <- stats::setNames(c("Phylogenetic half-life", "Stationary variance", "Sigma squared (y)"), parnames)
+        map <- stats::setNames(c("Phylogenetic half-life", "Stationary variance", "Diffusion variance"), parnames)
         
         xvar <- x$supportplot[parnames][which_variable]
         
@@ -342,7 +343,7 @@ plot.slouch <- function(x,
       graphics::plot(x = log(x$supportplot$sigma2_y),
                      y = x$supportplot$loglik,
                      pch = 19,
-                     xlab = "sigma squared (y)",
+                     xlab = "Diffusion variance",
                      ylab = "logL",
                      xaxt = "n",
                      ylim = c(min(hline, min(x$supportplot$loglik)), 
@@ -435,7 +436,7 @@ regimeplot <- function(x, ...){
 
 parnames <- function(x){
   x[x == "vy"] <- "Stationary variance"
-  x[x == "sigma2_y"] <- "Sigma squared (y)"
+  x[x == "sigma2_y"] <- "Diffusion variance"
   x[x == "hl"] <- "Phylogenetic half-life"
   x[x == "a"] <- "Rate of adaptation"
   return(x)

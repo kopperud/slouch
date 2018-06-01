@@ -317,7 +317,7 @@
                                   byrow = TRUE,
                                   ncol = 2, 
                                   dimnames = list(names.random.cov,
-                                                  c("Phylogenetic mean", "Variance"))
+                                                  c("Phylogenetic mean", "Diffusion variance"))
     )
   }else{
     brownian_predictors <- NULL
@@ -334,9 +334,10 @@
                  AIC = -2*ml+2*n.par,
                  AICc = aic + (2*n.par*(n.par+1))/(n-n.par-1),
                  SIC = -2*ml+log(n)*n.par,
-                 "R squared" = fit$r.squared*100,
+                 "R squared" = fit$r.squared,
                  SST = fit$sst,
-                 SSE = fit$sse)
+                 SSE = fit$sse,
+                 "N (params)" = n.par)
   
   if(model == "ou"){
     if(!is.null(hl_values) & !is.null(c(vy_values, sigma2_y_values))){

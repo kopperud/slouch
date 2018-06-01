@@ -30,22 +30,22 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
                          dimnames = list(NULL, c(observations$names.direct.cov, 
                                                  observations$names.random.cov)))
     
-    ## Sugar, append "(bm)" to the continuous explanatory variable names that are modelled as a brownian motion
-    if(!is.null(observations$random.cov)){
-      i <- length(observations$names.direct.cov)
-      k <- i + seq_along(observations$names.random.cov)
-      
-      if (control$model == "bm"){
-        if (evolutionary){
-          s <- ("(bm)")
-        }else{
-          s <- "(bm, trend)"
-        }
-      }else if (control$model == "ou"){
-        s <- ("(bm)")
-      }
-      colnames(covariates)[k] <- paste(colnames(covariates)[k],  s)
-    }
+    # ## Sugar, append "(bm)" to the continuous explanatory variable names that are modelled as a brownian motion
+    # if(!is.null(observations$random.cov)){
+    #   i <- length(observations$names.direct.cov)
+    #   k <- i + seq_along(observations$names.random.cov)
+    #   
+    #   if (control$model == "bm"){
+    #     if (evolutionary){
+    #       s <- ("(bm)")
+    #     }else{
+    #       s <- "(bm, trend)"
+    #     }
+    #   }else if (control$model == "ou"){
+    #     s <- ("(bm)")
+    #   }
+    #   colnames(covariates)[k] <- paste(colnames(covariates)[k],  s)
+    # }
     #colnames(covariates) <- paste(colnames(covariates),  "(bm)")
   }else{
     covariates <- NULL
@@ -66,7 +66,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
       w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
     }else{
       w_regimes <- weight.matrix.brown(tree$lineages)
-      colnames(w_regimes) <- paste(colnames(w_regimes), "(trend)") 
+      #colnames(w_regimes) <- paste(colnames(w_regimes), "(trend)") 
     }
     if(control$model == "bm" & control$estimate.Ya){
       X <- cbind(w_regimes,
@@ -344,7 +344,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
       
       beta_evolutionary <- c(list(coefficients = matrix(cbind(ev.beta1, sqrt(diag(ev.beta1.var))), 
                                              nrow=ncol(X0), 
-                                             dimnames = list(colnames(X0), c("Estimates", "Std. error"))),
+                                             dimnames = list(colnames(X0), c("Predictions", "Std. error"))),
                        X = X0,
                        vcov = ev.beta1.var,
                        residuals = Y - (X0 %*% ev.beta1)),
