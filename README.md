@@ -18,7 +18,7 @@ library(slouch)
 
 # Documentation
 
-Standard R-package documentation can be seen by entering the command `?slouch`, or visiting the package website [the package website](https://kopperud.github.io/slouch/).
+Standard R-package documentation can be seen by entering the command `?slouch`, or by visiting [the package website](https://kopperud.github.io/slouch/).
 
 
 ### References

@@ -144,9 +144,9 @@ plot(x = neocortex$brain_mass_g_log_mean,
 abline(lm(neocortex_area_mm2_log_mean ~ brain_mass_g_log_mean,
           data = neocortex), 
        col = "black", lwd = 2)
-abline(model3$opt.reg$coefficients[,1], 
+abline(model3$beta_primary$coefficients[,1], 
        col = "orange", lwd = 2)
-model3$opt.reg$coefficients
+model3$beta_primary$coefficients
 ```
 
 
@@ -197,7 +197,7 @@ model5 <- slouch.fit(phy = phy,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.01))
 
-model5$opt.reg$coefficients
+model5$beta_primary$coefficients
 ```
 
 
@@ -215,7 +215,7 @@ model6 <- slouch.fit(phy = phy,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.0005))
 
-model6$opt.reg$coefficients
+model6$beta_primary$coefficients
 plot(model6)
 ```
 

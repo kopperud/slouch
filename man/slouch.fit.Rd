@@ -5,12 +5,13 @@
 \title{Function to fit Ornstein-Uhlenbeck models of trait evolution}
 \usage{
 slouch.fit(phy, species = NULL, hl_values = NULL, vy_values = NULL,
-  sigma2_y_values = NULL, response, mv.response = NULL, fixed.fact = NULL,
-  direct.cov = NULL, mv.direct.cov = NULL, mcov.direct.cov = NULL,
-  random.cov = NULL, mv.random.cov = NULL, mcov.random.cov = NULL,
-  estimate.Ya = FALSE, estimate.bXa = FALSE, hessian = F, support = 2,
-  convergence = 1e-06, nCores = 1, hillclimb = FALSE, lower = c(1e-08,
-  1e-08), upper = Inf, verbose = FALSE)
+  sigma2_y_values = NULL, response, mv.response = NULL,
+  fixed.fact = NULL, direct.cov = NULL, mv.direct.cov = NULL,
+  mcov.direct.cov = NULL, random.cov = NULL, mv.random.cov = NULL,
+  mcov.random.cov = NULL, estimate.Ya = FALSE, estimate.bXa = FALSE,
+  hessian = F, support = 2, convergence = 1e-06, nCores = 1,
+  hillclimb = FALSE, lower = c(1e-08, 1e-08), upper = Inf,
+  verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}

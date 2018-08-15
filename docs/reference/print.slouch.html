@@ -21,14 +21,20 @@
 <!-- clipboard.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js" integrity="sha384-cV+rhyOuRHc9Ub/91rihWcGmMmCXDeksTtCihMupQHSsi8GIIRDG0ThDc3HGQFJ3" crossorigin="anonymous"></script>
 
+<!-- sticky kit -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
-<script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
+
+
+
 <meta property="og:title" content="Print Model Summary — print.slouch" />
 
 <meta property="og:description" content="Print Model Summary" />
 <meta name="twitter:card" content="summary" />
+
 
 
 <!-- mathjax -->
@@ -38,8 +44,6 @@
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
-
-
 
 
   </head>
@@ -87,6 +91,9 @@
     </li>
   </ul>
 </li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul>
       
       <ul class="nav navbar-nav navbar-right">
@@ -109,13 +116,15 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Print Model Summary</h1>
-    <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
+    <small class="dont-index">Source: <a href='http://github.com/kopperud/slouch/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
     <div class="hidden name"><code>print.slouch.Rd</code></div>
     </div>
 
+    <div class="ref-description">
     
     <p>Print Model Summary</p>
     
+    </div>
 
     <pre class="usage"><span class='co'># S3 method for slouch</span>
 <span class='fu'>print</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
@@ -141,30 +150,52 @@
 <span class='no'>neocortex</span> <span class='kw'>&lt;-</span> <span class='no'>neocortex</span>[<span class='fu'>match</span>(<span class='no'>artiodactyla</span>$<span class='no'>tip.label</span>, <span class='no'>neocortex</span>$<span class='no'>species</span>), ]
 
 <span class='no'>m0</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='slouch.fit.html'>slouch.fit</a></span>(<span class='kw'>phy</span> <span class='kw'>=</span> <span class='no'>artiodactyla</span>,
-                 <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>50</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
-                 <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>3</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
+                 <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>4</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
+                 <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>0.05</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
                  <span class='kw'>species</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>species</span>,
-                 <span class='kw'>response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_mean</span>,
-                 <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_varmean</span>,
+                 <span class='kw'>response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>neocortex_area_mm2_log_mean</span>,
+                 <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>neocortex_se_squared</span>,
+                 <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>brain_mass_g_log_mean</span>,
+                 <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>brain_se_squared</span>,
                  <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>diet</span>)
 
 <span class='fu'>print</span>(<span class='no'>m0</span>)</div><div class='output co'>#&gt; <span class='message'>Important - Always inspect the likelihood surface of the model parameters in the 3D-grid</span>
 #&gt; <span class='message'>          before evaluating model fit &amp; results. If the likelihood search space does not contain</span>
-#&gt; <span class='message'>          the true maximum likelihood, the model outputs will reflect this.</span></div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Model parameters</span></div><div class='output co'>#&gt;                        Estimate
-#&gt; Phylogenetic half-life 42.85729
-#&gt; Stationary variance    3       </div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Interval of parameters in 3d plot (Very sensitive to grid mesh, grid size and local ML estimate)</span></div><div class='output co'>#&gt;                          Minimum Maximum
-#&gt; Phylogenetic half-life 10.715071      50
-#&gt; Stationary variance     1.286286       3</div><div class='output co'>#&gt; <span class='message'>Coefficients</span></div><div class='output co'>#&gt;    Estimates Std. error
-#&gt; Br  8.168138  1.9603048
-#&gt; Gr 16.525746  3.2664721
-#&gt; MF 11.389154  0.6332073</div><div class='output co'>#&gt; <span class='message'>Model fit</span></div><div class='output co'>#&gt;           Values   
-#&gt; Support   -59.83444
-#&gt; AIC       129.6689 
-#&gt; AICc      131.2905 
-#&gt; SIC       138.4749 
-#&gt; R squared 11.64168 
-#&gt; SST       50.49254 
-#&gt; SSE       44.61436 </div><div class='img'><img src='print.slouch-1.png' alt='' width='700' height='433' /></div></pre>
+#&gt; <span class='message'>          the true maximum likelihood, the model outputs will reflect this.</span></div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Maximum-likelihood estimates</span></div><div class='output co'>#&gt;                        Estimate
+#&gt; Phylogenetic half-life 0.001   
+#&gt; Stationary variance    0.022   
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Stochastic predictor(s)</span></div><div class='output co'>#&gt;                                 Phylogenetic mean Diffusion variance
+#&gt; neocortex$brain_mass_g_log_mean          5.139644         0.02922457
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Inferred maximum-likelihood parameters</span></div><div class='output co'>#&gt;                                     Value    
+#&gt; Rate of adaptation                  693.1472 
+#&gt; Mean phylogenetic correction factor 0.9999469
+#&gt; Diffusion variance                  30.49848 
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)</span></div><div class='output co'>#&gt;                        Minimum  Maximum
+#&gt; Phylogenetic half-life   0.001 3.143071
+#&gt; Stationary variance      0.001 0.039500
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Regime optima</span></div><div class='output co'>#&gt;    Estimates Std. error
+#&gt; Br  5.277136  0.1810023
+#&gt; Gr  5.397711  0.2162166
+#&gt; MF  5.390225  0.1886245
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Optimal regression slope</span></div><div class='output co'>#&gt;                                 Estimates Std. error
+#&gt; neocortex$brain_mass_g_log_mean 0.8531703  0.0371682
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Evolutionary regression slope</span></div><div class='output co'>#&gt;                                 Predictions Std. error
+#&gt; neocortex$brain_mass_g_log_mean   0.8531251 0.03716623
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Attenuation factor. Linear model coefficients (above) are not corrected for bias.</span></div><div class='output co'>#&gt;                                              
+#&gt; Br                              1 0 0 -0.0330
+#&gt; Gr                              0 1 0 -0.0351
+#&gt; MF                              0 0 1 -0.0339
+#&gt; neocortex$brain_mass_g_log_mean 0 0 0  1.0100
+#&gt; </div><div class='output co'>#&gt; <span class='message'>Model fit summary</span></div><div class='output co'>#&gt;             Values
+#&gt; Support     14.000
+#&gt; AIC        -16.000
+#&gt; AICc       -13.600
+#&gt; SIC         -5.380
+#&gt; R squared    0.936
+#&gt; SST        713.000
+#&gt; SSE         45.600
+#&gt; N (params)   6.000</div><div class='img'><img src='print.slouch-1.png' alt='' width='700' height='433' /></div><div class='input'>
+<span class='fu'>plot</span>(<span class='no'>m0</span>, <span class='kw'>theta</span> <span class='kw'>=</span> <span class='fl'>150</span>)</div><div class='img'><img src='print.slouch-2.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

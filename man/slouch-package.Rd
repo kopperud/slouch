@@ -6,7 +6,7 @@
 \alias{slouch-package}
 \title{SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses}
 \description{
-SLOUCH: Stochastic Linear Ornstein Uhlenbeck Comparative Hypotheses
+An implementation of a phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves towards a primary optimum. The optimum can be modelled as a single parameter, as multiple discrete regimes on the phylogenetic tree, and/or with continuous covariates.
 }
 \section{References}{
 

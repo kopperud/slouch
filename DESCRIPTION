@@ -13,7 +13,7 @@ Description: An implementation of a phylogenetic comparative method. It can fit 
 License: GPL-2
 LazyData: FALSE
 ByteCompile: FALSE
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Depends:
   R (>= 3.0.0),
   base,
@@ -30,4 +30,3 @@ URL: http://github.com/kopperud/slouch
 BugReports: http://github.com/kopperud/slouch/issues
 VignetteBuilder: knitr
 Encoding: UTF-8
-

@@ -8,8 +8,8 @@
 <title>Slouch introduction • slouch</title>
 <!-- jquery --><script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script><!-- Font Awesome icons --><link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js" integrity="sha384-cV+rhyOuRHc9Ub/91rihWcGmMmCXDeksTtCihMupQHSsi8GIIRDG0ThDc3HGQFJ3" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../jquery.sticky-kit.min.js"></script><script src="../pkgdown.js"></script><meta property="og:title" content="Slouch introduction">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js" integrity="sha384-cV+rhyOuRHc9Ub/91rihWcGmMmCXDeksTtCihMupQHSsi8GIIRDG0ThDc3HGQFJ3" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Slouch introduction">
 <meta property="og:description" content="">
 <meta name="twitter:card" content="summary">
 <!-- mathjax --><script src="https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!--[if lt IE 9]>
@@ -59,6 +59,9 @@
     </li>
   </ul>
 </li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
@@ -82,9 +85,9 @@
       <h1>Slouch introduction</h1>
                         <h4 class="author">Bjørn Tore Kopperud</h4>
             
-            <h4 class="date">2018-04-19</h4>
+            <h4 class="date">2018-08-15</h4>
       
-      <small>Source: <a href="http://github.com/kopperud/slouch/blob/master/vignettes/introduction.Rmd"><code>vignettes/introduction.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="http://github.com/kopperud/slouch/blob/master/vignettes/introduction.Rmd"><code>vignettes/introduction.Rmd</code></a></small>
       <div class="hidden name"><code>introduction.Rmd</code></div>
 
     </div>
@@ -218,12 +221,12 @@ p</code></pre></div>
 <span class="kw">abline</span>(<span class="kw">lm</span>(neocortex_area_mm2_log_mean <span class="op">~</span><span class="st"> </span>brain_mass_g_log_mean,
           <span class="dt">data =</span> neocortex), 
        <span class="dt">col =</span> <span class="st">"black"</span>, <span class="dt">lwd =</span> <span class="dv">2</span>)
-<span class="kw">abline</span>(model3<span class="op">$</span>opt.reg<span class="op">$</span>coefficients[,<span class="dv">1</span>], 
+<span class="kw">abline</span>(model3<span class="op">$</span>beta_primary<span class="op">$</span>coefficients[,<span class="dv">1</span>], 
        <span class="dt">col =</span> <span class="st">"orange"</span>, <span class="dt">lwd =</span> <span class="dv">2</span>)
-model3<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
+model3<span class="op">$</span>beta_primary<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                                 Estimates Std. error
-## (Intercept)                     5.4488647 0.23767997
-## neocortex$brain_mass_g_log_mean 0.8339193 0.04414496</code></pre>
+## (Intercept)                     5.4488690 0.23769111
+## neocortex$brain_mass_g_log_mean 0.8339188 0.04414677</code></pre>
 <p><img src="introduction_files/figure-html/unnamed-chunk-7-1.png" width="672"></p>
 <p>While the single-optimum model showed a very strong phylogenetic inertia, in this model it is somewhat lower with a phylogenetic half-life (<span class="math inline">\(t_{1/2}\)</span>) of 16.9 myr. In this case, the regression line estimated using ordinary least squares is almost indistinguishable from the Ornstein-Uhlenbeck optimal regression. It is also possible to fit a model with multiple continuous covariates, however the input to <code>direct.cov</code> must be a matrix or data frame that has column names.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model4 &lt;-<span class="st"> </span>
@@ -265,12 +268,12 @@ edge_regimes &lt;-<span class="st"> </span><span class="kw">factor</span>(regime
                      <span class="dt">hillclimb =</span> <span class="ot">TRUE</span>,
                      <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">0.001</span>, <span class="fl">0.01</span>))
 
-model5<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
+model5<span class="op">$</span>beta_primary<span class="op">$</span>coefficients</code></pre></div>
 <pre><code>##                                 Estimates Std. error
-## Br                              5.3746697 0.22271817
-## Gr                              5.6044369 0.30270232
-## MF                              5.5558559 0.22385800
-## neocortex$brain_mass_g_log_mean 0.8203596 0.04313639</code></pre>
+## Br                              5.3746627 0.22276576
+## Gr                              5.6045135 0.30280307
+## MF                              5.5558922 0.22390132
+## neocortex$brain_mass_g_log_mean 0.8203544 0.04314243</code></pre>
 </div>
 <div id="adaptation-model" class="section level3">
 <h3 class="hasAnchor">
@@ -285,10 +288,10 @@ model5<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</cod
                      <span class="dt">hillclimb =</span> <span class="ot">TRUE</span>,
                      <span class="dt">lower =</span> <span class="kw">c</span>(<span class="fl">0.001</span>, <span class="fl">0.0005</span>))
 
-model6<span class="op">$</span>opt.reg<span class="op">$</span>coefficients</code></pre></div>
-<pre><code>##                                      Estimates Std. error
-## (Intercept)                          5.3406859 0.21881752
-## neocortex$brain_mass_g_log_mean (bm) 0.9864637 0.04678965</code></pre>
+model6<span class="op">$</span>beta_primary<span class="op">$</span>coefficients</code></pre></div>
+<pre><code>##                                 Estimates Std. error
+## (Intercept)                     5.3406859 0.21881752
+## neocortex$brain_mass_g_log_mean 0.9864637 0.04678965</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(model6)</code></pre></div>
 <p><img src="introduction_files/figure-html/unnamed-chunk-11-1.png" width="672"></p>
 </div>

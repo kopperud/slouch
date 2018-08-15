@@ -21,14 +21,20 @@
 <!-- clipboard.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js" integrity="sha384-cV+rhyOuRHc9Ub/91rihWcGmMmCXDeksTtCihMupQHSsi8GIIRDG0ThDc3HGQFJ3" crossorigin="anonymous"></script>
 
+<!-- sticky kit -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
-<script src="../jquery.sticky-kit.min.js"></script>
 <script src="../pkgdown.js"></script>
+
+
+
 <meta property="og:title" content="Function to fit Brownian-motion models of trait evolution — brown.fit" />
 
 <meta property="og:description" content="Function to fit Brownian-motion models of trait evolution" />
 <meta name="twitter:card" content="summary" />
+
 
 
 <!-- mathjax -->
@@ -38,8 +44,6 @@
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
-
-
 
 
   </head>
@@ -87,6 +91,9 @@
     </li>
   </ul>
 </li>
+<li>
+  <a href="../news/index.html">Changelog</a>
+</li>
       </ul>
       
       <ul class="nav navbar-nav navbar-right">
@@ -109,18 +116,20 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Function to fit Brownian-motion models of trait evolution</h1>
-    <small>Source: <a href='http://github.com/kopperud/slouch/blob/master/R/interface.R'><code>R/interface.R</code></a></small>
+    <small class="dont-index">Source: <a href='http://github.com/kopperud/slouch/blob/master/R/interface.R'><code>R/interface.R</code></a></small>
     <div class="hidden name"><code>brown.fit.Rd</code></div>
     </div>
 
+    <div class="ref-description">
     
     <p>Function to fit Brownian-motion models of trait evolution</p>
     
+    </div>
 
     <pre class="usage"><span class='fu'>brown.fit</span>(<span class='no'>phy</span>, <span class='kw'>species</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>sigma2_y_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>response</span>,
   <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mvcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>hessian</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>convergence</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>nCores</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>lower</span> <span class='kw'>=</span> <span class='fl'>1e-08</span>, <span class='kw'>upper</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
@@ -133,7 +142,7 @@
     </tr>
     <tr>
       <th>species</th>
-      <td><p>a character vector of species tip labels, typically the "species" column in a data framv. This column needs to be an exact match and same order as phy$tip.label</p></td>
+      <td><p>a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label</p></td>
     </tr>
     <tr>
       <th>sigma2_y_values</th>
@@ -157,11 +166,11 @@
     </tr>
     <tr>
       <th>mv.direct.cov</th>
-      <td><p>Observational variances for direct effect independent variables. Must be the same shape as direct.cov</p></td>
+      <td><p>Estimation variances for direct effect independent variables. Must be the same shape as direct.cov</p></td>
     </tr>
     <tr>
-      <th>mvcov.direct.cov</th>
-      <td><p>.</p></td>
+      <th>mcov.direct.cov</th>
+      <td><p>Estimation covariances between the response variable and direct effect independent variables. Most be the same shape as direct.cov</p></td>
     </tr>
     <tr>
       <th>random.cov</th>
@@ -169,11 +178,11 @@
     </tr>
     <tr>
       <th>mv.random.cov</th>
-      <td><p>Observational variances for the brownian covariates. Must be the same shape as random.cov</p></td>
+      <td><p>Estimation variances for the brownian covariates. Must be the same shape as random.cov</p></td>
     </tr>
     <tr>
-      <th>mvcov.random.cov</th>
-      <td><p>.</p></td>
+      <th>mcov.random.cov</th>
+      <td><p>Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov</p></td>
     </tr>
     <tr>
       <th>estimate.Ya</th>
@@ -229,13 +238,14 @@
 <li><p>lineages - for all species (1,2,3... n), a list of their branch times and regimes as painted on the tree.</p></li>
 <li><p>regimes - for all nodes (1,2,3... n, root, root+1, ...) in the tree, the respective regime as specified by "<code>phy$node.label</code>" and "<code>fixed.fact</code>".</p></li>
 </ul></p></dd>
+
 <dt>modfit</dt><dd><p>a list of statistics to characterize model fit</p></dd>
 <dt>supportplot</dt><dd><p>a list or matrix used to plot the grid search</p></dd>
 <dt>supported_range</dt><dd><p>a matrix indicating the interval of grid search that is within the support region. If the grid search values are carefully selected, this may be used to estimate the true support region.</p></dd>
 <dt>V</dt><dd><p>the residual variance-covariance matrix for the maximum likelihood model as found by parameter search.</p></dd>
 <dt>evolpar</dt><dd><p>maximum likelihood estimates of parameters under the chosen model.</p></dd>
-<dt>opt.reg</dt><dd><p>regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.</p></dd>
-<dt>ev.reg</dt><dd><p>under a random effect model, "ev.reg" is the evolutionary regression coefficients and associated objects.</p></dd>
+<dt>beta_primary</dt><dd><p>regression coefficients and associated objects. Whether the regression coefficients are to be interpreted as optima or not depend on the type of model and model estimates.</p></dd>
+<dt>beta_evolutionary</dt><dd><p>under a random effect model, "beta_evolutionary" is the evolutionary regression coefficients and associated objects.</p></dd>
 <dt>n.par</dt><dd><p>number of free parameters with which the likelihood criteria are penalized.</p></dd>
 <dt>brownian_predictors</dt><dd><p>under a random effect model, a matrix of means and standard errors for the independent Brownian motion variable(s). Not to be confused with the regression coefficients when the residuals are under a "bm" model.</p></dd>
 <dt>climblog_df</dt><dd><p>a matrix of the path trajectory of the hillclimber routine.</p></dd>

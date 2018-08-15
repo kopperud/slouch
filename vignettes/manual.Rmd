@@ -1,16 +1,19 @@
 ---
 title: "Manual"
-author: ' --'
+author: 'Jason Pienaar, Bjørn Tore Kopperud, Kjetil Lysne Voje, Thomas F. Hansen (in no particular order)'
 date: '`r Sys.Date()`'
 output:
+  html_document: 
+    fig_caption: yes
+  word_document:
+    fig_caption: yes
+  pdf_document: null
+  rmarkdown::html_vignette: null
   bookdown::pdf_document2:
     fig_caption: yes
     pandoc_args: 
     - --filter=pandoc-eqnos
     toc: no
-  html_document: default
-  pdf_document: null
-  rmarkdown::html_vignette: null
 fontsize: 10pt
 documentclass: article
 classoption:
@@ -20,15 +23,15 @@ vignette: |
   %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 
-## Overview
+```{r setup, cache=FALSE, include=FALSE}
+library(knitr)
+#output <- opts_knit$get("rmarkdown.pandoc.to")
+#if (output=="html") opts_chunk$set(fig.width=11, fig.height=11)
+#if (output=="docx") opts_chunk$set(fig.width=6,  fig.height=6)
 
-This document describes an R-package for estimating parameters for a suite of comparative methods based on the Ornstein-Uhlenbeck process as a model of adaptive evolution. We refer to this program as SLOUCH 2.0 since it builds on the models in SLOUCH 1.0 (Hansen *et al.* 2008). SLOUCH 1.0 dealt with a continuous trait that evolves as an Ornstein-Uhlenbeck process around an optimal state that itself depend on an environmental variable that evolves as if by a Brownian motion. For the current version we have extended the model to deal with an optimal state that depends on multiple randomly evolving predictors and multiple direct effect predictors. We also describe in more detail how to include measurement error in the analyses. SLOUCH 2.0 also includes functionality designed to deal with traits that evolve in response to fixed categorical niches that can be mapped onto a phylogeny and then used to estimate niche optima for the response trait (Hansen, 1997; Butler & King, 2004). The multi-optima model is thus an alternative to Butler & King’s (2004) OUCH program, but it differs in a few crucial apects, as described below. SLOUCH 1.3 and earlier versions were built as an addition to OUCH, and data formats and some functions were borrowed from the original version of OUCH, either as is, or slightly modified. In SLOUCH 2.0 the phylogenetic tree format is revamped, and now uses the format used by the R-package APE (Paradis *et al.* 2004). 
+opts_chunk$set(collapse = TRUE)
+```
 
-The fixed.fit function of SLOUCH 1.1 differs from the OUCH program as follows: a) it allows the user to estimate parameters using a non-ultrametric tree, such as those that include extinct species, b) it allows the user to incorporate measurement error in the response variable, c) it automatically calculates standard errors for estimated optima, goodness of fit as $\text{R}^2$ and can be used to compute support regions for rates of adaptation and trait variances, d) it includes functionality to use both grid search and the built-in R optimizing functions to estimate parameters, and e) it includes various options to deal with intercept estimation, which can be problematic. [Do we need to compare with OUCH?]
-
-SLOUCH 2.0 also includes Brownian-motion models where the optima are instead modeled as trends. This document is written to serve as an updated user manual for SLOUCH 2.0. It provides a summary of the rationale for the methods, and illustrates them with examples based on the Liolaemus (ungulate teeth?) data set. It extends the user manual for SLOUCH 1.0 by discussing multiple regression and ANOVA type of models for the optimum, and gives more details on modeling non-ultrametric trees and measurement error. The mathematical and conceptual basis of the adaptation-inertia methods are presented and discussed in Hansen (1997), Butler & King (2004), and Hansen et al. (2008). A user of SLOUCH 2.0 should also consult these papers.
-
-\newpage
 
 \tableofcontents
 
@@ -38,11 +41,11 @@ SLOUCH 2.0 also includes Brownian-motion models where the optima are instead mod
 
 ## Background
 
-Comparing the trait values of groups of related species to their predicted optima in different environments or time periods can provide powerful tests of adaptive hypotheses (e.g. Ridley 1983; Harvey & Pagel 1991). The distributions of current species trait values at the current tips of a phylogeny (and fossil data or reconstructed ancestral states within the phylogeny if available) however, may reflect, adaptation, phylogenetic inertia, both of these, or none of these. We use the term phylogenetic inertia in the sense of resistance to adaptive change i.e. it comes about when related species inherit an inert trait from a common ancestor, which then resists adaptive change to new optima. Hence, if inertia is present, observed trait values may reflect both adaptive change as well as an ancestral trait influence. When testing an adaptive hypothesis with such data, the constraints provided by such resistance to change for current trait values as they evolve towards their optima need to be controlled for (and similarly, the effects of adaptation need to be controlled for when testing hypothesis of phylogenetic inertia). 
+Comparing traits in groups of related species in different environments or time periods can provide powerful tests of adaptive hypotheses (e.g. Sober 2008; Hansen 2014). The distributions of trait values of extant species at the tips of a phylogeny (and fossil data or reconstructed ancestral states within the phylogeny if available) however, may reflect, adaptation, phylogenetic inertia, both of these, or none of these. We use the term phylogenetic inertia in the sense of resistance to adaptive change i.e. it comes about when related species inherit an inert trait from a common ancestor, which then lags adaptive change to new optima. Hence, if inertia is present, observed trait values may reflect both adaptive change as well as an influence of a maladapted ancestral trait. When testing an adaptive hypothesis with such data, the constraints provided by such resistance to change for current trait values as they evolve towards their optima need to be controlled for (and similarly, the effects of adaptation need to be controlled for when testing hypothesis of phylogenetic inertia). 
 
-Most contemporary comparative methodologies do not control for inertia in the sense defined above, but rather control for general effects of phylogeny. Their principal concern is to deal with statistical issues that arise from non-independent, correlated data that naturally arise from evolution along a branching phylogeny, and are usually used to remove these correlations before the actual analysis takes place. Phylogenetic effects, however, will also be present when traits adapt to variables that are themselves phylogenetically structured. Such effects should not be controlled for when studying adaptation and need to be separated from inertia. Furthermore, most contemporary methods assume that traits evolve as a Brownian motion, a crucial assumption and one that provides the analytical techniques to remove the correlations (e.g. independent contrasts). Numerous studies however, have pointed out that comparative method that assumes a Brownian motion as the underlying evolutionary process are not suitable for studying adaptation towards optima (e.g. Hansen & Orzack, 2005). A Brownian-motion process consists only of a stochastic component, where the expected mean value must equal the common ancestral state at the base of the species phylogeny. There is no mechanism in the process that allows one to specify adaptation to or maintenance at specific optima. Even if the ancestral state is at the optimum and the optimum does not change through time, any deviations from the optimum relationship generated by the stochastic Brownian-motion process will be inherited and there is no mechanism that allows a single species trait to return to its optimum value. 
+Most contemporary comparative methodologies do not control for inertia in the sense defined above, but rather control for general effects of phylogeny. Their principal concern is to deal with statistical issues that arise from non-independent, correlated data that naturally arise from evolution along a branching phylogeny, and are usually used to remove these correlations before the actual analysis takes place. Phylogenetic effects, however, will also be present when traits adapt to variables that are themselves phylogenetically structured. Effects of adaptation should not be controlled for when studying adaptation and they need to be separated from inertia. Furthermore, most contemporary methods assume that traits evolve as a Brownian motion, a crucial assumption and one that provides the analytical techniques to remove the correlations (e.g. independent contrasts). Numerous studies however, have pointed out that comparative method that assumes a Brownian motion as the underlying evolutionary process are not suitable for studying adaptation towards optima (e.g. Hansen 2014). A Brownian motion is a stochastic process in which the expected mean value equals the common ancestral state at the base of the species phylogeny. There is no mechanism in the process that allows one to specify adaptation to or maintenance at specific optima. Even if the ancestral state is at the optimum and the optimum does not change through time, any deviations from the optimum relationship generated by the stochastic Brownian-motion process will be inherited and there is no mechanism that allows a trait in a species to return to its optimum value. 
 
-Hansen (1997), Butler & King (2004), Hansen & Orzack (2005) and Hansen *et al.* (2008) have shown that comparative methods based on an Ornstein-Uhlenbeck (OU) process are more suited to studying adaptive hypotheses using comparative data. The OU process, unlike a pure Brownian motion, consists of a deterministic component (which can be used to model adaptation of a trait towards an optimum) as well as a stochastic component (which models the random fluctuations of the trait as it evolves towards the optimum (see equations below). In fact if we take away the deterministic component of an OU process, we are left with a Brownian motion.
+Hansen (1997), Butler & King (2004), Hansen & Orzack (2005) and Hansen *et al.* (2008) have argued that comparative methods based on an Ornstein-Uhlenbeck (OU) process are more suited to studying adaptive hypotheses using comparative data. The OU process, unlike a pure Brownian motion, consists of a deterministic component (which can be used to model adaptation of a trait towards an optimum) as well as a stochastic component (which models the random fluctuations of the trait as it evolves towards the optimum (see equations below). If we take away the deterministic component of an OU process, we are left with a Brownian motion.
 
 
 ## Comparative methods built around an Ornstein-Uhlenbeck process
@@ -64,18 +67,18 @@ $$
 dy = -\alpha(y - \theta)dt + \sigma_ydW_y
 $$
 
-which is interpreted as follows: $dy$ is the change in $y$ over a time step dt, $\alpha$ is a parameter measuring the rate of adaptation towards the optimum, $dW_y$ is a white-noise process having independent, normally- distributed random changes with mean zero and unit variance. The standard deviation of the random changes is given by $\sigma_y$ and $\theta$ are the fixed or random optima as defined above. Categorical predictor variables must be mapped on the phylogeny a priori. The method treats these as known. For the random predictors we have an additional stochastic differential Brownian-motion process to describe their evolution on a phylogeny:
+which is interpreted as follows: $dy$ is the change in $y$ over a time step dt, $\alpha$ is a parameter measuring the rate of adaptation towards the optimum, $dW_y$ is a white-noise process having independent, normally- distributed random changes with mean zero and unit variance. The standard deviation of the random changes is given by $\sigma_y$ and $\theta$ are the fixed or random optima as defined above. Categorical predictor variables must be mapped on the phylogeny a priori. The method treats these as fixed. For the random predictors we have an additional stochastic differential Brownian-motion process to describe their evolution on a phylogeny:
 
 $$
 dx = \sigma_xdW_y
 $$
 
-where $\sigma_x$ gives the standard deviation of the random changes (hence the rate at which the predictors change). These dynamical equations can be solved for the different assumptions about the optimum. With fixed, categorical predictor variables, the model predicts that the species data will be of the form:
+where $\sigma_x$ gives the standard deviation of the random changes (hence, the rate at which the predictors change). These dynamical equations can be solved for the different assumptions about the optimum. With fixed, categorical predictor variables, the model predicts that the species data will be of the form:
 
 $$
 y_i = c_{0i}y_a + c_{1i}\theta_1 + c_{2i}\theta_2 \dots + r_i
 $$
-where $y_a$ is a parameter describing the state of the trait at the root of the tree, the coefficients, $c_{ji}$ , are determined by the time on the phylogeny the species $i$ has spent in environment $j$, such that more recent environments are weighted more than more ancient environments. The weights are determined by the rate of adaptation, $\alpha$. More specifically, $c_{ji}$ is a sum over all time intervals in the past history of species $i$ where this species experienced environment $j$, and each interval contributes a term $e^{-\alpha t} - e^{\alpha s}$, where $t$ is the time back to the end of the interval, and $s$ is the time back to the beginning of the interval (see Hansen (1997) for formal derivation). The coefficient for the parameter $y_a$ is $c_0 = e^{ -\alpha t}$ , where $t$ is the time from the root to species $i$. Note that if $\alpha$ is large, then only the most recent environment will contribute. Ancient environments only contribute if the rate of adaptation is low. SLOUCH will automatically compute these coefficients given a mapping of niches on the tree. The residual terms, $r_i$, are assumed to be normally distributed with mean zero and variances and covariances given later. These are also computed automatically.
+where $y_a$ is a parameter describing the state of the trait at the root of the tree, the coefficients, $c_{ji}$ , are determined by the time on the phylogeny the species $i$ has spent in environment $j$, such that more recent environments are weighted more than more ancient environments. The weights are determined by the rate of adaptation, $\alpha$. More specifically, $c_{ji}$ is a sum over all time intervals in the past history of species $i$ where this species experienced environment $j$, and each interval contributes a term $e^{-\alpha t} - e^{\alpha s}$, where, starting at the root with $t_0$ = 0, $s$ is the time when the species enters the environment, and $t$ is the end-time of the environment (see Hansen (1997) for formal derivation). The coefficient for the ancestral state $y_a$ is $c_0 = e^{ -\alpha t}$ , where $t$ is the time from the root to species $i$. Note that if $\alpha$ is large, then only the most recent environment will contribute to the trait values of the species. Ancient environments only contribute to species' trait values if the rate of adaptation is low. SLOUCH will automatically compute these coefficients given a mapping of niches on the tree. The residual terms, $r_i$, are assumed to be normally distributed with mean zero and variances and covariances given later. These are also computed automatically.
 
 For random, continuous predictor variables, evolving as if by a Brownian motion, the model predicts:
 
@@ -86,9 +89,9 @@ $$
 where $x_{ij}$ is the current state of predictor variable $j$ for species $i$. The intercept ($k$) is discussed below, and $\rho(\alpha t_i)$ is a "phylogenetic correction factor", given as:
 
 $$
-\rho(\alpha t_i) = (1 - \frac{1 - e^{-\alpha t_i}}{\alpha t_i})
+\rho(\alpha t_i) = 1 - \frac{1 - e^{-\alpha t_i}}{\alpha t_i}
 $$
-where $t_i$ is the time from root to species $i$. On ultrametric trees, this factor is identical for all species. The correction factor varies between 0 and 1. It describes how phylogenetic inertia makes the “evolutionary” regressions of y on x less steep than the underlying “optimal” regressions, $b$. If the rate of adaptation or the time back to the origin of the radiation are very high, $\rho(\alpha t_i) = 1$, and the evolutionary regression will equal the optimal regression. The residual terms, $r_i$, are normally distributed with mean zero and variances and covariances given later. The residuals and the phylogenetic correction factors are computed automatically by SLOUCH, and both evolutionary and optimal regressions are returned. In addition to estimating the parameters, $\theta$ or $b$, describing the relationship of the primary optimum to the environmental variables, we also need to estimate the parameters $\alpha$ and $\sigma_y$ describing the rate of evolution, and in the random evironment model, we also need the rate of evolution of the environment, $\sigma_x$. The estimation methods are described below. Here, we just note that we will work with the transformed parameters:
+where $t_i$ is the time from root to species $i$. On ultrametric trees, this factor is identical for all species. The correction factor varies between 0 and 1. It describes how phylogenetic inertia makes the “evolutionary” regressions of y on x less steep than the underlying “optimal” regressions, $b$ (see below for an explanation of the evolutionary and optimal regressions). If the rate of adaptation or the time back to the origin of the radiation are high, $\rho(\alpha t_i) = 1$ and the evolutionary regression will equal the optimal regression. The residual terms, $r_i$, are normally distributed with mean zero and variances and covariances given later. The residuals and the phylogenetic correction factors are computed automatically by SLOUCH, and both evolutionary and optimal regressions are returned. While the optimal regression represents the relationship between predictor and the trait that we expect if adaptation is immediate, the evolutionary regression is the generalized least squares regression of a trait on the predictor, and is influenced by both adaptation and inertia. The optimal regression is accordingly an estimate of the optimal relationship between predictor and the trait totally free of constraints, while evolutionary regression is the 'observed' relationship. The magnitute of the difference between the optimal and the evolutionary regression is therefore informative of the relative importance of inertia and adaptation between the predictor and the response trait. The evolutionary and optimal regression will be identical if there is no inertia. The optimal and evolutionary regressions are therefore not alternative models, but rather two perspectives or aspects of the same model. In addition to estimating the parameters, $\theta$ or $b$, describing the relationship of the primary optimum to the environmental variables, we also need to estimate the parameters $\alpha$ and $\sigma_y$ describing the rate of evolution. In the random evironment model, we also need to estimate the rate of evolution of the environmental variable, $\sigma_x$. The estimation methods are described below. Here, we just note that we will work with the transformed parameters:
 
 $$
 \begin{aligned}
@@ -96,7 +99,7 @@ t_{1/2} =& \frac{\log(2)}{\alpha} \\
 v_y =& \frac{\sigma^2_y}{2\alpha}
 \end{aligned}
 $$
-These are both easier to interpret and easier to estimate than $\alpha$ and $\sigma_y$ . The phylogenetic half life, $t_{1/2}$, is the time it takes for the expected trait value to move half the distance from the ancestral state to the primary optimum. The half life provides a useful metric to asses the strength of phylogenetic inertia as it is on the same linear scale as the phylogenetic branch lengths. If the half life is short relative to phylogeny, it means that adaptation to the primary optimum is rapid in expectation, and if the half life is long, it means that ancestral influences constrain the adapting trait. Consequently, if large, we would expect the species traits to be poorly adapted to the primary niches. A half life of infinity corresponds to evolution governed by a Brownian-motion process where there is no tendency to move towards the optimum, and a half life of zero corresponds to instant adaptation. The parameter $v_y$ is the variance expected when the adaptive and stochastic forces are in stochastic equilibrium. The residual variances and covariances of the fixed-effect model were derived in Hansen (1997). They are
+These are both easier to interpret and easier to estimate than $\alpha$ and $\sigma_y$ . The phylogenetic half life, $t_{1/2}$, is the time it takes for the expected trait value to move half the distance from the ancestral state to the primary optimum. The half life provides a useful metric to asses the strength of phylogenetic inertia as it is on the same linear scale as the phylogenetic branch lengths. If the half life is short relative to the total length of the phylogeny, it means adaptation to the primary optimum is rapid in expectation, and if the half life is long, it suggests the presence of inertia and that ancestral trait values influence the species' observed trait values at the tips. Consequently, if the half life is large, we would expect the species traits to be poorly adapted to the primary niches. A half life of infinity corresponds to evolution governed by a Brownian-motion process in which there is no tendency to move towards the optimum, and a half life of zero corresponds to immediate adaptation. The parameter $v_y$ is the variance expected when the adaptive and stochastic forces are in stochastic equilibrium. The residual variances and covariances of the fixed-effect model were derived in Hansen (1997). They are
 
 $$
 \begin{aligned}
@@ -104,7 +107,7 @@ $$
 \text{Cov}[r_i, r_j] &= v_y e^{-\alpha t_{ij}}(1 - e^{-2 \alpha t_a})
 \end{aligned}
 $$
-where $t_i$ is the time from root to species $i$, $t_a$ is the time from root to the most recent common ancestor of species $i$ and $j$, and $t_{ij}$ is the time separating species $i$ from species $j$ (i.e. the sum of the distances from $i$ and $j$ to their most recent common ancestor). For the random effect model, Hansen *et al.* (2008) derived the residual covariances as:
+where $t_i$ is the time from root to species $i$, $t_a$ is the time from root to the most recent common ancestor of species $i$ and $j$, and $t_{ij}$ is the time separating species $i$ from species $j$ (i.e. the sum of the distances from $i$ and $j$ to their most recent common ancestor). For the random-effect model, Hansen *et al.* (2008) derived the residual covariances as:
 
 $$
 \begin{aligned}
@@ -115,7 +118,7 @@ $$
 
 The parameter $\sigma^2_\theta$ in the above equation equals $b_1^2\sigma_{x1}^2 + b_2^2\sigma_{x2}^2 + \dots$, assuming the predictor variables are not correlated. The instantaneous variances, $\sigma_{xi}^2$, of the predictor variables are estimated in advance. Note that this is considerably more complex than with fixed effects, and also depend on the regression parameters $b_i$. SLOUCH uses an iterated estimation procedure to account for the effects of the regression parameters in the residual variance matrix.
 
-## Estimation specifics
+## Parameter estimation
 
 The intercept, $k$, in the random-effect model is given as:
 
@@ -123,32 +126,55 @@ $$
 k = e^{-\alpha t}y_a + (1 - e^{- \alpha t})b_0 + (1 - e^{-\alpha t} - \rho(\alpha t))(b_1x_{a1} + b_2x_{a2} + \dots)
 $$
 
-where $y_a$ and $x_{aj}$ are the ancestral states of the trait, $y$, and the predictor variables, $x_j$, and $b_0$ is the true intercept of the optimal regression. As $t$ is the time from root to the species, we also see that the intercept on a non-ultrametric tree will differ from species to species. Clearly, $k$ is not a parameter of biological interest. What we would like is to get estimates of its components, and in particular of the “optimal” intercept, $b_0$. For species on a non-ultrametric phylogeny, it is technically possible to get independent estimates of $b_0, y_a$ and the $x_a$'s, but unless the phylogeny is strongly non-ultrametric, these would be poorly resolved, and the individual estimates are likely to be highly unreliable. We generally do not recommend separate estimates of these parameters, and for an ultrametric phylogeny, we can only obtain an estimate of the composite $k$. An estimate of the optimal intercept may, however, be obtained indirectly with an additional assumption. First, note that SLOUCH returns independent estimates of the ancestral states $x_a$ based on the assumption that the predictors evolve as if by a Brownian motion. The problem is then only to get an estimate of the ancestral state of the trait, $y_a$. One resonable way to do this is to assume that the common ancestor was optimal, and use $y_a = b_0 + b_1x_{a1} + b_2x_{a2} \dots$. From this we can derive an estimate of the optimal intercept as:
+where $y_a$ and $x_{aj}$ are the ancestral states of the trait, $y$, and the predictor variables, $x_j$, and $b_0$ is the true intercept of the optimal regression. As $t$ is the time from root to the species, we also see that the intercept on a non-ultrametric tree will differ from species to species. Clearly, $k$ is not a parameter of biological interest. What we would like is to get estimates of its components, and in particular of the “optimal” intercept, $b_0$. For species on a non-ultrametric phylogeny, it is technically possible to get independent estimates of $b_0, y_a$ and the $x_a$'s, but unless there is strong phylogenetic inertia and the phylogeny is strongly non-ultrametric, these would be poorly resolved, and the individual estimates will be inaccurate. We generally do not recommend separate estimates of these parameters, and for an ultrametric phylogeny, we can only obtain an estimate of the composite $k$. An estimate of the optimal intercept may, however, be obtained indirectly with an additional assumption. First, note that SLOUCH returns independent estimates of the ancestral states $x_a$ based on the assumption that the predictors evolve as if by a Brownian motion. The problem is then only to get an estimate of the ancestral state of the trait, $y_a$. One resonable way to do this is to assume that the common ancestor was optimal, and use $y_a = b_0 + b_1x_{a1} + b_2x_{a2} \dots$. From this we can derive an estimate of the optimal intercept as:
 
 $$
 b_0 = k + (\rho(\alpha t) - 1)(b_1x_{a1} + b_2x_{a2} \dots)
 $$
-where $k, b$'s, $x_a$'s and $\rho(\alpha t)$ are all output from the SLOUCH analysis. This may be useful for plotting of the optimal regression, etc. The error due to ancestral optimality is likely to be very small unless the phylogenetic half-life is very large.
+where $k, b$'s, $x_a$'s and $\rho(\alpha t)$ are all output from the SLOUCH analysis. This may be useful for plotting of the optimal regression, etc. The error due to the ancestral-optimality assumption is likely to be small unless the phylogenetic half-life is large.
+
+In SLOUCH, the regression parameters are estimated using the least-squares method. Conditional on the other model parameters (e.g. $t_{1/2}$, $\sigma^2_y/2\alpha$ and $\sigma^2_{xj}$), we start with an ordinary least-squares estimate of the regression parameters:
+
+$$
+\hat{\mathbf{\beta}}_0 = (\mathbf{X}^T\mathbf{X})^{-1}(\mathbf{X}^T\mathbf{X}),
+$$
+where $\mathbf{X}$ is the model matrix. We require an initial estimate $\hat{\mathbf{\beta}}_0$ since the regression coefficients enter the residual variance-covariance matrix $\mathbf{V}$ when measurement error is included in the model. We use $\hat{\beta}_0$ and $\mathbf{V}$ to obtain a generalized least-squares (GLS) estimate of the regression parameters as;
+
+$$
+\hat{\mathbf{\beta}} = (\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X})^{-1}(\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X}).
+$$
+We update $\mathbf{V}$ and iterate the GLS estimation until convergence is reached. For models with random predictor variables, this estimate yields the optimal or primary regression, as the interpretation depends on the phylogenetic half-life. In calculating the evolutionary regression, $\hat{\beta}_\text{evolutionary}$, we reconstruct the model matrix $\mathbf{X}$ by setting $\rho = 1$, and apply same above formula. The variances and covariances of the linear model parameter are estimated as:
+
+$$
+\text{Var}[\hat{\beta}] = (\mathbf{X}^T\mathbf{V}^{-1}\mathbf{X})^{-1},
+$$
+where the square root of the diagonal elements are the standard errors. At this point we evaluate the log-likelihood (= support) function:
+
+$$
+\log \mathcal{L}(t_{1/2}, \sigma_y^2/2\alpha) = -\frac{1}{2}(n\log(2\pi) + \log \left|\mathbf{V} \right| + (\mathbf{y} - \mathbf{X\hat{\beta}})^T\mathbf{V}^{-1}(\mathbf{y} - \mathbf{X\hat{\beta}})).
+$$
+
+The regression parameters and likelihood are estimated in equal fashion for all types of models. SLOUCH includes two options for estimating $t_{1/2}$ and $\sigma^2_y/2\alpha$ using likelihood: a numerical optimization routine (L-BFGS-B, Byrd *et al.* 1995) and a grid search, which are explained below.
 
 ## Model selection
 
-SLOUCH output provides the user with various information criteria in order to compare models with different combinations of predictor variables. These are the AIC, the small small size corrected AIC (AICc) and the stricter SIC (Burnham & Anderson, 1998). For continuous predictor models, these criteria can be used to reduce the number of informative predictors in a multiple regression, or to decide which is the best predictor of a given trait‘s evolution. These information criteria can also be used to decide whether a single or multiple optima Ornstein-Uhlenbeck process or a Brownian-Motion process best describes a trait's evolution. For models with fixed categorical predictors, these information criteria are useful for assessing which categories influence a trait's evolution. In this way the user can either pool different categories or further subdivide a given category into biological meaningful categories in order to test various hypotheses concerning differential selective niches. We note however, that the information criteria will sometimes pick models with very strange parameter estimates like optima or ancestral states that are way out of biological bounds, or stationary variances of zero. Such models should be regarded with skepticism, and one should look at the support surfaces (see below) to see if there are other peaks in the likelihood surface with more reasonable estimates.
+SLOUCH output provides the user with various information criteria in order to compare models with different combinations of predictor variables. These are the Akaike Information Criteion (AIC), the small small size corrected AIC (AICc) and the stricter Schwarz Information Critetion (SIC) (Burnham & Anderson, 1998). For continuous predictor models, these criteria can be used to choose the number of informative predictors in a multiple regression, or to decide which is the best predictor of a given trait‘s evolution. These information criteria can also be used to decide whether a single or multiple optima Ornstein-Uhlenbeck process or a Brownian-Motion process best describes a trait's evolution. For models with fixed categorical predictors, these information criteria are useful for assessing which categories influence a trait's evolution (Butler & King 2004). In this way the user can either pool different categories or further subdivide a given category into biological meaningful categories in order to test various hypotheses concerning differential selective niches. We note however, that the information criteria will sometimes pick models with strange parameter estimates like optima or ancestral states that are way out of biological bounds, or stationary variances of zero. Such models should be regarded with skepticism, and one should look at the support surfaces (see below) to see if there are other peaks in the likelihood surface with more reasonable estimates.
 
 ## Measurement variance
 
-Martins & Hansen (1997) and Ives *et al.* (2007) discuss how to incorporate measurement error into a phylogenetic comparative analysis. Most often, a comparative analysis involves using species means as input values. In this case the main component of measurement error is estimation error in the mean (or whatever other statistics are used) resulting from sampling a finite number of individuals. If each mean species value to be used in the regression was obtained from a large number of individuals (> 20-30 or so) the square of the standard error (i.e. the estimation variance) can be entered into the measurement error column for that variable. If no measurement error is to be included, then simply add a column of zeros (this can also be done in R itself by specifying a vector of zeros of length $n$, the number of species). We also refer the reader to the section below entitled measurement variance in the Liolaemus example for a more detailed example. SLOUCH deals with measurement error in the response variable by adding measurement variance to the diagonals of the residual variance matrix. Measurement variance in the random predictor variable(s) is incorporated by multiplying it by the square of the uncorrected slope parameter and then adding it to the diagonals of the residual variance matrix in the manner of an iterated generalized least squares (GLS) estimation. Measurement covariance between response and predictor variables can be incorporated by adding two times the measurement covariance times the uncorrected slope parameters to the variance matrix (not yet implemented). If the observational errors in the predictor variables are non-zero, the generalized least squares estimator may be biased. A bias correction for the regression coefficients is implemented according to Hansen & Bartoszek (2012).
+Hansen & Bartozsek (2012) discuss how to incorporate measurement error into a phylogenetic comparative analysis. Most often, a comparative analysis involves using species means as input values. In this case the main component of measurement error is estimation error in the mean (or whatever other statistics are used) resulting from sampling a finite number of individuals. If each mean species value to be used in the regression was obtained from a large number of individuals (> 20-30 or so) the square of the standard error (i.e. the estimation variance) can be entered into the measurement error column for that variable. If no measurement error is to be included, then simply add a column of zeros (this can also be done in R itself by specifying a vector of zeros of length $n$, the number of species). We also refer the reader to the section below entitled measurement variance in ruminant neocortex for a more detailed example. SLOUCH deals with measurement error in the response variable by adding measurement variance to the diagonals of the residual variance matrix. Measurement variance in the random predictor variable(s) is incorporated by multiplying it by the square of the uncorrected slope parameter and then adding it to the diagonals of the residual variance matrix in the manner of an iterated generalized least squares (GLS) estimation. If the observational errors in the predictor variables are non-zero, the generalized least squares estimator may be biased. A bias correction for the regression coefficients is implemented according to Hansen & Bartoszek (2012).
 
 ## Caveats and limitations
 
-As with any statistical model, the quality of the parameter estimates is dependent on the quality of the data and certain assumptions concerning the residuals must be met. SLOUCH utilizes both measured trait values and the phylogenetic topology and branch lengths as data. With regards to the trait values, we assume that a linear relationship exists between expected optimal trait values and the predictor variables. Although we could perform non-linear regression by entering quadratic terms in the model, this will most likely violate the assumption that the predictors evolve as a Brownian Motion and consequently we do not recommend this. It should also be kept in mind that any inferences drawn about the rates of adaption, phylogenetic inertia and its potential effects on trait values are conditional on the phylogeny used. Unfortunately SLOUCH does not at this time include routines for evaluating the effects of phylogeny uncertainty. We recommend performing the analysis on plausible alternative phylogenetic hypotheses to examine the effects of phylogenetic uncertainty on parameter estimates. Simulation may also be useful here for examining potential interactions between true parameter values and alternative phylogenies.
+As with any statistical model, the quality of the parameter estimates is dependent on the quality of the data and certain assumptions concerning the residuals must be met. SLOUCH utilizes both measured trait values and the phylogenetic topology and branch lengths as data. With regards to the trait values, we assume that a linear relationship exists between expected optimal trait values and the predictor variables. Although SLOUCH can perform non-linear regression by entering quadratic terms in the model, this will most likely violate the assumption that the predictors evolve as a Brownian Motion. SLOUCH also assumes that the underlying evolutionary process is equal in all parts of the tree, as $t_{1/2}$ and $\sigma_y^2$ are constant. When studying a clade that is heterogeneic (e.g. Cetartiodactyla) or spans large timespans this assumption may be violated, and one may consider splitting the phylogeny or using methods that relax this assumption (e.g. Beaulieu *et al*. 2014). It should also be kept in mind that any inferences drawn about the rates of adaption, phylogenetic inertia and its potential effects on trait values are conditional on the phylogeny used. SLOUCH does not include routines for evaluating the effects of phylogeny uncertainty in a systematic manner, but one can perform the analysis on plausible alternative phylogenetic hypotheses to examine the effects of phylogenetic uncertainty on parameter estimates. Simulation may also be useful here for examining potential interactions between true parameter values and alternative phylogenies.
 
 # Data requirements
 
 ## Checklist
 
-1. A rooted phylogeny with branch lengths. Both ultrametric and non-ultrametric trees can be used, but this will have implications for reliable estimation of ancestral states. Polytomies and non-branching edges are not a problem but each branch must have a length. The units of the lengths are arbitrary and can be given in time units or number of nucleotide substitutions. A lot of the power of this method comes from having accurate branch lengths and topologies so some care should be taken in obtaining these.
+1. A rooted phylogeny with branch lengths. Both ultrametric and non-ultrametric trees can be used, but this will have implications for reliable estimation of ancestral states. Polytomies and non-branching edges are not a problem but each branch must have a length. The units of the lengths are arbitrary and can be given in time units or number of nucleotide substitutions. A lot of the power of this method comes from having accurate branch lengths so some care should be taken in time-calibrating the phylogeny.
 2. Measurements of a continuous response variable and one or more continuous predictor variables for the species at the tips of the phylogeny or a fixed predictor variable with different levels to represent
-different fixed niches. Missing values are not allowed. The observational or measurement errors of the continuous response and predictor variables can and should be included and accounted for.
+different fixed niches. Missing values are not allowed. The observational or measurement errors of the continuous response and predictor variables can be included and accounted for.
 3. An adaptive hypothesis relating the response variable to the predictors. The idea of the OU models is that the response variables evolve towards optima that are estimated by the methods.
 4. A computer with the R program on it. This is freeware and versions for Windows, MacOS and GNU/Linux can be downloaded from [https://www.r-project.org/](https://www.r-project.org/).
 
@@ -160,7 +186,7 @@ The source code for the developmental version of SLOUCH is available at [https:/
 install.packages("slouch")
 ```
 \vspace{1em}
-The phylogenetic trees used in SLOUCH are encoded as an object of class `phylo`. Consult the package APE (Analysis of Phylogenetics and Evolution, Paradis *et al.* 2004) for the base functionality, and perhaps auxillary packages such as `treeio` and `ggtree` (Yu *et al.* 2016) for more modern and extensive functionality when importing, exporting or plotting phylogenetic trees from various formats. For the purposes of illustrating syntax, we will use a dataset of artiodactyl neocortices bundled with the package (see `?neocortex`), and a corresponding phylogenetic tree (Toljagić *et al.* 2017). First, we will organize the neocortex data and associated annotation data.
+The phylogenetic trees used in SLOUCH are encoded as an object of class `phylo`. Consult the package APE (Analysis of Phylogenetics and Evolution, Paradis *et al.* 2004) for the base functionality, and perhaps auxillary packages such as `treeio` and `ggtree` (Yu *et al.* 2016) for more modern and extensive functionality when importing, exporting or plotting phylogenetic trees from various formats. For the purposes of illustrating the software, we will use a dataset of ruminant neocortices bundled with the package and a corresponding phylogenetic tree (Toljagić *et al.* 2017). First, we will organize the neocortex data and associated annotation data.
 
 \vspace{1em}
 
@@ -168,6 +194,8 @@ The phylogenetic trees used in SLOUCH are encoded as an object of class `phylo`.
 knitr::opts_knit$set(global.par = TRUE)
 par(mar = rep(0,4))
 ```
+
+SLOUCH includes some example data which can be used for testing the models. 
 
 ```{r, warning=FALSE, echo = TRUE, message = FALSE, highlight = TRUE, fig.width = 7, fig.height = 5}
 # Load necessary packages
@@ -210,7 +238,9 @@ neocortex$species == phy$tip.label
 ```
 
 
-### Measurement variance in the artiodactyl neocortex example:
+The neocortex dataset includes neocortex area, brain mass and body mass in ruminants, primarily bovids. It also includes some ecological information such as the type of habitat (open, closed) or mode of diet (grazer, browser), see `?neocortex` for further reference. We will 
+
+### Measurement variance in the ruminant neocortex example:
 
 Comparative analyses based on species averages should consider the estimation error in these averages as measurement error. This is particularly pressing in fields such as evolutionary physiology, where the measurements of individual organisms may be laborious and expensive. Obtaining many measurements from many individuals from many species is difficult, and, as seen in the Oboussier neocortex-data, one often ends up with sample sizes that are small and uneven across species. In such a situation the variance attributable to measurement error can be a substantial fraction of the total, and one wants to weigh the species data according to their reliability. It is also possible that measurement variance may generate a downward bias in estimates of phylogenetic effects, because it makes species appear less statistically correlated than they are in reality. As discussed above, SLOUCH can incorporate measurement variance in both response and predictor variables. 
 
@@ -220,15 +250,29 @@ $$
 \sigma^2_w = \frac{\sum_i \sigma_{wi}^2 (n_i - 1)}{\sum_i (n_i - 1)}
 $$
 
-where $\sigma_{wi}^2$ is the sample variance of species $i$, and $n_i$ is the sample size of species $i$. In this way, the larger sample sizes are weighted more. We then estimated the measurement variance of each species as $\sigma_w^2 / n_i$. We recommend this averaging procedure to estimate measurement variance for any species mean based on a small sample of individuals.
+where $\sigma_{wi}^2$ is the sample variance of species $i$, and $n_i$ is the sample size of species $i$. In this way, the larger sample sizes are weighted more. We then estimated the measurement variance of each species as $\sigma_w^2 / n_i$. See Grabowski *et al.* (2016) for further discussion.
 
-# Parameter estimation in SLOUCH
 
-## Testing for phylogenetic effects
+# Phylogenetic effect
 
-The idea here is to test whether the phylogenetic relationships have an influence on the distribution of a single variable. Most phylogenetic comparative methods will begin with this step. It is important to realize, however, that phylogenetic effects are not necessarily the same thing as phylogenetic inertia. A variable can be seen to have quite strong phylogenetic effects but such a pattern can easily come about if that variable is evolving towards optima associated with niches that themselves exhibit strong phylogenetic effects. Phylogenetic inertia needs to be measured from the residuals of a model that includes predictor variables that may or may not themselves be phylogenetically structured. The way to test for an overall phylogenetic effect in the SLOUCH program is to perform a regression with no predictors (i.e. including the intercept or grand mean). To do this we use a function called `slouch.fit`. The program will estimate the phylogenetic half-life $t_{1/2}$ ($t_{1/2} = \log(2)/\alpha$), and depending on user input, either the instantaneous variance parameter $\sigma_y^2$ or the stationary variance $v_y$ (where $v_y = \sigma^2_y / 2 \alpha$), and the intercept ($b_0$). The phylogenetic half-life and $v_y$ are estimated using likelihood, and there are two techniques to find the maximum likelihood estimates. The first is a grid search where we provide vectors of potential values for each parameter to the program to find the combination that maximizes the likelihood. The second is to use the built-in R optimization routines to find the best parameters. This technique uses the method "L-BFGS-B" in the `optim(...)` function to estimate parameters in the OU model, and method "Brent" when $\alpha$ is constrained to zero and the model is reduced to a Brownian motion. This technique is hereafter referred to as the "hillclimber" algorithm. The regression parameters (in this case the intercept) are estimated automatically by the program using iterated generalized least squares and are contingent on the best estimates of $\alpha$ and $v_y$.
+## Parameter estimation in SLOUCH
 
-The best way to find the parameters is to start with a rough grid (i.e. values of $t_{1/2}$ and $v_y$ incremented by large integer numbers) and then to "home in" on the best supported region with finer scaled grids. Some caution and "trial and error" need to be exercised here as it is possible to miss the support region entirely if the grid values are too widely spaced. There are several ways to create a vector of values in R for this purpose:
+
+The idea here is to test whether the phylogenetic relationships have an influence on the distribution of a single variable. Most phylogenetic comparative methods will begin with this step. It is important to realize, however, that phylogenetic effects are not necessarily the same thing as phylogenetic inertia. A variable can be seen to have quite strong phylogenetic effects but such a pattern can easily come about if that variable is evolving towards optima associated with niches that themselves exhibit strong phylogenetic effects. Phylogenetic inertia needs to be measured from the residuals of a model that includes predictor variables that may or may not themselves be phylogenetically structured. First, we plot the neocortex-brain allometry:
+
+\vspace{1em}
+```{r, fig.show='asis', highlight = TRUE, fig.width=7, fig.height = 4, fig.cap = "Scatter plot of mean log neocortex area (mm$^2$) on mean log brain mass (g).", fig.pos = "H"}
+braincentered <- neocortex$brain_mass_g_log_mean - mean(neocortex$brain_mass_g_log_mean)
+plot(x = braincentered, 
+     y = neocortex$neocortex_area_mm2_log_mean, 
+     xlab = "Mean log brain mass (g)",
+     ylab = "Mean log neocortex area (mm2)")
+```
+
+
+The way to test for an overall phylogenetic effect in the SLOUCH program is to fit an intercept-only or grand mean model. To do this we use a function called `slouch.fit`. The program will estimate the phylogenetic half-life $t_{1/2}$ ($t_{1/2} = \log(2)/\alpha$), and the stationary variance $v_y$ ($= \sigma^2_y / 2 \alpha$), and the intercept ($b_0$). The phylogenetic half-life and $v_y$ are estimated using likelihood, and two techniques are implemented to find the maximum likelihood estimates. The first is a grid search where we provide vectors of potential values for each parameter to the program to find the combination that maximizes the likelihood. The second is to use the built-in R optimization routines to find the best parameters. This technique uses the method "L-BFGS-B" in the `optim(...)` function to estimate parameters in the OU model, and method "Brent" when $\alpha$ is constrained to zero and the model is reduced to a Brownian motion. This technique is hereafter referred to as the "hillclimber" algorithm. The estimated regression parameters (in this case the intercept) are contingent on the best estimates of $\alpha$ and $\sigma^2_y$.
+
+One way to find the best parameters is to start with a rough grid (i.e. values of $t_{1/2}$ and $v_y$ incremented by large integer numbers) and then to "home in" on the best supported region with finer scaled grids. Some caution and "trial and error" need to be exercised here as it is possible to miss the support region entirely if the grid values are too widely spaced. There are several ways to create a vector of values in R for this purpose:
 \vspace{1em}
 ```{r}
 ## The manual way
@@ -246,21 +290,21 @@ vy <- lseq(from = 0.001, to = 5, length.out = 15)
 \vspace{1em}
 Using the default values of the model fitting function `slouch.fit`, we use an initial grid search to find the maximum likelihood estimates of $t_{1/2}$ and $v_y$ in a single-optimum model, and change the grid location depending on how the surface looks.
 \vspace{1em}
-```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Three-dimensional joint support region for the estimates of half-lives and stationary variances, for the single-optimum model.", highlight = TRUE, warning=FALSE}
+```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Three-dimensional joint support region for the estimates of half-lives and stationary variances, for the single-optimum model.", highlight = TRUE, warning=FALSE, fig.pos = "H"}
 model0 <- slouch.fit(phy = phy,
-                     hl_values = seq(0.001, 12, length.out = 10),
-                     vy_values = seq(0.1, 1, length.out = 10),
+                     hl_values = seq(0.001, 12, length.out = 20),
+                     vy_values = seq(0.1, 1, length.out = 20),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean)
 plot(model0)
 ```
 
-The vertical axis in Figure (...) represents the log-likelihood standardized so that the maximum log-likelihood equals 0. The two horizontal axes are the vector of `hl_values` and `vy_values` that we defined in the function arguments. The peak that rises out of the flat surface therefore, represents the specific combination of `hl_values` and `vy_values` that are more than two support units below the best estimate. The flat surface itself represents parameter values falling outside the 2-unit support region (as defined by Edwars 1992). If the user prefers to plot an $m$-unit support region, a support value of $m$ can be specified in `slouch.fit` by supplying the argument `slouch.fit(... ,support = m)`.
+The vertical axis in Figure (...) represents the log-likelihood standardized so that the maximum log-likelihood equals 0. The two horizontal axes are the vector of `hl_values` and `vy_values` that we defined in the function arguments. The peak that rises out of the flat surface therefore, represents the specific combination of `hl_values` and `vy_values` that are more than two support units below the best estimate. The flat surface itself represents parameter values falling outside the 2-unit support region (as defined by Edwards 1992). If the user prefers to plot an $m$-unit support region, a support value of $m$ can be specified in `slouch.fit` by supplying the argument `slouch.fit(... ,support = m)`.
 
-```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Another slice of the log likelihood surface for the same single-optimum model", highlight = TRUE, warning=FALSE}
+```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Another slice of the log likelihood surface for the same single-optimum model", highlight = TRUE, warning=FALSE, fig.pos = "H"}
 model1 <- slouch.fit(phy = phy,
-                     hl_values = seq(0.001, 150, length.out = 5),
-                     vy_values = seq(0.1, 2.5, length.out = 5),
+                     hl_values = seq(0.001, 150, length.out = 20),
+                     vy_values = seq(0.1, 2.5, length.out = 20),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean)
 
@@ -273,7 +317,7 @@ plot(model1)
 
 \vspace{1em}
 
-```{r, highlight = TRUE, eval = FALSE, fig.width=7, fig.height = 4}  
+```{r, highlight = TRUE, eval = FALSE, fig.width=7, fig.height = 4, fig.pos = "H"}  
 library(plotly)
 p <- plot_ly(x = model0$supportplot$hl,
              y = model0$supportplot$vy,
@@ -288,26 +332,29 @@ p
 ```
 \vspace{1em}
 
-Another, perhaps more convenient way of estimating parameters is to use the hillclimber function. On default it will start on a random combination of $t_{1/2}$ and $\sigma_y^2/2\alpha$, but this may also be specified. While the hillclimber might seem both faster and more accurate at first glance, there are some drawbacks. If the likelihood search space has one or more local maxima, the hillclimber may converge at a sub-optimal location and give parameter estimates that are not truly maximum-likelihood estimates. Additionally, even though the hillclimber may converge at some local or global maximum, it will not indicate whether the support region of the parameters is narrow or wide. One problem when using the hillclimber is that, depending on the specified model, the residual variance-covariance matrix $\mathbf{V}$ may collapse if $\sigma_y^2/2\alpha$ reaches zero. The immediate consequence is that matrix is non-invertible, and the program will crash. If within-species observational error is non-zero and added to the model, this does not happen. In order to use the hillclimber in this scenario, it may be necessary to constrain its search space such that $\sigma_y^2/2\alpha$ does not enter zero or close to zero. The exact feasible boundary for this may depend on the scale of the response trait.
+Another, perhaps more convenient way of estimating parameters is to use the hillclimber function. On default it will start on a random combination of $t_{1/2}$ and $\sigma_y^2/2\alpha$, but this may also be specified. While the hillclimber might seem both faster and more accurate at first glance, there are some drawbacks. If the likelihood search space has one or more local maxima, the hillclimber may converge at a sub-optimal location and give parameter estimates that are not truly maximum-likelihood estimates. Additionally, even though the hillclimber may converge at some local or global maximum, it will not indicate whether the support region of the parameters is narrow or wide. One problem when using the hillclimber is that, depending on the specified model, the residual variance-covariance matrix $\mathbf{V}$ may collapse if $\sigma_y^2/2\alpha$ reaches zero. The immediate consequence is that matrix is non-invertible, and the program will return an error. If within-species observational error is non-zero and added to the model, this does not happen. In order to use the hillclimber, it may be necessary to constrain its search space such that $\sigma_y^2/2\alpha$ does not enter zero or close to zero. The exact feasible boundary for this may depend on the scale of the response trait.
 
 \vspace{1em}
-```{r, highlight = TRUE, fig.width=7, fig.height = 4, fig.cap="The path-trajectory of the L-BFGS-B hillclimber algorithm."}
+```{r, highlight = TRUE, fig.width=7, fig.height = 4, fig.cap="The path-trajectory of the L-BFGS-B hillclimber algorithm.", fig.pos = "H"}
 model2 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.01))
-plot(model2)
 ```
 
-The summary of `model2` can be generated by typing `print(model2)`, and displays the best estimates of all the parameters where support for the regression parameters are given as standard errors, the phylogenetically corrected $\text{R}^2$ value as the percentage of variance accounted for by the regression, and log-likelihood values as well as various information criteria for the best estimate model-fit. This output should be ignored until the grid search is deemed fine enough to accurately estimate $t_{1/2}$ and $v_y$, or if we trust that the hillclimber has converged at a global maximum.
+The summary of `model2` can be generated by typing `print(model2)`, and displays the best estimates of all the parameters where support for the regression parameters are given as standard errors, the phylogenetically corrected $\text{R}^2$ value as the percentage of variance accounted for by the regression, and log-likelihood values as well as various information criteria for the best estimate model-fit. This output should be ignored until the grid search is deemed fine enough to accurately estimate $t_{1/2}$ and $v_y$, or if we trust that the hillclimber has converged at a global maximum:
+
+```{r, hightlight = TRUE}
+print(model2)
+```
 
 ## Interpreting the parameters
 
 The phylogenetic half-life parameter ($t_{1/2} = \log(2) / \alpha$) measures the influence of the ancestral state of the variable in question relative to the tendency to evolve towards the common ancestral state (the intercept). Conversely, $\alpha$ measures the rate of adaptation. If the best estimate of $t_{1/2}$ is 0, the ancestral state does not influence the current state of the variable. The larger $t_{1/2}$ gets, the more influence the past state of the variable has on its current state (i.e. the trait‘s evolution approaches a Brownian motion as $t_{1/2}$ approaches infinity). The units of the phylogenetic half-lives are the same units as the branch lengths in the phylogenetic tree, `phy$edge.length`. The total depth, or distance from the root, can for all nodes be calculated with `node.depth.edgelength(phy)`. For this phylogenetic tree the maximum tree depth is about 27 million years. The phylogenetic correction factor is another measure of the strength of inertia:
 
 $$
-\rho(\alpha, t) = (1 - \frac{(1 - e^{-\alpha t})}{(\alpha t)})
+\rho(\alpha, t) = 1 - \frac{(1 - e^{-\alpha t})}{(\alpha t)}
 $$
 
 It can range anywhere between 0 and 1 where the closer to 0 it is, the stronger the inertia. The intercept-only model is also useful for testing one of the assumptions of the OU-BM model; that the predictor variables evolve as a Brownian motion. The stationary variance ($v_y = \sigma^2_y / 2\alpha$) of the joint OU-BM process is a measure of the relative influence of stochastic factors in the adaptive process relative to the primary adaptive force. Secondary stochasticity is generated by a combination of stochastic influences (such as changes in unmeasured selective forces, genetic drift, etc) on the response variable as it evolves towards the optimum or optima.
@@ -320,8 +367,7 @@ The parameters we estimate for the models that have a single random predictor va
 
 \vspace{1em}
 
-```{r, highlight=TRUE}
-braincentered <- neocortex$brain_mass_g_log_mean - mean(neocortex$brain_mass_g_log_mean)
+```{r, highlight=TRUE, fig.pos = "H"}
 model3 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -333,22 +379,22 @@ model3 <- slouch.fit(phy = phy,
 plot(model3)
 ```
 \vspace{1em}
-```{r, fig.show='asis', highlight = TRUE, fig.width=7, fig.height = 4, fig.cap = "The evolutionary (black) and optimal (orange) regression lines for the model of mean log neocortex area (mm$^2$) on mean log brain mass (g), both corrected for bias due to measurement error in mean log brain mass."}
+```{r, fig.show='asis', highlight = TRUE, fig.width=7, fig.height = 4, fig.cap = "The evolutionary (black) and optimal (orange) regression lines for the model of mean log neocortex area (mm$^2$) on mean log brain mass (g), both corrected for bias due to measurement error in mean log brain mass.", fig.pos = "H"}
 plot(x = braincentered, 
      y = neocortex$neocortex_area_mm2_log_mean, 
      xlab = "Mean log brain mass (g)",
      ylab = "Mean log neocortex area (mm2)")
-abline(model3$ev.reg$coefficients_bias_corr[,1], 
+abline(model3$beta_evolutionary$coefficients_bias_corr[,1], 
        col = "black", lwd = 2)
-abline(model3$opt.reg$coefficients_bias_corr[,1], 
+abline(model3$beta_primary$coefficients_bias_corr[,1], 
        col = "orange", lwd = 2)
-model3$opt.reg$coefficients
+model3$beta_primary$coefficients
 ```
 
-While the single-optimum model showed a very strong phylogenetic signal, this model exhibits much less phylogenetic inertia, with best estimate of the phylogenetic half-life ($t_{1/2}$) being 1 myr. Here, the optimal regression is steeper than the evolutionary regression. It is also possible to fit a model with multiple continuous covariates, however the input to `random.cov` must be a matrix or data frame that has column names, and the observational error passed to `mv.random.cov` must be a matrix or data frame of the same shape as `random.cov`.
+While the single-optimum model showed a strong phylogenetic signal, this model exhibits much less phylogenetic inertia, with best estimate of the phylogenetic half-life ($t_{1/2}$) being 1 myr. Here, the optimal regression is steeper than the evolutionary regression. It is also possible to fit a model with multiple continuous covariates, however the input to `random.cov` must be a matrix or data frame that has column names, and the observational error passed to `mv.random.cov` must be a matrix or data frame of the same shape as `random.cov`.
 
 \vspace{1em}
-```{r, highlight = TRUE, fig.width=7, fig.height = 4}
+```{r, highlight = TRUE, fig.width=7, fig.height = 4, fig.pos = "H"}
 bodycentered <- neocortex$body_mass_g_log_mean - mean(neocortex$body_mass_g_log_mean)
 model4 <- 
   slouch.fit(phy = phy,
@@ -366,7 +412,7 @@ plot(model4)
 
 ## Estimation error and model support 
 
-The type of estimation error (i.e. log-likelihood units or standard errors) reported in the SLOUCH 2.0 output depends on the statistical technique used to obtain a particular parameter (maximum likelihood or GLS). The parameters $\alpha$ (and its relatives, $t_{1/2}$ and the phylogentic correction factor, $\rho$) and $v_y$ are estimated with maximum likelihood. Note that in the 2-unit support region surface plot we plot $t_{1/2}$ against $v_y$, rather than $\alpha$. The reason for this is that $t_{1/2}$ is easier to interpret as a measure of phylogenetic inertia as it can be interpreted on the same linear scale as the branch lengths (and this is also the reason we provide a vector of half life values rather than $\alpha$ values during the grid search). The best estimates of $t_{1/2}$ and $v_y$ are however a joint estimate and for this reason the support region (the three-dimensional log-likelihood plot) is given as a measure of uncertainty for $t_{1/2}$ and $v_y$ jointly. The number of potential $t_{1/2}$ and $v_y$ values to include in the support region is, as mentioned previously, defined by the user (where by default, this is all estimates that give greater than maximum support - 2 support units). The marginal lowest and highest values of $t_{1/2}$ within the support region, conditional on the best estimate of $v_y$, can also be obtained using the figure and the support-region tables in the output (and vice versa for $v_y$). The `slouch.fit` function can also take scalars rather than vectors, which may be useful for finding the marginal support region of $t_{1/2}$ conditional on $v_y$ (and vice versa). In this case the 2-unit support region is no longer plotted, however the support limits can still be derived using the model summary or by looking at the elements of the model object. The regression parameters are estimated using iterated GLS and their estimation errors are given as standard errors, which can then be used to construct confidence intervals. Along with the $b_i$ estimates themselves, SLOUCH output provides the phylogenetically-corrected $\text{R}^2$ value as the percentage variance accounted for by the regression. The “goodness of fit” of the model itself to a particular data set is given as the support (logL) where a higher value means a better fit. In addition, SLOUCH provides three information criteria for model evaluation: AIC, AICc and the stricter SIC (also called the BIC). Which one to use is up to the user but we recommend the small sample size AIC (AICc, see Burnham & Anderson, 1998). For the information criteria, smaller values mean a better model fit. These values can be compared across models that use different predictor variables, different number of predictors, different types of predictor variable (e.g. categorical vs. continuous), or different models of evolution (Ornstein-Uhlenbeck vs. Brownian motion). Note that all of the model fit statistics, as well as the parameter search itself, is conditional on the *naive* GLS estimator, i.e. prior to any bias-correction routines.
+The type of estimation error (i.e. log-likelihood units or standard errors) reported in the SLOUCH 2.0 output depends on the statistical technique used to obtain a particular parameter (maximum likelihood or GLS). The parameters $\alpha$ (and its relatives, $t_{1/2}$ and the phylogentic correction factor, $\rho$) and $v_y$ are estimated with maximum likelihood. Note that in the 2-unit support region surface plot we plot $t_{1/2}$ against $v_y$, rather than $\alpha$. The reason for this is that $t_{1/2}$ is easier to interpret as a measure of phylogenetic inertia as it can be interpreted on the same linear scale as the branch lengths (and this is also the reason we provide a vector of half life values rather than $\alpha$ values during the grid search). The best estimates of $t_{1/2}$ and $v_y$ are however a joint estimate and for this reason the support region (the three-dimensional log-likelihood plot) is given as a measure of uncertainty for $t_{1/2}$ and $v_y$ jointly. The number of potential $t_{1/2}$ and $v_y$ values to include in the support region is, as mentioned previously, defined by the user (where by default, this is all estimates that give greater than maximum support - 2 support units). The marginal lowest and highest values of $t_{1/2}$ within the support region, conditional on the best estimate of $v_y$, can also be obtained using the figure and the support-region tables in the output (and vice versa for $v_y$). The `slouch.fit` function can also take scalars rather than vectors, which may be useful for finding the marginal support region of $t_{1/2}$ conditional on $v_y$ (and vice versa). In this case the 2-unit support region is no longer plotted, however the support limits can still be derived using the model summary or by looking at the elements of the model object. The regression parameters are estimated using iterated GLS and their estimation errors are given as standard errors, which can then be used to construct confidence intervals. Along with the $b_i$ estimates themselves, SLOUCH output provides the phylogenetically-corrected $\text{R}^2$ value as the percentage variance accounted for by the regression. The “goodness of fit” of the model itself to a particular data set is given as the support (logL) where a higher value means a better fit. In addition, SLOUCH provides three information criteria for model evaluation: AIC, AICc and the stricter SIC (also called the BIC). For the information criteria, smaller values mean a better model fit. These values can be compared across models that use different predictor variables, different number of predictors, different types of predictor variable (e.g. categorical vs. continuous), or different models of evolution (Ornstein-Uhlenbeck vs. Brownian motion). Note that all of the model fit statistics, as well as the parameter search itself, is conditional on the *naive* GLS estimator, i.e. prior to any bias-correction routines.
 
 ## Estimating the intercept
 
@@ -379,7 +425,7 @@ $$
 SLOUCH can independently estimate $y_a$, $b_0$ and the sum $bx_a = (b_1x_{a1} + b_2x_{a2} + \dots)$. Using the same example with neocortex evolving in response to brain size, we would specify:
 
 \vspace{1em}
-```{r, highlight = TRUE, fig.width=7, fig.height = 4, eval=F}
+```{r, highlight = TRUE, fig.width=7, fig.height = 4, eval=F, fig.pos = "H"}
 model5 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -397,9 +443,9 @@ The parameters $y_a$ and $bx_a$ represent the ancestral states for $y$ and $x$ s
 
 ## Multiple optima & phylo-format
 
-SLOUCH can fit models with multiple adaptive regimes or niches over the branches of the phylogenetic tree. We will fit neocortex size as a function of diet in artiodactyls. Trees in the `phylo` format are represented by the edges found in `phy$edge`, where each edge connects two vertices or nodes. All of the tip nodes have indices starting from 1, 2, 3 ... until $n_{tips}$, in this case 43. The root node has index $n_{tips}$+1, here 44, and the rest of the internal nodes have indices ($n_{tips}$+2, $n_{tips}$+3, ..., $n_{nodes}$). When running this type of model, we will need to specify the internal adaptive regimes in the order of node indices ($n_{tips}$+1, $n_{tips}$+2, $n_{tips}$+3, ..., $n_{nodes}$). The regimes for the tips must be supplied to the `fixed.fact` argument (`slouch.fit(..., fixed.fact = neocortex$diet)`), and the regimes for the internal nodes must be assigned to `phy$node.label`. In order to plot and visually verify that the ancestral state configuration is sensible, we need to have all the regimes in the order of the **edges**, not the nodes.
+SLOUCH can fit models with multiple adaptive regimes or niches over the branches of the phylogenetic tree. We will fit neocortex size as a function of diet in ruminants. Trees in the `phylo` format are represented by the edges found in `phy$edge`, where each edge connects two vertices or nodes. All of the tip nodes have indices starting from 1, 2, 3 ... until $n_{tips}$, in this case 43. The root node has index $n_{tips}$+1, here 44, and the rest of the internal nodes have indices ($n_{tips}$+2, $n_{tips}$+3, ..., $n_{nodes}$). When running this type of model, we will need to specify the internal adaptive regimes in the order of node indices ($n_{tips}$+1, $n_{tips}$+2, $n_{tips}$+3, ..., $n_{nodes}$). The regimes for the tips must be supplied to the `fixed.fact` argument (`slouch.fit(..., fixed.fact = neocortex$diet)`), and the regimes for the internal nodes must be assigned to `phy$node.label`. In order to plot and visually verify that the ancestral state configuration is sensible, we need to have all the regimes in the order of the **edges**, not the nodes.
 \vspace{1em}
-```{r include = FALSE}
+```{r include = FALSE, fig.pos = "H"}
 par(mar = rep(0, 4))
 ```
 ```{r, fig.width=7, fig.height = 4, highlight = TRUE}
@@ -424,7 +470,7 @@ par(mar = c(5.1, 4.1, 4.1, 2.1))
 If it looks like there are no visible mistakes, we can go ahead and fit the model in SLOUCH.
 
 \vspace{1em}
-```{r, highlight = TRUE}
+```{r, highlight = TRUE, fig.pos = "H"}
 model6 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -433,7 +479,7 @@ model6 <- slouch.fit(phy = phy,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.01))
 
-model6$opt.reg$coefficients
+model6$beta_primary$coefficients
 ```
 
 ## Direct effect predictors
@@ -441,10 +487,10 @@ model6$opt.reg$coefficients
 SLOUCH can also fit models with continuous covariates that don't have any phylogenetic covariance structure, variables that influence the optimum directly and immediately. Here, both the grid-search and the hillclimber routine are used to find the maximum-likelihood estimates for $t_{1/2}$ and $v_y$.
 
 \vspace{1em}
-```{r, fig.width = 7, fig.height = 4, highlight = TRUE}
+```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H"}
 model7 <- slouch.fit(phy = phy,
-                     hl_values = seq(0.001, 5, length.out = 5),
-                     vy_values = seq(0.001, 0.05, length.out = 5),
+                     hl_values = seq(0.001, 5, length.out = 20),
+                     vy_values = seq(0.001, 0.05, length.out = 20),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      mv.response = neocortex$neocortex_se_squared,
@@ -453,7 +499,7 @@ model7 <- slouch.fit(phy = phy,
                      hillclimb = TRUE,
                      lower = c(0.001, 0.0005))
 
-model7$opt.reg$coefficients
+model7$beta_primary$coefficients
 plot(model7)
 ```
 
@@ -467,16 +513,16 @@ $$
 
 where $dW_y \sim N(0, dt)$. The residual covariance is $\text{Cov}[r_i, r_j] = \sigma_y^2t_a$, where $t_a$ is the sum of shared branch lengths for species $i$ and $j$. With this model, we only estimate one parameter with likelihood: $\sigma_y^2$, which in this example has units $(\log(\text{neocortex(mm}^2)))^2 \times  \text{myr}^{-1}$. The parameters $v_y = \sigma_y^2/2\alpha$ and $t_{1/2}$ no longer enter the equation. The intercept-only model can be fitted by entering the following:
 \vspace{1em}
-```{r, fig.width = 7, fig.height = 4, highlight = TRUE}
+```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H"}
 model8 <- brown.fit(phy = phy,
-                    sigma2_y_values = seq(0.008, 0.05, length.out = 80),
+                    sigma2_y_values = lseq(0.008, 0.05, length.out = 80),
                     species = neocortex$species,
                     response = neocortex$neocortex_area_mm2_log_mean,
                     mv.response = neocortex$neocortex_se_squared,
                     hillclimb = TRUE,
                     lower = 0.0005)
 
-model8$opt.reg$coefficients
+model8$beta_primary$coefficients
 plot(model8)
 ```
 
@@ -493,9 +539,9 @@ $$
 where $t_s$ is the total time that species $i$ has spent in regime $s$. With ultrametric trees, $y_a$ can not be estimated independently of the trends $\tau$, and as such $y_a$ is not estimated with default settings. In other words, we assume that $y_a = 0$, and hence the trends $\tau_s$ can only be interpreted relative to each other. If we do estimate $y_a$ independently, however, the trends $\tau_s$ will represent the absolute expected direction of change. We will fit log neocortex area with different trends for each dietary regime:
 
 \vspace{1em}
-```{r, fig.width = 7, fig.height = 4, highlight = TRUE}
+```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H"}
 model9 <- brown.fit(phy = phy,
-                    sigma2_y_values = seq(0.008, 0.05, length.out = 80),
+                    sigma2_y_values = lseq(0.008, 0.05, length.out = 80),
                     species = neocortex$species,
                     response = neocortex$neocortex_area_mm2_log_mean,
                     mv.response = neocortex$neocortex_se_squared,
@@ -504,13 +550,13 @@ model9 <- brown.fit(phy = phy,
                     lower = 0.0005)
 
 plot(model9)
-model9$opt.reg$coefficients
+model9$beta_primary$coefficients
 ```
 
 In this example, the trends ($\tau$) are in units of $\log \text{neocortex} (\text{mm}^2) \times \text{myr}^{-1}$. Since with this procedure we assume that $y_a = 0$, we can only interpret the relative differences among the trends.
 
 ```{r}
-model9$opt.reg$trend_diff
+model9$beta_primary$trend_diff
 ```
 
 By looking at the pairwise contrasts, we can see that the expected increase in neocortex for grazers is larger than for browsers and mixed feeders. 
@@ -527,20 +573,30 @@ dx = \sigma_x dW_x
 $$
 where $a$ are the regime-dependent trends as previously denoted $\tau$, and $x$ is a random variable evolving as a Brownian motion. In the case of multiple independent predictors, we have
 $$
-dy = (a + \sum_k{b_kx_k})dt + \sigma_y dW_y
+dy = (a + \sum_k{b_kx_k})dt + \sigma_y dW_y,
 $$
-where $\sum_k{b_kx_k}$ is also a Brownian motion with variances $\sigma_\theta^2 = \sum_k{b_k^2 \sigma_k^2}$. The residual covariance for this model is
+where $\sum_k{b_kx_k}$ is also a Brownian motion with variances $\sigma_\theta^2 = \sum_k{b_k^2 \sigma_k^2}$. For each species, the model predicts: 
 
 $$
-\text{Cov}[r_i, r_j] = \sigma_y^2 t_a + \sigma_\theta^2 t_a(t_a^2/12 + t_{ia}t_{ja}/4)
+y = y_a + \sum_s{a_st_s} + \sum_j{\rho(t)b_jx_{j}} + r,
+$$
+where $y_a$ is the ancestral state, $a_s$ are the trends, and $t_s$ are sums of time spent in regime $s$. $x_{j}$ is the current state of predictor variable $j$, and $\rho(t)$ is the phylogenetic correction factor:
+
+$$
+\rho(t) = \frac{t}{2},
+$$
+where $t$ is the time from the species to the root of the tree. The residual covariances for this model are
+
+$$
+\text{Cov}[r_i, r_j] = \sigma_y^2 t_a + \sigma_\theta^2 t_a(t_a^2/12 + t_{ia}t_{ja}/4),
 $$
 
 where the time from the most recent common ancestor (MRCA) of species $i, j$ to species $i$ is $t_{ia}$, and the time from the MRCA to species $j$ is $t_{ja}$. To fit such a model of log neocortex area on log brain mass, we would enter:
 
 \vspace{1em}
-```{r, fig.width = 7, fig.height = 4, highlight = TRUE}
+```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H"}
 model10 <- brown.fit(phy = phy,
-                     sigma2_y_values = seq(0.00001, 0.002, length.out = 80),
+                     sigma2_y_values = lseq(0.00001, 0.002, length.out = 80),
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
                      mv.response = neocortex$neocortex_se_squared,
@@ -550,7 +606,7 @@ model10 <- brown.fit(phy = phy,
                      hillclimb = TRUE,
                      lower = 0.000000001)
 
-model10$opt.reg$coefficients
+model10$beta_primary$coefficients
 plot(model10)
 ```
 
@@ -559,6 +615,16 @@ plot(model10)
 
 
 \pagebreak
+
+# History & comparison with other packages
+
+This document describes an R-package for estimating parameters for a suite of comparative methods based on the Ornstein-Uhlenbeck process as a model of adaptive evolution. We refer to this program as SLOUCH 2.0 since it builds on the models in SLOUCH 1.0 (Hansen *et al.* 2008). SLOUCH 1.0 dealt with a continuous trait that evolves as an Ornstein-Uhlenbeck process around an optimal state that itself depend on an environmental variable that evolves as if by a Brownian motion. For the current version we have extended the model to deal with an optimal state that depends on multiple randomly evolving predictors and multiple direct effect predictors. We also describe in more detail how to include measurement error in the analyses. SLOUCH 2.0 also includes functionality designed to deal with traits that evolve in response to fixed categorical niches that can be mapped onto a phylogeny and then used to estimate niche optima for the response trait (Hansen, 1997; Butler & King, 2004). The multi-optima model is thus an alternative to Butler & King’s (2004) OUCH program, but it differs in a few crucial apects, as described below. SLOUCH 1.3 and earlier versions were built as an addition to OUCH, and data formats and some functions were borrowed from the original version of OUCH, either as is, or slightly modified. In SLOUCH 2.0 the phylogenetic tree format is revamped, and now uses the format used by the R-package APE (Paradis *et al.* 2004). 
+
+The fixed.fit function of SLOUCH 1.1 differs from the OUCH program as follows: a) it allows the user to estimate parameters using a non-ultrametric tree, such as those that include extinct species, b) it allows the user to incorporate measurement error in the response variable, c) it automatically calculates standard errors for estimated optima, goodness of fit as $\text{R}^2$ and can be used to compute support regions for rates of adaptation and trait variances, d) it includes functionality to use both grid search and the built-in R optimization routines to estimate parameters, and e) it includes various options to deal with intercept estimation, which can be problematic. [Do we need to compare with OUCH?]
+
+SLOUCH 2.0 also includes Brownian-motion models where the optima are instead modeled as trends. This document is written to serve as an updated user manual for SLOUCH. It provides a summary of the rationale for the methods, and illustrates them with examples based on the ruminant neocortex data set. It extends the user manual for SLOUCH 1.0 by discussing multiple regression and ANOVA type of models for the optimum, and gives more details on modeling non-ultrametric trees and measurement error. The mathematical and conceptual basis of the adaptation-inertia methods are presented and discussed in Hansen (1997), Butler & King (2004), and Hansen et al. (2008). A user of SLOUCH should also consult these papers.
+
+\newpage
 
 # References
 
@@ -570,6 +636,8 @@ Butler, M. A., & King, A. A. (2004). Phylogenetic comparative analysis: a modeli
 Edwards, A. W. F. (1992). Likelihood. expanded edition Johns Hopkins University Press. Baltimore, MD.
 
 Escudero, M., Hipp, A. L., Hansen, T. F., Voje, K. L., & Luceño, M. (2012). Selection and inertia in the evolution of holocentric chromosomes in sedges (Carex, Cyperaceae). New Phytologist, 195(1), 237–247. https://doi.org/10.1111/j.1469-8137.2012.04137.x
+
+Grabowski, M., Voje, K. L., & Hansen, T. F. (2016). Evolutionary modeling and correcting for observation error support a 3/5 brain-body allometry for primates. Journal of human evolution, 94, 106-116.
 
 Hansen, T. F. (1997). Stabilizing Selection and the Comparative Analysis of Adaptation. Evolution, 51(5), 1341. https://doi.org/10.2307/2411186
 
@@ -594,3 +662,7 @@ Labra, A., Pienaar, J., & Hansen, T. F. (2009). Evolution of Thermal Physiology 
 Ridley, M. (1983). The explanation of organic diversity: the comparative method and adaptations for mating. Oxford University Press, USA.
 
 Toljagić, O., Voje, K. L., Matschiner, M., Liow, L. H., & Hansen, T. F. (2017). Millions of years behind: Slow adaptation of ruminants to grasslands. Systematic Biology, (318). https://doi.org/10.1093/sysbio/syx059
+
+Sober, E. (2008). Evidence and evolution: The logic behind the science. Cambridge University Press.
+
+Beaulieu, J. M., Jhwueng, D. C., Boettiger, C., & O’Meara, B. C. (2012). Modeling stabilizing selection: expanding the Ornstein–Uhlenbeck model of adaptive evolution. Evolution, 66(8), 2369-2383.
