@@ -20,6 +20,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, a_values = NULL,
 
 \item{hl_values}{a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.}
 
+\item{a_values}{a vector of candidate rate of adaptation values to be evaluated in grid search. Optional.}
+
 \item{vy_values}{a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.}
 
 \item{sigma2_y_values}{alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.}

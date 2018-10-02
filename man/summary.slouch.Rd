@@ -4,10 +4,10 @@
 \alias{summary.slouch}
 \title{Model Summary}
 \usage{
-\method{summary}{slouch}(x, ...)
+\method{summary}{slouch}(object, ...)
 }
 \arguments{
-\item{x}{An object of class 'slouch'}
+\item{object}{An object of class 'slouch'}
 
 \item{...}{Additional arguments, unused.}
 }

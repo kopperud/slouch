@@ -6,6 +6,7 @@
 #' Print, minimalist output
 #' 
 #' @param x An object of class 'slouch'
+#' @param ... additional parameters
 #'
 #' @examples 
 #' data(artiodactyla)
@@ -23,32 +24,34 @@
 #'                  mv.random.cov = neocortex$brain_se_squared,
 #'                  fixed.fact = neocortex$diet)
 #' @export
-print.slouch <- function(x, digits = max(3, getOption("digits")- 3)){
-cat(paste0("Response: ", x$control$name.response, "\n"))
-cat("\n  ")
-
-fit <- unlist(x$modfit[c("AICc", "Support", "R squared")])
-print(fit, digits = digits)
-
-cat("\n  ")
-cat("ML estimates(s): \n")
-
-evolpar <- unlist(x$evolpar)
-names(evolpar) <- parnames(names(evolpar))
-for (i in seq_along(evolpar)){
-  cat(paste0(names(evolpar)[i], ":\t ", round(evolpar[i], digits), "\n"))
-}
-
-regpar <- x$beta_primary$coefficients[,1]
-names(regpar) <- rownames(x$beta_primary$coefficients)
-cat("\n  ")
-cat("Coefficients: \n")
-print(regpar, digits = digits)
+print.slouch <- function(x, ...){
+  digits <- max(3, getOption("digits")- 3)
+    
+  cat(paste0("Response: ", x$control$name.response, "\n"))
+  cat("\n  ")
+  
+  fit <- unlist(x$modfit[c("AICc", "Support", "R squared")])
+  print(fit, digits = digits)
+  
+  cat("\n  ")
+  cat("ML estimates(s): \n")
+  
+  evolpar <- unlist(x$evolpar)
+  names(evolpar) <- parnames(names(evolpar))
+  for (i in seq_along(evolpar)){
+    cat(paste0(names(evolpar)[i], ":\t ", round(evolpar[i], digits), "\n"))
+  }
+  
+  regpar <- x$beta_primary$coefficients[,1]
+  names(regpar) <- rownames(x$beta_primary$coefficients)
+  cat("\n  ")
+  cat("Coefficients: \n")
+  print(regpar, digits = digits)
 }
 
 #' Model Summary
 #' 
-#' @param x An object of class 'slouch'
+#' @param object An object of class 'slouch'
 #' @param ... Additional arguments, unused.
 #'
 #' @examples 
@@ -71,7 +74,8 @@ print(regpar, digits = digits)
 #' 
 #' plot(m0, theta = 150)
 #' @export
-summary.slouch <- function(x, ...){
+summary.slouch <- function(object, ...){
+  x <- object
   message("Important - Always inspect the likelihood surface of the model parameters with
           grid search before evaluating model fit & results.")
   message("")

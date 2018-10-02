@@ -4,10 +4,12 @@
 \alias{print.slouch}
 \title{Print, minimalist output}
 \usage{
-\method{print}{slouch}(x, digits = max(3, getOption("digits") - 3))
+\method{print}{slouch}(x, ...)
 }
 \arguments{
 \item{x}{An object of class 'slouch'}
+
+\item{...}{additional parameters}
 }
 \description{
 Print, minimalist output

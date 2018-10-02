@@ -5,6 +5,7 @@
 #' @param species a character vector of species tip labels, typically the "species" column in a data frame. This column needs to be an exact match and same order as phy$tip.label
 #' @param sigma2_y_values alternative to vy_values, if the stationary variance is reparameterized as the variance parameter for the Brownian motion.
 #' @param hl_values a vector of candidate phylogenetic half-life values to be evaluated in grid search. Optional.
+#' @param a_values a vector of candidate rate of adaptation values to be evaluated in grid search. Optional.
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
 #' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
 #' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
