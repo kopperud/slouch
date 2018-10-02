@@ -6,3 +6,4 @@ src/*.dll
 src/*.so
 src/*.o
 inst/doc
+*.swp

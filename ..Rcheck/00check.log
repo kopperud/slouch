@@ -1,7 +1,8 @@
 * using log directory ‘/uio/kant/nhm-sfs-u2/bjorntko/slouch/..Rcheck’
-* using R version 3.4.4 (2018-03-15)
+* using R version 3.5.0 (2018-04-23)
 * using platform: x86_64-redhat-linux-gnu (64-bit)
 * using session charset: UTF-8
+* using option ‘--as-cran’
 * checking for file ‘./DESCRIPTION’ ... ERROR
 Required fields missing or empty:
   ‘Author’ ‘Maintainer’
