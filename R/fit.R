@@ -2,6 +2,7 @@
 .slouch.fit <- function(phy,
                         species,
                         hl_values, 
+                        a_values,
                         vy_values, 
                         sigma2_y_values,
                         response, 
@@ -25,7 +26,8 @@
                         upper,
                         verbose,
                         names.direct.cov,
-                        names.random.cov)
+                        names.random.cov,
+                        name.response)
 {
   if(is.null(species)){
     stop("Use argument \"species\" to make sure the order of the data correctly lines up with the tree. See example.")
@@ -167,7 +169,8 @@
                   estimate.bXa = estimate.bXa,
                   support = support,
                   convergence = convergence,
-                  model = model)
+                  model = model,
+                  name.response = name.response)
   
   
   seed <- seed(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov)
@@ -185,7 +188,7 @@
     }else{
       
     }
-    if (is.null(hl_values)){
+    if (is.null(hl_values) & is.null(a_values)){
       hl_values <- stats::runif(1, 0, max(times))
     }
   }
@@ -202,6 +205,7 @@
     ))
   }else{
     gridlist <- list(hl = hl_values,
+                     a = a_values,
                      vy = vy_values,
                      sigma2_y = sigma2_y_values)
     gridlist[sapply(gridlist, is.null)] <- NULL ## Remove null entries
@@ -266,6 +270,7 @@
                      fnscale = -1),
       hessian = hessian
     )
+
     
     climblog2 <- sapply(names(climblog[[1]]$par), 
                         function(x) sapply(climblog, 
@@ -340,15 +345,16 @@
                  "N (params)" = n.par)
   
   if(model == "ou"){
-    if(!is.null(hl_values) & !is.null(c(vy_values, sigma2_y_values))){
-      if(length(hl_values) > 1 | length(c(vy_values, sigma2_y_values)) > 1){
+    if(!is.null(c(hl_values, a_values)) & !is.null(c(vy_values, sigma2_y_values))){
+      if(length(c(hl_values, a_values)) > 1 | length(c(vy_values, sigma2_y_values)) > 1){
         
-        z <- matrix(sapply(grid, function(e) e$support), nrow=length(hl_values), byrow=F)
+        z <- matrix(sapply(grid, function(e) e$support), nrow=length(c(hl_values, a_values)), byrow=F)
         if(!(all(is.na(z) | is.infinite(z)))){
           z <- z - ml
           z[abs(z) >= support] <- -2
           
-          supportplot <- list(hl = hl_values,
+          supportplot <- list(a = a_values,
+                              hl = hl_values,
                               vy = vy_values,
                               sigma2_y = sigma2_y_values,
                               z = z)

@@ -63,6 +63,7 @@
 slouch.fit <- function(phy,
                        species = NULL,
                        hl_values = NULL, 
+                       a_values = NULL,
                        vy_values = NULL, 
                        sigma2_y_values = NULL,
                        response, 
@@ -76,16 +77,19 @@ slouch.fit <- function(phy,
                        mcov.random.cov=NULL,
                        estimate.Ya = FALSE,
                        estimate.bXa = FALSE,
-                       hessian = F,
+                       hessian = FALSE,
                        support = 2, 
                        convergence = 0.000001,
                        nCores = 1,
-                       hillclimb = FALSE,
+                       hillclimb = TRUE,
                        lower = c(1e-8, 1e-8),
                        upper = Inf,
                        verbose = FALSE)
 {
-  if((sum(c(is.null(hl_values), is.null(vy_values), is.null(sigma2_y_values))) > 1) & !hillclimb){
+  if((sum(c(is.null(hl_values), 
+            is.null(a_values), 
+            is.null(vy_values), 
+            is.null(sigma2_y_values))) > 2) & !hillclimb){
     stop("Choose at minimum a 1x1 grid, or use the hillclimber routine.")
   }
   if(!is.null(vy_values) & !is.null(sigma2_y_values)){
@@ -108,9 +112,12 @@ slouch.fit <- function(phy,
     }
   }
   
+  name.response <- deparse(substitute(response))
+  
   .slouch.fit(phy = phy,
               species = species,
               hl_values = hl_values, 
+              a_values = a_values,
               vy_values = vy_values, 
               sigma2_y_values = sigma2_y_values,
               response = response, 
@@ -134,7 +141,8 @@ slouch.fit <- function(phy,
               upper = upper,
               verbose = verbose,
               names.direct.cov = names.direct.cov,
-              names.random.cov = names.random.cov)
+              names.random.cov = names.random.cov,
+              name.response = name.response)
 }
 
 #' Function to fit Brownian-motion models of trait evolution
@@ -168,7 +176,7 @@ brown.fit <- function(phy,
                       support = 2, 
                       convergence = 0.000001,
                       nCores = 1,
-                      hillclimb = FALSE,
+                      hillclimb = TRUE,
                       lower = 1e-8,
                       upper = NULL,
                       verbose = FALSE)
@@ -179,6 +187,8 @@ brown.fit <- function(phy,
   if(is.null(upper)){
     upper <- 10 * stats::var(response) / max(ape::node.depth.edgelength(phy))
   }
+  
+  name.response <- deparse(substitute(response))
   
   if(!is.null(random.cov)){
     if(ncol(as.matrix(random.cov))==1) {
@@ -220,7 +230,8 @@ brown.fit <- function(phy,
               upper = upper,
               verbose = verbose,
               names.direct.cov = names.direct.cov,
-              names.random.cov = names.random.cov)
+              names.random.cov = names.random.cov,
+              name.response = name.response)
 }
 
 

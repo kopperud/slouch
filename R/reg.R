@@ -185,13 +185,17 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
   }
   
   if (control$model == "ou"){
-    hl <- par$hl
-
-    if(hl == 0){
-      a <- Inf ## When response is modeled only by fixed factors, of which one or more levels contain only internal regimes, Var(beta) becomes singular, throws error.
+    if (!is.null(par$hl)){
+      hl <- par$hl  
+      a <- log(2) / hl
     }else{
-      a <- log(2)/hl
+      a <- par$a
+      hl <- log(2) / a
     }
+    
+
+
+
     
     if(!is.null(par$vy)){
       vy <- par$vy

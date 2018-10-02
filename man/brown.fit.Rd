@@ -9,7 +9,7 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
   mv.direct.cov = NULL, mcov.direct.cov = NULL, random.cov = NULL,
   mv.random.cov = NULL, mcov.random.cov = NULL, estimate.Ya = FALSE,
   hessian = FALSE, support = 2, convergence = 1e-06, nCores = 1,
-  hillclimb = FALSE, lower = 1e-08, upper = NULL, verbose = FALSE)
+  hillclimb = TRUE, lower = 1e-08, upper = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}

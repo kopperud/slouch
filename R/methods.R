@@ -3,7 +3,50 @@
 
 
 
-#' Print Model Summary
+#' Print, minimalist output
+#' 
+#' @param x An object of class 'slouch'
+#'
+#' @examples 
+#' data(artiodactyla)
+#' data(neocortex)
+#' 
+#' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+#' 
+#' m0 <- slouch.fit(phy = artiodactyla,
+#'                  hl_values = seq(0.001, 4, length.out = 15),
+#'                  vy_values = seq(0.001, 0.05, length.out = 15),
+#'                  species = neocortex$species,
+#'                  response = neocortex$neocortex_area_mm2_log_mean,
+#'                  mv.response = neocortex$neocortex_se_squared,
+#'                  random.cov = neocortex$brain_mass_g_log_mean,
+#'                  mv.random.cov = neocortex$brain_se_squared,
+#'                  fixed.fact = neocortex$diet)
+#' @export
+print.slouch <- function(x, digits = max(3, getOption("digits")- 3)){
+cat(paste0("Response: ", x$control$name.response, "\n"))
+cat("\n  ")
+
+fit <- unlist(x$modfit[c("AICc", "Support", "R squared")])
+print(fit, digits = digits)
+
+cat("\n  ")
+cat("ML estimates(s): \n")
+
+evolpar <- unlist(x$evolpar)
+names(evolpar) <- parnames(names(evolpar))
+for (i in seq_along(evolpar)){
+  cat(paste0(names(evolpar)[i], ":\t ", round(evolpar[i], digits), "\n"))
+}
+
+regpar <- x$beta_primary$coefficients[,1]
+names(regpar) <- rownames(x$beta_primary$coefficients)
+cat("\n  ")
+cat("Coefficients: \n")
+print(regpar, digits = digits)
+}
+
+#' Model Summary
 #' 
 #' @param x An object of class 'slouch'
 #' @param ... Additional arguments, unused.
@@ -24,14 +67,13 @@
 #'                  mv.random.cov = neocortex$brain_se_squared,
 #'                  fixed.fact = neocortex$diet)
 #'                  
-#' print(m0) 
+#' summary(m0) 
 #' 
 #' plot(m0, theta = 150)
 #' @export
-print.slouch <- function(x, ...){
-  message("Important - Always inspect the likelihood surface of the model parameters in the 3D-grid
-          before evaluating model fit & results. If the likelihood search space does not contain
-          the true maximum likelihood, the model outputs will reflect this.")
+summary.slouch <- function(x, ...){
+  message("Important - Always inspect the likelihood surface of the model parameters with
+          grid search before evaluating model fit & results.")
   message("")
   message("Maximum-likelihood estimates")
   evolpar <- as.matrix(x$evolpar, ncol = 1)
@@ -60,14 +102,19 @@ print.slouch <- function(x, ...){
   print(evolpar)
   
   if (!is.null(x$brownian_predictors)){
-    cat("\n")
+    cat("\n  ")
     message("Stochastic predictor(s)")
     print(x$brownian_predictors)
   }
 
   if(x$control$model == "ou"){
-    hl <- x$evolpar$hl
-    a <- log(2) / hl
+    if(is.null(x$evolpar$hl)){
+      a <- x$evolpar$a
+      hl <- log(2) / a
+    }else{
+      hl <- x$evolpar$hl
+      a <- log(2) / hl      
+    }
     
     if(!is.null(x$evolpar$vy)){
       vy <- x$evolpar$vy
@@ -78,8 +125,14 @@ print.slouch <- function(x, ...){
     }
     
     rho <- mean(1 - (1 - exp(-a * x$tree$T.term)) / (a * x$tree$T.term))
-    inferred <- list("Rate of adaptation" = a,
-                     "Mean phylogenetic correction factor" = rho)
+    inferred <- list("Mean phylogenetic correction factor" = rho)
+    
+    if(!is.null(x$evolpar$hl)){
+     inferred["Rate of adaptation"]  = a
+    }
+    if(!is.null(x$evolpar$a)){
+      inferred["Phylogenetic half-life"]  = hl
+    }
     
     if(!is.null(x$evolpar$vy)){
       inferred["Diffusion variance"] <- sigma2_y
@@ -98,14 +151,14 @@ print.slouch <- function(x, ...){
   }
   
   if (length(inferred) > 0){
-    cat("\n")
+    cat("\n  ")
     message("Inferred maximum-likelihood parameters")
     inferred_matrix <- matrix(inferred, ncol = 1, dimnames = list(names(inferred), "Value"))
     print(inferred_matrix)
   }
   
   if (!is.null(x$supported_range)){
-    cat("\n")
+    cat("\n  ")
     message("Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)")
     rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
@@ -114,7 +167,7 @@ print.slouch <- function(x, ...){
   
   foo <- function(w, title){
     if(length(w) > 0){
-      cat("\n")
+      cat("\n  ")
       if(title == "Regime-dependent trends"){
         if(!x$control$estimate.Ya){
           title <- paste(title, "(assuming Ya = 0)")
@@ -124,13 +177,13 @@ print.slouch <- function(x, ...){
       print(x$beta_primary$coefficients[w, ,drop=FALSE])
       
       if(title == "Optimal regression slope" | title == "Trend covariates"){
-        cat("\n")
+        cat("\n  ")
         message("Evolutionary regression slope")
         print(x$beta_evolutionary$coefficients[w, ,drop = FALSE])
       }
       
       if(grepl("Regime trends", title)){
-        cat("\n")
+        cat("\n  ")
         message("Pairwise contrasts among trends:")
         print(x$beta_primary$trend_diff)
       }
@@ -147,14 +200,14 @@ print.slouch <- function(x, ...){
   
   if(!is.null(x$beta_primary$K)){
     if(!is.diag(x$beta_primary$K)){
-      cat("\n")
+      cat("\n  ")
       message("Attenuation factor. Linear model coefficients (above) are not corrected for bias.")
       m <- signif(x$beta_primary$K, 3)
       prmatrix(m, collab = rep_len("", ncol(m)))
     }
   }
 
-  cat("\n")
+  cat("\n  ")
   message("Model fit summary")
   m <- as.matrix(sapply(x$modfit, signif, 3))
   colnames(m) <- "Values"
@@ -206,27 +259,29 @@ hillclimbplot.slouch <- function(x,...){
   if (!is.null(x$climblog_df)){
     logL <- x$climblog_df$loglik
     hl <- x$climblog_df$hl
+    a <- x$climblog_df$a
     vy <- x$climblog_df$vy
     sigma2_y <- x$climblog_df$sigma2_y
     index <- x$climblog_df$index
-    s <- if(!is.null(vy)) vy else sigma2_y
+    y_axis <- if(!is.null(vy)) vy else sigma2_y
+    x_axis <- if(!is.null(a)) a else hl
     
     if(x$control$model == "ou"){
-      graphics::plot(x = hl, 
-                     y = s, 
+      graphics::plot(x = x_axis, 
+                     y = y_axis, 
                      main = "Path of hillclimber",
                      col = grDevices::gray.colors(length(index),
                                                   start = 0.8, end = 0.05, gamma = 1)[index],
                      pch = 19,
-                     ylim = c(min(s), max(s)),
-                     xlim = c(min(hl), max(hl)),
-                     xlab = "Phylogenetic half-life",
+                     ylim = range(y_axis),
+                     xlim = range(x_axis),
+                     xlab = if(!is.null(hl)) "Phylogenetic half-life" else "Rate of adaptation",
                      ylab = if(!is.null(vy)) "Stationary variance" else "Diffusion variance"
       )
       
-      points(hl[length(hl)], s[length(s)], col = "red", pch = 19)
-      text(hl[1], s[1], "Start")
-      text(hl[length(hl)], s[length(s)], "End")
+      points(x_axis[length(x_axis)], y_axis[length(y_axis)], col = "red", pch = 19)
+      text(x_axis[1], y_axis[1], "Start")
+      text(x_axis[length(x_axis)], y_axis[length(y_axis)], "End")
       
     }else{
       graphics::plot(x = log(sigma2_y),
@@ -289,9 +344,10 @@ plot.slouch <- function(x,
   if (!is.null(x$supportplot)){
     if(x$control$model == "ou"){
       s3d <- if(!is.null(x$supportplot$vy)) x$supportplot$vy else x$supportplot$sigma2_y
+      x_axis <- if(!is.null(x$supportplot$hl)) x$supportplot$hl else x$supportplot$a
 
       if(all(dim(x$supportplot$z) > 1)){
-        graphics::persp(x = x$supportplot$hl,
+        graphics::persp(x = x_axis,
                         y = s3d,
                         z = x$supportplot$z,
                         theta = theta,
@@ -302,17 +358,17 @@ plot.slouch <- function(x,
                         col = "NA",
                         main = "Grid search",
                         ticktype = "detailed",
-                        xlab = "Phylogenetic half-life", 
+                        xlab = if(!is.null(x$supportplot$hl)) "Phylogenetic half-life" else "Rate of adaptation", 
                         ylab = if(!is.null(x$supportplot$vy)) "Stationary variance" else "Diffusion variance", 
                         zlab = "Log-likelihood", 
                         zlim = c(min(x$supportplot$z), 0),
                         ...)
       }else{
         hline <- logLik(x) - x$control$support
-        parnames <- c("hl", "vy", "sigma2_y")
+        parnames <- c("hl", "a", "vy", "sigma2_y")
         which_one <- sapply(x$supportplot[parnames], function(e) length(e) == 1)
         which_variable <- sapply(x$supportplot[parnames], function(e) length(e) > 1)
-        map <- stats::setNames(c("Phylogenetic half-life", "Stationary variance", "Diffusion variance"), parnames)
+        map <- stats::setNames(c("Phylogenetic half-life", "Rate of adaptation", "Stationary variance", "Diffusion variance"), parnames)
         
         xvar <- x$supportplot[parnames][which_variable]
         
