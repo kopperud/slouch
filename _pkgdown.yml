@@ -2,3 +2,4 @@ template:
   params:
     bootswatch: united
 
+toc_depth: 1

@@ -21,8 +21,7 @@ classoption:
 - T1
 vignette: |
   %\VignetteIndexEntry{Background} 
-  %\VignetteEngine{knitr::rmarkdown} 
-  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 
 ```{r setup, cache=FALSE, include=FALSE}

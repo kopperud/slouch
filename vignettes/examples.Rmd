@@ -3,17 +3,21 @@ title: "Examples"
 author: 'Jason Pienaar, Bjørn Tore Kopperud, Kjetil Lysne Voje, Thomas F. Hansen (in no particular order)'
 date: '`r Sys.Date()`'
 output:
+  bookdown::html_document2: NULL
   bookdown::pdf_document2:
     fig_caption: yes
-    toc: no
+    toc: yes
+    toc_depth: 2
     includes:
       in_header: header.tex
   word_document:
     fig_caption: yes
   pdf_document: null
-  rmarkdown::html_vignette: null
+  rmarkdown::html_vignette: 
+    toc_depth: 1
   html_document: 
     fig_caption: yes
+    toc_depth: 1
 fontsize: 10pt
 documentclass: article
 classoption:
@@ -22,7 +26,6 @@ classoption:
 vignette: |
   %\VignetteIndexEntry{Examples} 
   %\VignetteEngine{knitr::rmarkdown} 
-  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, cache=FALSE, include=FALSE}
@@ -36,8 +39,6 @@ opts_chunk$set(collapse = TRUE, results = 'markup')
 par(mar = rep(0,4))
 ```
 
-
-\tableofcontents
 
 \newpage
 
