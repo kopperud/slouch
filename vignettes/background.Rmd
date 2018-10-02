@@ -8,6 +8,8 @@ output:
     pandoc_args: 
     - --filter=pandoc-eqnos
     toc: no
+    includes:
+      in_header: header.tex
   word_document:
     fig_caption: yes
   pdf_document: null
@@ -20,7 +22,9 @@ classoption:
 - a4paper
 - T1
 vignette: |
-  %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Background} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, cache=FALSE, include=FALSE}
