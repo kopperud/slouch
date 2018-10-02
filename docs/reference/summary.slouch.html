@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot the internal regimes for a given fitted model — regimeplot.slouch • slouch</title>
+<title>Model Summary — summary.slouch • slouch</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Plot the internal regimes for a given fitted model — regimeplot.slouch" />
+<meta property="og:title" content="Model Summary — summary.slouch" />
 
-<meta property="og:description" content="Plot the internal regimes for a given fitted model" />
+<meta property="og:description" content="Model Summary" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -115,75 +115,100 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot the internal regimes for a given fitted model</h1>
+    <h1>Model Summary</h1>
     <small class="dont-index">Source: <a href='http://github.com/kopperud/slouch/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
-    <div class="hidden name"><code>regimeplot.Rd</code></div>
+    <div class="hidden name"><code>summary.slouch.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Plot the internal regimes for a given fitted model</p>
+    <p>Model Summary</p>
     
     </div>
 
     <pre class="usage"><span class='co'># S3 method for slouch</span>
-<span class='fu'>regimeplot</span>(<span class='no'>x</span>, <span class='no'>...</span>)
-
-<span class='fu'>regimeplot</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>summary</span>(<span class='no'>x</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>x</th>
-      <td><p>an object of class 'slouch'</p></td>
+      <td><p>An object of class 'slouch'</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>additional parameters passed to plot.phylo(...)</p></td>
+      <td><p>Additional arguments, unused.</p></td>
     </tr>
     </table>
     
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>nothing</p>
-    
-    <h2 class="hasAnchor" id="methods-by-class-"><a class="anchor" href="#methods-by-class-"></a>Methods (by class)</h2>
-
-    <ul>
-<li><p><code>slouch</code>: Regimeplot for the 'slouch' object</p></li>
-</ul>
-    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'>
-<span class='fu'>data</span>(<span class='no'>artiodactyla</span>)
+    <pre class="examples"><div class='input'><span class='fu'>data</span>(<span class='no'>artiodactyla</span>)
 <span class='fu'>data</span>(<span class='no'>neocortex</span>)
 
 <span class='no'>neocortex</span> <span class='kw'>&lt;-</span> <span class='no'>neocortex</span>[<span class='fu'>match</span>(<span class='no'>artiodactyla</span>$<span class='no'>tip.label</span>, <span class='no'>neocortex</span>$<span class='no'>species</span>), ]
 
 <span class='no'>m0</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='slouch.fit.html'>slouch.fit</a></span>(<span class='kw'>phy</span> <span class='kw'>=</span> <span class='no'>artiodactyla</span>,
+                 <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>4</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
+                 <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='fu'>seq</span>(<span class='fl'>0.001</span>, <span class='fl'>0.05</span>, <span class='kw'>length.out</span> <span class='kw'>=</span> <span class='fl'>15</span>),
                  <span class='kw'>species</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>species</span>,
-                 <span class='kw'>response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_mean</span>,
-                 <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>body_mass_g_log_varmean</span>,
-                 <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>diet</span>,
-                 <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+                 <span class='kw'>response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>neocortex_area_mm2_log_mean</span>,
+                 <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>neocortex_se_squared</span>,
+                 <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>brain_mass_g_log_mean</span>,
+                 <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>brain_se_squared</span>,
+                 <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='no'>neocortex</span>$<span class='no'>diet</span>)
 
-<span class='fu'>regimeplot</span>(<span class='no'>m0</span>)</div><div class='img'><img src='regimeplot-1.png' alt='' width='700' height='433' /></div><div class='output co'>#&gt; [1] "Colors:"
-#&gt; [1] "Br: black"
-#&gt; [1] "Gr: red"
-#&gt; [1] "MF: green3"</div><div class='input'>
-</div></pre>
+<span class='fu'>summary</span>(<span class='no'>m0</span>)</div><div class='output co'>#&gt; <span class='message'>Important - Always inspect the likelihood surface of the model parameters with</span>
+#&gt; <span class='message'>          grid search before evaluating model fit &amp; results.</span></div><div class='output co'>#&gt; </div><div class='output co'>#&gt; <span class='message'>Maximum-likelihood estimates</span></div><div class='output co'>#&gt;                        Estimate   
+#&gt; Phylogenetic half-life 0.007365716
+#&gt; Stationary variance    0.02288948 
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Stochastic predictor(s)</span></div><div class='output co'>#&gt;                                 Phylogenetic mean Diffusion variance
+#&gt; neocortex$brain_mass_g_log_mean          5.139644         0.02922457
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Inferred maximum-likelihood parameters</span></div><div class='output co'>#&gt;                                     Value    
+#&gt; Mean phylogenetic correction factor 0.9996092
+#&gt; Rate of adaptation                  94.10452 
+#&gt; Diffusion variance                  4.308007 
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)</span></div><div class='output co'>#&gt;                        Minimum  Maximum
+#&gt; Phylogenetic half-life   0.001 3.143071
+#&gt; Stationary variance      0.001 0.039500
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Regime optima</span></div><div class='output co'>#&gt;    Estimates Std. error
+#&gt; Br  5.279607  0.1841308
+#&gt; Gr  5.400820  0.2198705
+#&gt; MF  5.393051  0.1918272
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Optimal regression slope</span></div><div class='output co'>#&gt;                                 Estimates Std. error
+#&gt; neocortex$brain_mass_g_log_mean 0.8528923  0.0378051
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Evolutionary regression slope</span></div><div class='output co'>#&gt;                                 Predictions Std. error
+#&gt; neocortex$brain_mass_g_log_mean    0.852559 0.03779033
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Attenuation factor. Linear model coefficients (above) are not corrected for bias.</span></div><div class='output co'>#&gt;                                              
+#&gt; Br                              1 0 0 -0.0330
+#&gt; Gr                              0 1 0 -0.0352
+#&gt; MF                              0 0 1 -0.0340
+#&gt; neocortex$brain_mass_g_log_mean 0 0 0  1.0100
+#&gt; 
+#&gt;   </div><div class='output co'>#&gt; <span class='message'>Model fit summary</span></div><div class='output co'>#&gt;             Values
+#&gt; Support     14.000
+#&gt; AIC        -16.000
+#&gt; AICc       -13.600
+#&gt; SIC         -5.400
+#&gt; R squared    0.936
+#&gt; SST        688.000
+#&gt; SSE         44.100
+#&gt; N (params)   6.000</div><div class='img'><img src='summary.slouch-1.png' alt='' width='700' height='433' /></div><div class='input'>
+<span class='fu'>plot</span>(<span class='no'>m0</span>, <span class='kw'>theta</span> <span class='kw'>=</span> <span class='fl'>150</span>)</div><div class='img'><img src='summary.slouch-2.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-
-      <li><a href="#methods-by-class-">Methods (by class)</a></li>
-      
+            
       <li><a href="#examples">Examples</a></li>
     </ul>
 

@@ -84,10 +84,10 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/introduction.html">Slouch introduction</a>
+      <a href="../articles/background.html">Background</a>
     </li>
     <li>
-      <a href="../articles/manual.html">Manual</a>
+      <a href="../articles/examples.html">Examples</a>
     </li>
   </ul>
 </li>
@@ -126,14 +126,14 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>slouch.fit</span>(<span class='no'>phy</span>, <span class='kw'>species</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>sigma2_y_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>response</span>, <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>mcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>mcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>estimate.bXa</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>hessian</span> <span class='kw'>=</span> <span class='no'>F</span>, <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>convergence</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>nCores</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>lower</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>1e-08</span>, <span class='fl'>1e-08</span>), <span class='kw'>upper</span> <span class='kw'>=</span> <span class='fl'>Inf</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>slouch.fit</span>(<span class='no'>phy</span>, <span class='kw'>species</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>hl_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>a_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>vy_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>sigma2_y_values</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>response</span>,
+  <span class='kw'>mv.response</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fixed.fact</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mv.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mcov.direct.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mv.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mcov.random.cov</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>estimate.Ya</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>estimate.bXa</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>hessian</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>support</span> <span class='kw'>=</span> <span class='fl'>2</span>,
+  <span class='kw'>convergence</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>nCores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>hillclimb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>lower</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='fl'>1e-08</span>, <span class='fl'>1e-08</span>), <span class='kw'>upper</span> <span class='kw'>=</span> <span class='fl'>Inf</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

@@ -3,10 +3,6 @@ title: "Slouch introduction"
 author: "Bjørn Tore Kopperud"
 date: '`r Sys.Date()`'
 output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 SLOUCH is an implementation of a particular phylogenetic comparative method. It can fit univariate among-species Ornstein-Uhlenbeck models of phenotypic trait evolution, where the trait evolves towards a primary optimum. Optima can be fitted either as discrete regimes as niches on the phylogenetic tree, and/or with continuous covariates. This document is not meant to be exhaustive nor cover the biological interpretations in any depth; it is merely a short introduction on software syntax and a few technical issues. For more information about the theoretical background, how the method is derived, and how to interpret the models, see the associated literature:
