@@ -5,8 +5,6 @@ date: '`r Sys.Date()`'
 output:
   bookdown::pdf_document2:
     fig_caption: yes
-    pandoc_args: 
-    - --filter=pandoc-eqnos
     toc: no
     includes:
       in_header: header.tex
