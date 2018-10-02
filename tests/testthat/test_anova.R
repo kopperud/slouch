@@ -38,5 +38,5 @@ test_that("No errors ANOVA", {
                            0.050412202001475), .Dim = c(2L, 2L), .Dimnames = list(c("A", 
                                                                                     "B"), c("Estimates", "Std. error"))),
                m1$beta_primary$coefficients,
-               tolerance = 9e-07)
+               tolerance = 9e-04)
 })

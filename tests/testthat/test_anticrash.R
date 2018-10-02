@@ -6,7 +6,13 @@ set.seed(4)
 phy <- rtree(n)
 trait_1 <- runif(n)
 trait_1_SE_sq <- 0.01*runif(n)
-#regimes_tip <- factor(sample(c("A", "B", "C"), n, replace = TRUE))
+trait_2 <- runif(n)
+trait_2_SE_sq <- 0.01*runif(n)
+trait_3 <- runif(n)
+trait_3_SE_sq <- 0.01*runif(n)
+trait_4 <- runif(n)
+trait_4_SE_sq <- 0.01*runif(n)
+
 regimes_tip <- factor(sample(c("A", "B"), n, replace = TRUE))
 
 ## Ancestral state recon
@@ -57,13 +63,13 @@ m3 <- slouch.fit(phy,
                      vy_values = seq(0.05,0.15, length.out = 3),
                      response = trait_1,
                      mv.response = trait_1_SE_sq,
-                     random.cov = cbind(a = rnorm(n), b = rnorm(n)),
-                     mv.random.cov = cbind(0.001*rnorm(n), 0.001*rnorm(n)),
-                     direct.cov = cbind(c = rnorm(n), d = rnorm(n)),
-                     mv.direct.cov = cbind(0.001*rnorm(n), 0.001*rnorm(n)),
+                     random.cov = cbind(a = trait_1, b = trait_2),
+                     mv.random.cov = cbind(trait_1_SE_sq, trait_2_SE_sq),
+                     direct.cov = cbind(c = trait_3, d = trait_4),
+                     mv.direct.cov = cbind(trait_3_SE_sq, trait_4_SE_sq),
                      fixed.fact = regimes_tip,
-                     estimate.Ya = TRUE,
-                     estimate.bXa = TRUE)
+                     estimate.Ya = FALSE,
+                     estimate.bXa = FALSE)
 
 
 ## The "everything" model without measurement error
@@ -77,8 +83,8 @@ m4 <- slouch.fit(phy,
                  random.cov = cbind(a = rnorm(n), b = rnorm(n)),
                  direct.cov = cbind(c = rnorm(n), d = rnorm(n)),
                  fixed.fact = regimes_tip,
-                 estimate.Ya = TRUE,
-                 estimate.bXa = TRUE)
+                 estimate.Ya = FALSE,
+                 estimate.bXa = FALSE)
 
 #detach(dummydata)
 

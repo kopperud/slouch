@@ -28,17 +28,11 @@ naive_regweightshelper <- function(a, nt){
   return(res)
 }
 
-#slouch::weightshelper(3, lineages[[35]]$nodes_time)
-
-#regimeweights <- naive_regweightshelper(0, nt)
 
 for (a in alphas){
   old <- lapply(lineages, function(lineage) naive_regweightshelper(a, lineage$nodes_time))
   new <- lapply(lineages, function(lineage) weights_segments(a, lineage))
-  # print(microbenchmark::microbenchmark(old <- lapply(lineages, function(lineage) naive_regweightshelper(a, lineage$nodes_time)),
-  #                                      new <- lapply(lineages, function(lineage) weights_segments(a, lineage)),
-  #                                      rcpp <- lapply(lineages, function(lineage) regimeWeightsHelper(a, lineage$nodes_time))))
-  # 
+  
   test_that(paste("Regimeweights for alpha =", a), {
     expect_equal(old, new)
   })
