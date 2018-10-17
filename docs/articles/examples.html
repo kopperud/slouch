@@ -30,7 +30,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">slouch</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.0</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.1</span>
       </span>
     </div>
 
@@ -53,9 +53,6 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/background.html">Background</a>
-    </li>
-    <li>
       <a href="../articles/examples.html">Examples</a>
     </li>
   </ul>
@@ -84,9 +81,8 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1>Examples</h1>
-                        <h4 class="author">Jason Pienaar, Bjørn Tore Kopperud, Kjetil Lysne Voje, Thomas F. Hansen (in no particular order)</h4>
             
-            <h4 class="date">2018-10-02</h4>
+            <h4 class="date">2018-10-17</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/kopperud/slouch/blob/master/vignettes/examples.Rmd"><code>vignettes/examples.Rmd</code></a></small>
       <div class="hidden name"><code>examples.Rmd</code></div>
@@ -161,12 +157,12 @@ Scatter plot of mean log neocortex area (mm<span class="math inline">\(^2\)</spa
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(model0)
 ## Response: neocortex$neocortex_area_mm2_log_mean
 ## 
-##        AICc   Support R squared 
-##     70.55    -31.97      0.00 
+##         AICc    Support  R squared 
+##  7.055e+01 -3.197e+01  3.308e-16 
 ## 
 ##   ML estimates(s): 
-## Phylogenetic half-life:   431494.3633
-## Stationary variance:  7081.0076
+## Phylogenetic half-life:   374637.3563
+## Stationary variance:  6153.3764
 ## 
 ##   Coefficients: 
 ## (Intercept) 
@@ -178,32 +174,32 @@ Scatter plot of mean log neocortex area (mm<span class="math inline">\(^2\)</spa
 ## 
 ## Maximum-likelihood estimates
 ##                        Estimate
-## Phylogenetic half-life 431494.4
-## Stationary variance    7081.008
+## Phylogenetic half-life 374637.4
+## Stationary variance    6153.376
 ## 
 ## 
 ## Inferred maximum-likelihood parameters
 ##                                     Value       
-## Mean phylogenetic correction factor 2.183846e-05
-## Rate of adaptation                  1.606388e-06
-## Diffusion variance                  0.02274969  
+## Mean phylogenetic correction factor 2.515272e-05
+## Rate of adaptation                  1.850182e-06
+## Diffusion variance                  0.02276973  
 ## 
 ## 
 ## Intercepts
 ##             Estimates Std. error
-## (Intercept)  9.759027  0.3679542
+## (Intercept)  9.759027  0.3681145
 ## 
 ## 
 ## Model fit summary
-##            Values
-## Support     -32.0
-## AIC          69.9
-## AICc         70.5
-## SIC          75.2
-## R squared     0.0
-## SST          43.0
-## SSE          43.0
-## N (params)    3.0</code></pre></div>
+##               Values
+## Support    -3.20e+01
+## AIC         6.99e+01
+## AICc        7.05e+01
+## SIC         7.52e+01
+## R squared   3.31e-16
+## SST         4.30e+01
+## SSE         4.30e+01
+## N (params)  3.00e+00</code></pre></div>
 <div id="interpreting-the-parameters" class="section level2">
 <h2 class="hasAnchor">
 <a href="#interpreting-the-parameters" class="anchor"></a>Interpreting the parameters</h2>
@@ -344,7 +340,7 @@ model6
 ##  -16.1789   15.2561    0.9104 
 ## 
 ##   ML estimates(s): 
-## Phylogenetic half-life:   8.5281
+## Phylogenetic half-life:   8.5278
 ## Stationary variance:  0.0357
 ## 
 ##   Coefficients: 
@@ -372,8 +368,8 @@ model7
 ##  -20.0123   14.5325    0.8994 
 ## 
 ##   ML estimates(s): 
-## Phylogenetic half-life:   106.2074
-## Stationary variance:  0.1481
+## Phylogenetic half-life:   106.3349
+## Stationary variance:  0.1483
 ## 
 ##   Coefficients: 
 ##                     (Intercept) neocortex$brain_mass_g_log_mean 
@@ -548,7 +544,7 @@ p</code></pre></div>
 <p>Edwards, A. W. F. (1992). Likelihood. expanded edition Johns Hopkins University Press. Baltimore, MD.</p>
 <p>Escudero, M., Hipp, A. L., Hansen, T. F., Voje, K. L., &amp; Luceño, M. (2012). Selection and inertia in the evolution of holocentric chromosomes in sedges (Carex, Cyperaceae). New Phytologist, 195(1), 237–247. <a href="https://doi.org/10.1111/j.1469-8137.2012.04137.x" class="uri">https://doi.org/10.1111/j.1469-8137.2012.04137.x</a></p>
 <p>Grabowski, M., Voje, K. L., &amp; Hansen, T. F. (2016). Evolutionary modeling and correcting for observation error support a 3/5 brain-body allometry for primates. Journal of human evolution, 94, 106-116.</p>
-<p>Hansen, T. F. (1997). Stabilizing Selection and the Comparative Analysis of Adaptation. Evolution, 51(5), 1341. <a href="https://doi.org/10.2307/2411186" class="uri">https://doi.org/10.2307/2411186</a></p>
+<p>Hansen, T. F. (1997). Stabilizing Selection and the Comparative Analysis of Adaptation. Evolution, 51(5), 1341.</p>
 <p>Hansen, T. F., &amp; Martins, E. P. (1996). Translating between microevolutionary process and macroevolutionary patterns: the correlation structure of interspecific data. Evolution, 50(4), 1404-1417.</p>
 <p>Hansen, T. F., &amp; Orzack, S. H. (2005). Assessing current adaptation and phylogenetic inertia as explanations of trait evolution: the need for controlled comparisons. Evolution, 59(10), 2063-2072.</p>
 <p>Hansen, T. F., Pienaar, J., &amp; Orzack, S. H. (2008). A comparative method for studying adaptation to a randomly evolving environment. Evolution, 62(8), 1965–1977. <a href="https://doi.org/10.1111/j.1558-5646.2008.00412.x" class="uri">https://doi.org/10.1111/j.1558-5646.2008.00412.x</a></p>

@@ -7,3 +7,4 @@ _pkgdown.yml
 LICENSE
 README.md
 cran-comments.md
+vignettes/.drafts/*.*

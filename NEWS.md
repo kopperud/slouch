@@ -1,4 +1,8 @@
-# slouch 2.1.0.9000
+# slouch 2.1.1
+
+* Removed 'background' vignette
+
+# slouch 2.1.0
 
 * Added a `NEWS.md` file to track changes to the package.
 * Breaking changes: several variable names in function arguments and model outputs have been changed for clarity.

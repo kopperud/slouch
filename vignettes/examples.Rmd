@@ -1,9 +1,7 @@
 ---
 title: "Examples"
-author: 'Jason Pienaar, Bjørn Tore Kopperud, Kjetil Lysne Voje, Thomas F. Hansen (in no particular order)'
 date: '`r Sys.Date()`'
 output:
-  bookdown::html_document2: NULL
   bookdown::pdf_document2:
     fig_caption: yes
     toc: yes
@@ -18,6 +16,7 @@ output:
   html_document: 
     fig_caption: yes
     toc_depth: 1
+  bookdown::html_document2: NULL
 fontsize: 10pt
 documentclass: article
 classoption:
@@ -194,7 +193,7 @@ abline(model3$beta_primary$coefficients_bias_corr[,1],
 While the single-optimum model showed a strong phylogenetic signal, this model exhibits much less phylogenetic inertia, with best estimate of the phylogenetic half-life ($t_{1/2}$) being 1 myr. Here, the optimal regression is steeper than the evolutionary regression. It is also possible to fit a model with multiple continuous covariates, however the input to `random.cov` must be a matrix or data frame that has column names, and the observational error passed to `mv.random.cov` must be a matrix or data frame of the same shape as `random.cov`.
 
 \vspace{1em}
-```{r, highlight = TRUE, fig.width=7, fig.height = 4, fig.pos = "H"}
+```{r, highlight = TRUE, fig.width=7, fig.height = 4, fig.pos = "H", out.extra=""}
 bodycentered <- neocortex$body_mass_g_log_mean - mean(neocortex$body_mass_g_log_mean)
 model4 <- 
   slouch.fit(phy = phy,
@@ -219,7 +218,7 @@ $$
 SLOUCH can independently estimate $y_a$, $b_0$ and the sum $bx_a = (b_1x_{a1} + b_2x_{a2} + \dots)$. Using the same example with neocortex evolving in response to brain size, we would specify:
 
 \vspace{1em}
-```{r, highlight = TRUE, fig.width=7, fig.height = 4, eval=F, fig.pos = "H"}
+```{r, highlight = TRUE, fig.width=7, fig.height = 4, eval=F, fig.pos = "H", out.extra=""}
 model5 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -277,7 +276,7 @@ model6
 SLOUCH can also fit models with continuous covariates that don't have any phylogenetic covariance structure, variables that influence the optimum directly and immediately.
 
 \vspace{1em}
-```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H"}
+```{r, fig.width = 7, fig.height = 4, highlight = TRUE, fig.pos = "H", out.extra=""}
 model7 <- slouch.fit(phy = phy,
                      species = neocortex$species,
                      response = neocortex$neocortex_area_mm2_log_mean,
@@ -391,7 +390,7 @@ vy <- lseq(from = 0.001, to = 5, length.out = 15)
 \vspace{1em}
 Using the default values of the model fitting function `slouch.fit`, we use an initial grid search to find the maximum likelihood estimates of $t_{1/2}$ and $v_y$ in a single-optimum model, and change the grid location depending on how the surface looks. When using grid search, it may be easier to explicitly disable the hillclimber technique, i.e. `slouch.fit(... hillclimb = FALSE)`.
 \vspace{1em}
-```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Three-dimensional joint support region for the estimates of half-lives and stationary variances, for the single-optimum model.", highlight = TRUE, warning=FALSE, fig.pos = "H"}
+```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Three-dimensional joint support region for the estimates of half-lives and stationary variances, for the single-optimum model.", highlight = TRUE, warning=FALSE, fig.pos = "H", out.extra=""}
 model_grid_0 <- slouch.fit(phy = phy,
                      hl_values = seq(0.001, 12, length.out = 20),
                      vy_values = seq(0.1, 1, length.out = 20),
@@ -403,7 +402,7 @@ plot(model_grid_0)
 
 The vertical axis in Figure (...) represents the log-likelihood standardized so that the maximum log-likelihood equals 0. The two horizontal axes are the vector of `hl_values` and `vy_values` that we defined in the function arguments. The peak that rises out of the flat surface therefore, represents the specific combination of `hl_values` and `vy_values` that are more than two support units below the best estimate. The flat surface itself represents parameter values falling outside the 2-unit support region (as defined by Edwards 1992). If the user prefers to plot an $m$-unit support region, a support value of $m$ can be specified in `slouch.fit` by supplying the argument `slouch.fit(... ,support = m)`.
 
-```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Another slice of the log likelihood surface for the same single-optimum model", highlight = TRUE, warning=FALSE, fig.pos = "H"}
+```{r, fig.show='asis', fig.width=6, fig.height = 4, fig.cap = "Another slice of the log likelihood surface for the same single-optimum model", highlight = TRUE, warning=FALSE, fig.pos = "H", out.extra=""}
 model_grid_1 <- slouch.fit(phy = phy,
                      hl_values = seq(0.001, 150, length.out = 20),
                      vy_values = seq(0.1, 2.5, length.out = 20),
@@ -420,7 +419,7 @@ plot(model_grid_1)
 
 \vspace{1em}
 
-```{r, highlight = TRUE, eval = FALSE, fig.width=7, fig.height = 4, fig.pos = "H"}  
+```{r, highlight = TRUE, eval = FALSE, fig.width=7, fig.height = 4, fig.pos = "H", out.extra=""}  
 library(plotly)
 p <- plot_ly(x = model0$supportplot$hl,
              y = model0$supportplot$vy,
@@ -450,7 +449,7 @@ Escudero, M., Hipp, A. L., Hansen, T. F., Voje, K. L., & Luceño, M. (2012). Sel
 
 Grabowski, M., Voje, K. L., & Hansen, T. F. (2016). Evolutionary modeling and correcting for observation error support a 3/5 brain-body allometry for primates. Journal of human evolution, 94, 106-116.
 
-Hansen, T. F. (1997). Stabilizing Selection and the Comparative Analysis of Adaptation. Evolution, 51(5), 1341. https://doi.org/10.2307/2411186
+Hansen, T. F. (1997). Stabilizing Selection and the Comparative Analysis of Adaptation. Evolution, 51(5), 1341.
 
 Hansen, T. F., & Martins, E. P. (1996). Translating between microevolutionary process and macroevolutionary patterns: the correlation structure of interspecific data. Evolution, 50(4), 1404-1417.
 
