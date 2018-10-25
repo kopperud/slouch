@@ -15,14 +15,15 @@
 #' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
 #' 
 #' m0 <- slouch.fit(phy = artiodactyla,
-#'                  hl_values = seq(0.001, 4, length.out = 15),
-#'                  vy_values = seq(0.001, 0.05, length.out = 15),
+#'                  hl_values = seq(0.001, 4, length.out = 10),
+#'                  vy_values = seq(0.001, 0.05, length.out = 10),
 #'                  species = neocortex$species,
 #'                  response = neocortex$neocortex_area_mm2_log_mean,
 #'                  mv.response = neocortex$neocortex_se_squared,
 #'                  random.cov = neocortex$brain_mass_g_log_mean,
 #'                  mv.random.cov = neocortex$brain_se_squared,
-#'                  fixed.fact = neocortex$diet)
+#'                  fixed.fact = neocortex$diet,
+#'                  hillclimb = FALSE)
 #' @export
 print.slouch <- function(x, ...){
   digits <- max(3, getOption("digits")- 3)
@@ -61,14 +62,15 @@ print.slouch <- function(x, ...){
 #' neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
 #' 
 #' m0 <- slouch.fit(phy = artiodactyla,
-#'                  hl_values = seq(0.001, 4, length.out = 15),
-#'                  vy_values = seq(0.001, 0.05, length.out = 15),
+#'                  hl_values = seq(0.001, 4, length.out = 10),
+#'                  vy_values = seq(0.001, 0.05, length.out = 10),
 #'                  species = neocortex$species,
 #'                  response = neocortex$neocortex_area_mm2_log_mean,
 #'                  mv.response = neocortex$neocortex_se_squared,
 #'                  random.cov = neocortex$brain_mass_g_log_mean,
 #'                  mv.random.cov = neocortex$brain_se_squared,
-#'                  fixed.fact = neocortex$diet)
+#'                  fixed.fact = neocortex$diet,
+#'                  hillclimb = FALSE)
 #'                  
 #' summary(m0) 
 #' 
