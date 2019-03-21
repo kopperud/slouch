@@ -5,7 +5,7 @@
 ## R CMD check results
 Status: OK
 
-Apologies for fast resubmission, one vignette should be retracted. The words "Ornstein" and "Uhlenbeck" are surnames, and are not misspelled.
+Amended tests not to depend on `set.seed()`, such that it works with new sampler in R 3.6.0. The words "Ornstein" and "Uhlenbeck" are surnames, and are not misspelled.
 
 
 ## Vignette caveats:
