@@ -31,18 +31,20 @@ data("artiodactyla")
 
 neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
 
-m1 <- slouch.fit(artiodactyla,
+m1 <- brown.fit(artiodactyla,
                      species = neocortex$species,
-                     hl_values = seq(0,0.4, length.out = 15),
-                     vy_values = seq(0.05,0.15, length.out = 15),
+                     sigma2_y_values = lseq(0.007, 0.07, length.out = 40),
+                     #sigma2_y_values = 
+                     #hl_values = seq(0,0.4, length.out = 15),
+                     #vy_values = seq(0.05,0.15, length.out = 15),
                      response = neocortex$neocortex_area_mm2_log_mean,
                      mv.response = neocortex$neocortex_se_squared,
                      fixed.fact = neocortex$diet)
 
 
 
-reference <- structure(c(-28323.9802125233, 53231.086989994, 9.91679560722592, 
-                         19774.1791676592, 30572.5096605727, 0.377428304377147), .Dim = 3:2, .Dimnames = list(
+reference <- structure(c(0.341755546588429, 0.407864742952078, 0.364723324061735, 
+                         0.0162920222717242, 0.0263382449836314, 0.0138800506014244), .Dim = 3:2, .Dimnames = list(
                            c("Br", "Gr", "MF"), c("Estimates", "Std. error")))
 
 
