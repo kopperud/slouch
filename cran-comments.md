@@ -1,6 +1,7 @@
 ## Test environments
-* Local Fedora 27, R 3.5.0
-* Ubuntu 14.04.5 LTS (on Travis-ci), R 3.5.1
+* Local Fedora 27, R 3.5.22
+* Ubuntu 14.04.5 LTS (on Travis-ci), R 3.5.2
+* WinBuilder R 3.6.0 (Devel)
 
 ## R CMD check results
 Status: OK
