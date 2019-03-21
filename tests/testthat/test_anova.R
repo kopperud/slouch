@@ -1,42 +1,53 @@
-
+context("ANOVA (diet)")
 ## Generate tree for testing test
 library(ape)
-n = 80
-set.seed(4)
-phy <- rtree(n)
-trait_1 <- runif(n)
-trait_1_SE_sq <- 0.01*runif(n)
-#regimes_tip <- factor(sample(c("A", "B", "C"), n, replace = TRUE))
-regimes_tip <- factor(sample(c("A", "B"), n, replace = TRUE))
 
-## Ancestral state recon
-ans <- ace(regimes_tip, phy, type ="d")
-regimes_internal <- factor(levels(regimes_tip)[apply(ans$lik.anc, 1, function(e) which.max(e))])
-phy$node.label <- regimes_internal
-#levels(regimes_internal) <- c(levels(regimes_internal), "root"); regimes_internal[1] <- "root"
 
+## Simulation, test broken due to R 3.6.0 release changing the sample 
+## method, and thus `set.seed(4)` is broken.
+  
+# n = 80
+# set.seed(4)
+# phy <- rtree(n)
+# trait_1 <- runif(n)
+# trait_1_SE_sq <- 0.01*runif(n)
+# regimes_tip <- factor(sample(c("A", "B"), n, replace = TRUE))
+# 
+# ## Ancestral state recon
+# ans <- ace(regimes_tip, phy, type ="d")
+# regimes_internal <- factor(levels(regimes_tip)[apply(ans$lik.anc, 1, function(e) which.max(e))])
+# phy$node.label <- regimes_internal
+# 
+# regimes <- concat.factor(regimes_tip, regimes_internal)
+# lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
+#
 ## Plot
 #plot(phy); tiplabels(regimes_tip); nodelabels(regimes_internal)
 
-regimes <- concat.factor(regimes_tip, regimes_internal)
-lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
 
 
-m1 <- slouch.fit(phy,
-                     species = phy$tip.label,
+data("neocortex")
+data("artiodactyla")
+
+neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
+
+m1 <- slouch.fit(artiodactyla,
+                     species = neocortex$species,
                      hl_values = seq(0,0.4, length.out = 15),
                      vy_values = seq(0.05,0.15, length.out = 15),
-                     response = trait_1,
-                     mv.response = trait_1_SE_sq,
-                     fixed.fact = regimes_tip)
+                     response = neocortex$neocortex_area_mm2_log_mean,
+                     mv.response = neocortex$neocortex_se_squared,
+                     fixed.fact = neocortex$diet)
 
 
-#detach(dummydata)
 
-test_that("No errors ANOVA", {
-  expect_equal(structure(c(0.421599539503631, 0.481516052311344, 0.0453131399491333, 
-                           0.050412202001475), .Dim = c(2L, 2L), .Dimnames = list(c("A", 
-                                                                                    "B"), c("Estimates", "Std. error"))),
+reference <- structure(c(-28323.9802125233, 53231.086989994, 9.91679560722592, 
+                         19774.1791676592, 30572.5096605727, 0.377428304377147), .Dim = 3:2, .Dimnames = list(
+                           c("Br", "Gr", "MF"), c("Estimates", "Std. error")))
+
+
+test_that("No errors ANOVA (neocortex diet)", {
+  expect_equal(reference,
                m1$beta_primary$coefficients,
                tolerance = 9e-04)
 })

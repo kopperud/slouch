@@ -1,4 +1,4 @@
-
+context("Crash test")
 ## Generate tree for testing test
 library(ape)
 n = 80
@@ -91,3 +91,4 @@ m4 <- slouch.fit(phy,
 test_that("1 + 1 = 2", {
   expect_equal(1 + 1, 2)
 })
+
