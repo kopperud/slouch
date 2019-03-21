@@ -15,11 +15,13 @@ devtools::install_github("kopperud/slouch")
 library(slouch)
 ```
 
-
 # Documentation
 
 Standard R-package documentation can be seen by entering the command `?slouch`, or by visiting [the package website](https://kopperud.github.io/slouch/).
 
+# Contributions
+
+Questions, issues, PRs, forks are welcome.
 
 ### References
 
