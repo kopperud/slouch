@@ -32,14 +32,12 @@ data("artiodactyla")
 neocortex <- neocortex[match(artiodactyla$tip.label, neocortex$species), ]
 
 m1 <- brown.fit(artiodactyla,
-                     species = neocortex$species,
-                     sigma2_y_values = lseq(0.007, 0.07, length.out = 40),
-                     #sigma2_y_values = 
-                     #hl_values = seq(0,0.4, length.out = 15),
-                     #vy_values = seq(0.05,0.15, length.out = 15),
-                     response = neocortex$neocortex_area_mm2_log_mean,
-                     mv.response = neocortex$neocortex_se_squared,
-                     fixed.fact = neocortex$diet)
+                species = neocortex$species,
+                sigma2_y_values = lseq(0.007, 0.07, length.out = 40),
+                response = neocortex$neocortex_area_mm2_log_mean,
+                mv.response = neocortex$neocortex_se_squared,
+                fixed.fact = neocortex$diet,
+                hillclimb = FALSE)
 
 
 
