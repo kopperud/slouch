@@ -25,28 +25,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
         rho <- tree$T.term / 2
       }
     }
-    covariates <- matrix(cbind(observations$direct.cov, rho * observations$random.cov), 
-                         nrow = n, 
-                         dimnames = list(NULL, c(observations$names.direct.cov, 
-                                                 observations$names.random.cov)))
-    
-    # ## Sugar, append "(bm)" to the continuous explanatory variable names that are modelled as a brownian motion
-    # if(!is.null(observations$random.cov)){
-    #   i <- length(observations$names.direct.cov)
-    #   k <- i + seq_along(observations$names.random.cov)
-    #   
-    #   if (control$model == "bm"){
-    #     if (evolutionary){
-    #       s <- ("(bm)")
-    #     }else{
-    #       s <- "(bm, trend)"
-    #     }
-    #   }else if (control$model == "ou"){
-    #     s <- ("(bm)")
-    #   }
-    #   colnames(covariates)[k] <- paste(colnames(covariates)[k],  s)
-    # }
-    #colnames(covariates) <- paste(colnames(covariates),  "(bm)")
+
   }else{
     covariates <- NULL
   }
@@ -63,34 +42,51 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
   
   if(!is.null(observations$fixed.fact)){
     if(control$model == "ou"){
-      w_regimes <- weight.matrix(tree$phy, a, tree$lineages)
+      c_regimes <- weight.matrix(tree$phy, a, tree$lineages)
     }else{
-      w_regimes <- weight.matrix.brown(tree$lineages)
-      #colnames(w_regimes) <- paste(colnames(w_regimes), "(trend)") 
+      c_regimes <- weight.matrix.brown(tree$lineages)
     }
     if(control$model == "bm" & control$estimate.Ya){
-      X <- cbind(w_regimes,
-                 Ya = 1,
-                 covariates)
+      X <- cbind(c_regimes,
+                 Ya = 1)
     }else{
-      X <- cbind(w_regimes, bXa, covariates)
+      X <- cbind(c_regimes, 
+                 bXa)
     }
   }else{
     if(control$estimate.Ya){
-      K <- cbind(Ya = exp(-a * tree$T.term),
+      X <- cbind(Ya = exp(-a * tree$T.term),
                  b0 = 1-exp(-a * tree$T.term),
                  bXa)
     }else{
-      K <- cbind("(Intercept)" = rep(1, length(tree$phy$tip.label)), 
+      X <- cbind("(Intercept)" = rep(1, length(tree$phy$tip.label)), 
                  bXa)
     }
-    X <- cbind(K, covariates)
+    
   }
+  
+  if (!is.null(observations$fixed.fact) & control$interactions){
+    ## Interactions
+    direct.cov.list <- apply(observations$direct.cov, 2, list)
+    interactions.list <- lapply(direct.cov.list, function(x) apply(c_regimes, 2, function(e) e * x[[1]]))
+    interactions <- do.call(cbind, interactions.list)
+    interactions.names.list <- lapply(colnames(observations$direct.cov), function(x) sapply(colnames(c_regimes), function(e) paste0(e, ":", x)))
+    colnames(interactions) <- do.call(c, interactions.names.list)
+    
+    X <- cbind(X, 
+               interactions,
+               observations$random.cov)
+  }else{
+    X <- cbind(X, 
+               observations$direct.cov,
+               observations$random.cov)  
+  }
+ 
   return(X)
 }
 
 #varcov_model <- function(hl, vy, a, beta1, which.direct.cov, which.random.cov, random.cov, T.term, direct.cov, Vu_given_x, mcov.random.cov, mcov.direct.cov, n, sigma_squared, phy, ta, tij, tja, mv.response){
-varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.cov, tree, observations, seed, control){
+varcov_model <- function(hl, sigma2_y, a, beta1, w_beta, tree, observations, seed, control){
 
   tij <- tree$tij
   tja <- tree$tja
@@ -101,7 +97,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.
     Vt <- diag(rep(sigma2_y, times = n))
   }else if (a < 1e-14){
     if (!is.null(observations$random.cov)){
-      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[w_beta$which.random.cov, ])^2))
       Vt <- sigma2_y * ta + s1 * ta * ((ta^2)/12 + tja*t(tja)/4)
     }else{
       Vt <- sigma2_y * ta
@@ -109,7 +105,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.
 
   }else{
     if (!is.null(observations$random.cov)){
-      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[which.random.cov, ])^2))
+      s1 <- sum(seed$brownian_sigma_squared %*% ((beta1[w_beta$which.random.cov, ])^2))
       ti <- matrix(rep(tree$T.term, n), nrow=length(tree$phy$tip.label))
       
       term0 <- ((s1 + sigma2_y) / (2 * a)) * (1 - exp( -2 * a * ta)) * exp(-a * tij)
@@ -126,7 +122,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, which.direct.cov, which.random.
   return(Vt)
 }
 
-varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.direct.cov, which.random.cov, control){
+varcov_measurement <- function(observations, seed, beta1, hl, a, c_regimes, T.term, w_beta, control){
 
   if(control$model == "ou"){
     rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
@@ -135,14 +131,27 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
   }
   
   
-  if(length(which.direct.cov) > 0 | length(which.random.cov) > 0){
+  if(length(w_beta$which.direct.cov) > 0 | length(w_beta$which.random.cov) > 0){
     ## Update measurement error in X.
-    ## Measurement error in predictor - take 2]
-    beta2_Vu_given_x_list <-  mapply(function(Vu_given_xi, b, rho_squared) {Vu_given_xi * b^2 * rho_squared} , 
-                                     Vu_given_xi = seed$Vu_given_x, 
-                                     b = beta1[c(which.direct.cov, which.random.cov),], 
-                                     rho_squared = c(lapply(seq_along(beta1[which.direct.cov, ]), function(e) 1),
-                                                     lapply(seq_along(beta1[which.random.cov, ]), function(e) rho2)),
+    if (!is.null(observations$fixed.fact) & control$interactions){
+      c_regime <- split(c_regimes, colnames(c_regimes)) #apply(c_regimes, 2, f)
+      Vu_given_xi_direct <- head(seed$Vu_given_x, length(w_beta$which.direct.cov)/length(w_beta$which.regimes))
+      Vu_given_xi_random <- tail(seed$Vu_given_x, length(w_beta$which.random.cov))
+      Vu_given_xi <- c(do.call(c, lapply(Vu_given_xi_direct, function(e) lapply(w_beta$which.regimes, function(x) e))), 
+                       Vu_given_xi_random)
+      
+    }else{
+      c_regime <- 1
+      Vu_given_xi <- seed$Vu_given_x
+    }
+    
+    beta2_Vu_given_x_list <-  mapply(function(Vu_given_xi, b, w, rho_squared) {Vu_given_xi * b^2 * w * rho_squared} , 
+                                     Vu_given_xi = Vu_given_xi, 
+                                     b = beta1[c(w_beta$which.direct.cov, w_beta$which.random.cov),], 
+                                     w = c(do.call(c, lapply(seq_along(colnames(observations$direct.cov)), function(e) c_regime)),
+                                           lapply(seq_along(colnames(observations$random.cov)), function(e) 1)), ## interactions not supported for BM covariates
+                                     rho_squared = c(lapply(seq_along(beta1[w_beta$which.direct.cov, ]), function(e) 1),
+                                                     lapply(seq_along(beta1[w_beta$which.random.cov, ]), function(e) rho2)),
                                      SIMPLIFY = FALSE)
     beta2_Vu_given_x <- Reduce("+", beta2_Vu_given_x_list)
     
@@ -151,7 +160,7 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
     if(sum(observations$mcov.random.cov) == 0){
       mcov.random <- 0
     }else{
-      mcov.random <- rowSums(matrix(data=as.numeric(observations$mcov.random.cov)*t(kronecker(2*beta1[which.random.cov,],
+      mcov.random <- rowSums(matrix(data=as.numeric(observations$mcov.random.cov)*t(kronecker(2*beta1[w_beta$which.random.cov,],
                                                                                         (1-(1-exp(-a*T.term))/(a*T.term)))), 
                              ncol = ncol(observations$random.cov)))
     }
@@ -159,7 +168,7 @@ varcov_measurement <- function(observations, seed, beta1, hl, a, T.term, which.d
     if(sum(observations$mcov.direct.cov) == 0){
       mcov.direct <- 0
     }else{
-      mcov.direct <- rowSums(matrix(data=as.numeric(observations$mcov.direct.cov)*t(kronecker(2*beta1[which.direct.cov,],
+      mcov.direct <- rowSums(matrix(data=as.numeric(observations$mcov.direct.cov)*t(kronecker(2*beta1[w_beta$which.direct.cov,],
                                                                                              (1-(1-exp(-a*T.term))/(a*T.term)))), 
                                    ncol =  ncol(observations$direct.cov)))
     }
@@ -193,10 +202,6 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
       hl <- log(2) / a
     }
     
-
-
-
-    
     if(!is.null(par$vy)){
       vy <- par$vy
       sigma2_y <- vy*2*a 
@@ -216,12 +221,8 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
     vy <- NULL
   }
   
-
-  
   
   n <- length(tree$phy$tip.label)
-  
-
   
   if (control$verbose){
     cat(as.numeric(round(cbind(hl, (if(!is.null(vy)) vy else sigma2_y)), 4)))
@@ -240,9 +241,16 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
   n_regimes <- length(levels(regimes_all))
   
   
-  beta1.descriptor <- c(rep("Intercept", length(beta1) - n_regimes - n_direct - n_random),
+  #interaction = TRUE
+  if (control$interactions){
+    n_interaction <- n_direct * (n_regimes * control$interactions - 1)
+  }else{
+    n_interaction <- 0
+  }
+  
+  beta1.descriptor <- c(rep("Intercept", length(beta1) - n_regimes - n_direct - n_random - n_interaction),
                         rep("regime", n_regimes),
-                        rep("Instantaneous cov", n_direct),
+                        rep("Instantaneous cov", n_direct + n_interaction),
                         rep("Random cov", n_random))
   
   which.intercepts <- which(beta1.descriptor == "Intercept")
@@ -254,11 +262,12 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
                  which.regimes = which.regimes,
                  which.random.cov = which.random.cov,
                  which.direct.cov = which.direct.cov)
+  c_regimes <- X[ ,which.regimes]
   
   con.count <- 0
   repeat{
-    Vt <- varcov_model(hl, sigma2_y, a, beta1, which.direct.cov, which.random.cov, tree, observations, seed, control)
-    V_me <- varcov_measurement(observations, seed, beta1, hl, a, tree$T.term, which.direct.cov, which.random.cov, control)
+    Vt <- varcov_model(hl, sigma2_y, a, beta1, w_beta, tree, observations, seed, control)
+    V_me <- varcov_measurement(observations, seed, beta1, hl, a, c_regimes, tree$T.term, w_beta, control)
     V <- Vt + diag(V_me)
     
     L <- t(chol(V))
@@ -323,8 +332,8 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
     
     ## Following is less optimized, more identical to publication syntax because it only has to run once.
     V.inverse <- solve(V)
-    #beta1.var <- solve(t(X)%*%V.inverse%*%X)
-    beta1.var <- solve(crossprod(forwardsolve(L, X)))
+    #beta1.var <- solve(crossprod(forwardsolve(L, X)))
+    beta1.var <- pseudoinverse(crossprod(forwardsolve(L, X)))
     dimnames(beta1.var) <- list(colnames(X), colnames(X))
     
     if(control$model == "bm" & !is.null(observations$fixed.fact)){
@@ -334,7 +343,6 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
     }else{
       trend_diff <- NULL
     }
-
 
     
     ## Evolutionary regression
@@ -352,7 +360,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
                        X = X0,
                        vcov = ev.beta1.var,
                        residuals = Y - (X0 %*% ev.beta1)),
-                  bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, which.direct.cov, which.random.cov, seed))
+                  bias_correction(ev.beta1, ev.beta1.var, Y, X0, V, w_beta, c_regimes, seed, observations, control))
     }else{
       ev.beta1.var <- NULL
       ev.beta1 <- NULL
@@ -366,7 +374,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
                       residuals = Y - (X0 %*% beta1),
                       trend_diff = trend_diff,
                       vcov = beta1.var),
-                 if (!is.null(observations$direct.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, which.direct.cov, which.random.cov, seed) else NULL)
+                 if (!is.null(observations$direct.cov) | !is.null(observations$random.cov)) bias_correction(beta1, beta1.var, Y, X, V, w_beta, c_regimes, seed, observations, control) else NULL)
     
     pred.mean <- X%*%beta1
     g.mean <- (t(rep(1, times = n)) %*% solve(V) %*% Y) / sum(solve(V))

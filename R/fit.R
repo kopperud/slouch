@@ -16,6 +16,7 @@
                         mcov.random.cov,
                         estimate.Ya,
                         estimate.bXa,
+                        interactions,
                         hessian,
                         model,
                         support, 
@@ -170,7 +171,8 @@
                   support = support,
                   convergence = convergence,
                   model = model,
-                  name.response = name.response)
+                  name.response = name.response,
+                  interactions = interactions)
   
   
   seed <- seed(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov)

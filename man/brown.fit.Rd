@@ -8,8 +8,9 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
   mv.response = NULL, fixed.fact = NULL, direct.cov = NULL,
   mv.direct.cov = NULL, mcov.direct.cov = NULL, random.cov = NULL,
   mv.random.cov = NULL, mcov.random.cov = NULL, estimate.Ya = FALSE,
-  hessian = FALSE, support = 2, convergence = 1e-06, nCores = 1,
-  hillclimb = TRUE, lower = 1e-08, upper = NULL, verbose = FALSE)
+  interactions = FALSE, hessian = FALSE, support = 2,
+  convergence = 1e-06, nCores = 1, hillclimb = TRUE, lower = 1e-08,
+  upper = NULL, verbose = FALSE)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}
@@ -37,6 +38,8 @@ brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
 \item{mcov.random.cov}{Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov}
 
 \item{estimate.Ya}{independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).}
+
+\item{interactions}{a logical value. Whether to model interactions between (all) direct-effect continuous covariates and categorical regimes (experimental). Defaults to FALSE}
 
 \item{hessian}{use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.}
 

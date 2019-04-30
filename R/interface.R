@@ -9,6 +9,7 @@
 #' @param vy_values a vector of candidate stationary variances for the response trait, to be evaluated in grid search. Optional.
 #' @param estimate.Ya a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.
 #' @param estimate.bXa a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.
+#' @param interactions a logical value. Whether to model interactions between (all) direct-effect continuous covariates and categorical regimes (experimental). Defaults to FALSE
 #' @param response a numeric vector of a trait to be treated as response variable
 #' @param mv.response numeric vector of the observational variances of each response trait. E.g if response is a mean trait value, mv.response is the within-species squared standard error of the mean.
 #' @param fixed.fact factor of regimes on the terminal edges of the tree, in same order as species. If this is used, phy$node.label needs to be filled with the corresponding internal node regimes, in the order of node indices (root: n+1),(n+2),(n+3), ...
@@ -78,6 +79,7 @@ slouch.fit <- function(phy,
                        mcov.random.cov=NULL,
                        estimate.Ya = FALSE,
                        estimate.bXa = FALSE,
+                       interactions = FALSE,
                        hessian = FALSE,
                        support = 2, 
                        convergence = 0.000001,
@@ -132,6 +134,7 @@ slouch.fit <- function(phy,
               mcov.random.cov = mcov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = estimate.bXa,
+              interactions = interactions,
               hessian = hessian,
               model = "ou",
               support = support, 
@@ -173,6 +176,7 @@ brown.fit <- function(phy,
                       mv.random.cov = NULL, 
                       mcov.random.cov = NULL,
                       estimate.Ya = FALSE,
+                      interactions = FALSE,
                       hessian = FALSE,
                       support = 2, 
                       convergence = 0.000001,
@@ -221,6 +225,7 @@ brown.fit <- function(phy,
               mcov.random.cov = mcov.random.cov,
               estimate.Ya = estimate.Ya,
               estimate.bXa = FALSE,
+              interactions = interactions,
               hessian = hessian,
               model = "bm",
               support = support, 

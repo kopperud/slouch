@@ -9,8 +9,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, a_values = NULL,
   mv.response = NULL, fixed.fact = NULL, direct.cov = NULL,
   mv.direct.cov = NULL, mcov.direct.cov = NULL, random.cov = NULL,
   mv.random.cov = NULL, mcov.random.cov = NULL, estimate.Ya = FALSE,
-  estimate.bXa = FALSE, hessian = FALSE, support = 2,
-  convergence = 1e-06, nCores = 1, hillclimb = TRUE,
+  estimate.bXa = FALSE, interactions = FALSE, hessian = FALSE,
+  support = 2, convergence = 1e-06, nCores = 1, hillclimb = TRUE,
   lower = c(1e-08, 1e-08), upper = Inf, verbose = FALSE)
 }
 \arguments{
@@ -47,6 +47,8 @@ slouch.fit(phy, species = NULL, hl_values = NULL, a_values = NULL,
 \item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 
 \item{estimate.bXa}{a logical value indicathing whether "bXa" should be estimated. If true, bXa = 1-exp(-a*t) - (1-(1-exp(-a*t))/(a*t)) is added to the model matrix, estimating b*Xa. Same requirements as for estimating Ya.}
+
+\item{interactions}{a logical value. Whether to model interactions between (all) direct-effect continuous covariates and categorical regimes (experimental). Defaults to FALSE}
 
 \item{hessian}{use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.}
 
