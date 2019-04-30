@@ -71,9 +71,25 @@ m3 <- slouch.fit(phy,
                      estimate.Ya = FALSE,
                      estimate.bXa = FALSE)
 
+## The "everything" model with interactions
+m4 <-  slouch.fit(phy,
+                  species = phy$tip.label,
+                  hl_values = seq(0.1,0.4, length.out = 3),
+                  vy_values = seq(0.05,0.15, length.out = 3),
+                  response = trait_1,
+                  mv.response = trait_1_SE_sq,
+                  random.cov = cbind(a = trait_1, b = trait_2),
+                  mv.random.cov = cbind(trait_1_SE_sq, trait_2_SE_sq),
+                  direct.cov = cbind(c = trait_3, d = trait_4),
+                  mv.direct.cov = cbind(trait_3_SE_sq, trait_4_SE_sq),
+                  fixed.fact = regimes_tip,
+                  estimate.Ya = FALSE,
+                  estimate.bXa = FALSE,
+                  interactions = TRUE,
+                  hillclimb = FALSE)
 
 ## The "everything" model without measurement error
-m4 <- slouch.fit(phy,
+m5 <- slouch.fit(phy,
                  species = phy$tip.label,
                  hl_values = seq(0.1,0.4, length.out = 3),
                  vy_values = seq(0.05,0.15, length.out = 3),
@@ -84,6 +100,8 @@ m4 <- slouch.fit(phy,
                  fixed.fact = regimes_tip,
                  estimate.Ya = FALSE,
                  estimate.bXa = FALSE)
+
+
 
 test_that("1 + 1 = 2", {
   expect_equal(1 + 1, 2)
