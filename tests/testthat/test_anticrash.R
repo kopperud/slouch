@@ -73,7 +73,6 @@ m3 <- slouch.fit(phy,
 
 
 ## The "everything" model without measurement error
-## The "everything" model
 m4 <- slouch.fit(phy,
                  species = phy$tip.label,
                  hl_values = seq(0.1,0.4, length.out = 3),
@@ -85,8 +84,6 @@ m4 <- slouch.fit(phy,
                  fixed.fact = regimes_tip,
                  estimate.Ya = FALSE,
                  estimate.bXa = FALSE)
-
-#detach(dummydata)
 
 test_that("1 + 1 = 2", {
   expect_equal(1 + 1, 2)
