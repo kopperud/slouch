@@ -19,6 +19,7 @@ Depends:
   base,
   stats
 Imports:
+  crayon,
   parallel,
   ape,
   memoise

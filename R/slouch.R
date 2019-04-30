@@ -7,6 +7,7 @@
 #'@importFrom utils tail head
 #'@importFrom grDevices palette gray.colors
 #'@importFrom graphics plot text points axis
+#'@importFrom crayon bold red
 #'
 #' @section References:
 #'

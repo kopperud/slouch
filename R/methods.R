@@ -28,14 +28,15 @@
 print.slouch <- function(x, ...){
   digits <- max(3, getOption("digits")- 3)
     
-  cat(paste0("Response: ", x$control$name.response, "\n"))
+  cat(paste0(bold("Response: "), x$control$name.response, "\n"))
   cat("\n  ")
   
+  cat(bold("Model fit:\n"))
   fit <- unlist(x$modfit[c("AICc", "Support", "R squared")])
   print(fit, digits = digits)
   
   cat("\n  ")
-  cat("ML estimates(s): \n")
+  cat(bold("ML estimate(s): \n"))
   
   evolpar <- unlist(x$evolpar)
   names(evolpar) <- parnames(names(evolpar))
@@ -46,7 +47,7 @@ print.slouch <- function(x, ...){
   regpar <- x$beta_primary$coefficients[,1]
   names(regpar) <- rownames(x$beta_primary$coefficients)
   cat("\n  ")
-  cat("Coefficients: \n")
+  cat(bold("Coefficients: \n"))
   print(regpar, digits = digits)
 }
 
@@ -78,10 +79,10 @@ print.slouch <- function(x, ...){
 #' @export
 summary.slouch <- function(object, ...){
   x <- object
-  message("Important - Always inspect the likelihood surface of the model parameters with
-          grid search before evaluating model fit & results.")
-  message("")
-  message("Maximum-likelihood estimates")
+  cat(bold("Important"), "- Always inspect the likelihood surface of the model parameters with
+          grid search before evaluating model fit & results.\n")
+  cat("\n  ")
+  cat(bold("Maximum-likelihood estimates\n"))
   evolpar <- as.matrix(x$evolpar, ncol = 1)
   rownames(evolpar) <- parnames(rownames(evolpar))
   if(!is.null(x$hessian)){
@@ -109,7 +110,7 @@ summary.slouch <- function(object, ...){
   
   if (!is.null(x$brownian_predictors)){
     cat("\n  ")
-    message("Stochastic predictor(s)")
+    cat(bold("Stochastic predictor(s)\n"))
     print(x$brownian_predictors)
   }
 
@@ -158,14 +159,14 @@ summary.slouch <- function(object, ...){
   
   if (length(inferred) > 0){
     cat("\n  ")
-    message("Inferred maximum-likelihood parameters")
+    cat(bold("Inferred maximum-likelihood parameters\n"))
     inferred_matrix <- matrix(inferred, ncol = 1, dimnames = list(names(inferred), "Value"))
     print(inferred_matrix)
   }
   
   if (!is.null(x$supported_range)){
     cat("\n  ")
-    message("Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)")
+    cat(bold("Interval of parameters in 3d plot (Sensitive to grid mesh, grid size and local ML estimate)\n"))
     rownames(x$supported_range) <- parnames(rownames(x$supported_range))
     print(x$supported_range)
   }
@@ -179,18 +180,18 @@ summary.slouch <- function(object, ...){
           title <- paste(title, "(assuming Ya = 0)")
         }
       }
-      message(title)
+      cat(bold(title));cat("\n")
       print(x$beta_primary$coefficients[w, ,drop=FALSE])
       
       if(title == "Optimal regression slope" | title == "Trend covariates"){
         cat("\n  ")
-        message("Evolutionary regression slope")
+        cat(bold("Evolutionary regression slope\n"))
         print(x$beta_evolutionary$coefficients[w, ,drop = FALSE])
       }
       
       if(grepl("Regime trends", title)){
         cat("\n  ")
-        message("Pairwise contrasts among trends:")
+        cat(bold("Pairwise contrasts among trends:\n"))
         print(x$beta_primary$trend_diff)
       }
     }
@@ -207,14 +208,14 @@ summary.slouch <- function(object, ...){
   if(!is.null(x$beta_primary$K)){
     if(!is.diag(x$beta_primary$K)){
       cat("\n  ")
-      message("Attenuation factor. Linear model coefficients (above) are not corrected for bias.")
+      cat(bold("Attenuation factor. Linear model coefficients (above) are not corrected for bias.\n"))
       m <- signif(x$beta_primary$K, 3)
       prmatrix(m, collab = rep_len("", ncol(m)))
     }
   }
 
   cat("\n  ")
-  message("Model fit summary")
+  cat(bold("Model fit summary\n"))
   m <- as.matrix(sapply(x$modfit, signif, 3))
   colnames(m) <- "Values"
   print(m)
