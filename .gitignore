@@ -8,3 +8,4 @@ src/*.so
 src/*.o
 inst/doc
 *.swp
+vignettes/.drafts/*.pdf
