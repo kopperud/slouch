@@ -113,6 +113,12 @@ slouch.fit <- function(phy,
     }else{
       names.direct.cov <- colnames(direct.cov)
     }
+    
+    if(!is.null(mv.direct.cov)){
+      if (interactions){
+        stop("Interactions with measurement error in x currently not implemented.")
+      }
+    }
   }
   
   name.response <- deparse(substitute(response))
