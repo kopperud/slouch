@@ -71,7 +71,7 @@ m3 <- slouch.fit(phy,
                      estimate.Ya = FALSE,
                      estimate.bXa = FALSE)
 
-## The "everything" model with interactions
+## The "everything" model with interactions, except mv in direct.cov
 m4 <-  slouch.fit(phy,
                   species = phy$tip.label,
                   hl_values = seq(0.1,0.4, length.out = 3),
@@ -81,7 +81,7 @@ m4 <-  slouch.fit(phy,
                   random.cov = cbind(a = trait_1, b = trait_2),
                   mv.random.cov = cbind(trait_1_SE_sq, trait_2_SE_sq),
                   direct.cov = cbind(c = trait_3, d = trait_4),
-                  mv.direct.cov = cbind(trait_3_SE_sq, trait_4_SE_sq),
+                  #mv.direct.cov = cbind(trait_3_SE_sq, trait_4_SE_sq),
                   fixed.fact = regimes_tip,
                   estimate.Ya = FALSE,
                   estimate.bXa = FALSE,
