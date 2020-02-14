@@ -75,11 +75,11 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
     
     X <- cbind(X, 
                interactions,
-               observations$random.cov)
+               observations$random.cov*rho)
   }else{
     X <- cbind(X, 
                observations$direct.cov,
-               observations$random.cov)  
+               observations$random.cov*rho)  
   }
  
   return(X)
@@ -94,6 +94,7 @@ varcov_model <- function(hl, sigma2_y, a, beta1, w_beta, tree, observations, see
   n <- length(tree$phy$tip.label)
   
   if (hl == 0){
+    
     Vt <- diag(rep(sigma2_y, times = n))
   }else if (a < 1e-14){
     if (!is.null(observations$random.cov)){
@@ -122,13 +123,18 @@ varcov_model <- function(hl, sigma2_y, a, beta1, w_beta, tree, observations, see
   return(Vt)
 }
 
-varcov_measurement <- function(observations, seed, beta1, hl, a, c_regimes, T.term, w_beta, control){
+varcov_measurement <- function(observations, seed, beta1, hl, a, c_regimes, T.term, w_beta, control, evolutionary){
 
-  if(control$model == "ou"){
-    rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
+  if (evolutionary){
+    rho2 <- 1
   }else{
-    rho2 <- (T.term/2)^2
+    if(control$model == "ou"){
+      rho2 <- (1 - (1 - exp(-a * T.term))/(a * T.term))^2
+    }else{
+      rho2 <- (T.term/2)^2
+    }
   }
+
   
   
   if(length(w_beta$which.direct.cov) > 0 | length(w_beta$which.random.cov) > 0){
@@ -267,7 +273,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
   con.count <- 0
   repeat{
     Vt <- varcov_model(hl, sigma2_y, a, beta1, w_beta, tree, observations, seed, control)
-    V_me <- varcov_measurement(observations, seed, beta1, hl, a, c_regimes, tree$T.term, w_beta, control)
+    V_me <- varcov_measurement(observations, seed, beta1, hl, a, c_regimes, tree$T.term, w_beta, control, evolutionary = FALSE)
     V <- Vt + diag(V_me)
     
     L <- t(chol(V))
@@ -381,7 +387,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
     sst <- t(Y - c(g.mean)) %*% solve(V) %*% (Y - c(g.mean))
     sse <- t(Y - pred.mean) %*% solve(V) %*% (Y - pred.mean)
     r.squared <- (sst - sse) / sst
-    
+
     return(list(support = sup1,
                 par = par,
                 V = V, 
