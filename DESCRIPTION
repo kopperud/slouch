@@ -1,9 +1,9 @@
 Package: slouch
 Type: Package
 Title: Stochastic Linear Ornstein-Uhlenbeck Comparative Hypotheses
-Version: 2.1.3.9000
-Date: 2019-03-21
-Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "b.t.kopperud@nhm.uio.no"),
+Version: 2.1.3
+Date: 2020-02-12
+Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "kopperud@protonmail.com"),
              person("Jason", "Pienaar", role = c("aut")),
              person("Kjetil Lysne", "Voje", role = c("aut")),
              person("Steven Hecht", "Orzack", role = c("aut")),

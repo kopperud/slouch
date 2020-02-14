@@ -1,3 +1,12 @@
+# slouch 2.1.3
+
+* Added rudimentary support for interaction terms between direct-effect continuous predictors, and categorical predictors. Caveat: measurement error in continuous predictor not supported for estimating interaction terms.
+* Changed maintainer e-mail
+
+# slouch 2.1.2
+
+* Amended tests not to depend on `set.seed()`, such that it works with new sampler in R 3.6.0. 
+
 # slouch 2.1.1
 
 * Removed 'background' vignette
