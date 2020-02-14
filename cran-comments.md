@@ -1,12 +1,12 @@
 ## Test environments
-* Local Fedora 27, R 3.5.22
-* Ubuntu 14.04.5 LTS (on Travis-ci), R 3.5.2
-* WinBuilder R 3.6.0 (Devel)
+* Local Debian 10, R 3.5.22
+* Ubuntu 16.04.6 LTS (on Travis-ci), R 3.6.2
+* WinBuilder R-devel (unstable) (2020-01-28 r77738)
 
 ## R CMD check results
-Status: OK
+Status: 1 NOTE
 
-Amended tests not to depend on `set.seed()`, such that it works with new sampler in R 3.6.0. The words "Ornstein" and "Uhlenbeck" are surnames, and are not misspelled.
+Changed maintainer e-mail in DESCRIPTION. The words "Ornstein" and "Uhlenbeck" are surnames, and are not misspelled.
 
 
 ## Vignette caveats:
