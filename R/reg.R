@@ -27,7 +27,7 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
     }
 
   }else{
-    covariates <- NULL
+    rho <- NULL
   }
 
   if(control$estimate.bXa){
