@@ -8,9 +8,11 @@ output:
   pdf_document: null
   rmarkdown::html_vignette: 
     toc_depth: 1
+    theme: sandstone
   html_document: 
     fig_caption: yes
     toc_depth: 1
+    theme: sandstone
   bookdown::pdf_document2:
     fig_caption: yes
     toc: yes

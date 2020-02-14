@@ -1,5 +1,6 @@
 template:
   params:
-    bootswatch: united
+    bootswatch: sandstone
 
-toc_depth: 1
+toc:
+  depth: 1
