@@ -4,8 +4,7 @@
 \alias{plot.slouch}
 \title{Plot Grid Search}
 \usage{
-\method{plot}{slouch}(x, theta = 30, phi = 30, expand = 0.5,
-  ltheta = 120, shade = 0.75, ...)
+\method{plot}{slouch}(x, theta = 30, phi = 30, expand = 0.5, ltheta = 120, shade = 0.75, ...)
 }
 \arguments{
 \item{x}{An object of class 'slouch'}
