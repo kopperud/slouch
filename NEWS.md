@@ -1,7 +1,10 @@
+# slouch 2.1.4
+
+* Changed maintainer e-mail
+
 # slouch 2.1.3
 
 * Added rudimentary support for interaction terms between direct-effect continuous predictors, and categorical predictors. Caveat: measurement error in continuous predictor not supported for estimating interaction terms.
-* Changed maintainer e-mail
 
 # slouch 2.1.2
 
