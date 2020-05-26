@@ -1,6 +1,7 @@
 # slouch 2.1.4
 
 * Changed maintainer e-mail
+* Bugfix: model with random, continuous covariate was broken. Bug only relevant for installs from github, between commits ee5d38 and 04b103. CRAN repository not affected.
 
 # slouch 2.1.3
 
