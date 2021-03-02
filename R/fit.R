@@ -15,7 +15,6 @@
                         mv.random.cov, 
                         mcov.random.cov,
                         ace,
-                        simmap,
                         anc_maps,
                         estimate.Ya,
                         estimate.bXa,
@@ -54,6 +53,10 @@
     mv.response <- rep(0, times= length(response))
   }
   
+  if(anc_maps == "simmap"){
+    stopifnot("simmap" %in% class(phy))
+  }
+  
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
   
   Y <- response
@@ -73,7 +76,7 @@
     regimes_tip <- fixed.fact
     
     regimes <- concat.factor(regimes_tip, regimes_internal)
-    lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, anc_maps, regimes, ace, simmap)) #; names(lineages) <- phy$tip.label
+    lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, anc_maps, regimes, ace)) #; names(lineages) <- phy$tip.label
   }else{
     regimes <- lineages <- NULL
   }

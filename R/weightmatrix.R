@@ -13,13 +13,12 @@ lineage.nodes <- function(phy, x){
   return(k)
 }
 
-lineage.constructor <- function(phy, e, anc_maps, regimes, ace, simmap){
+lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
   nodes <- lineage.nodes(phy, e)
   min_age <- min(node.depth.edgelength(phy)[nodes])
   
   if(anc_maps == "regimes"){
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(regimes[nodes], x); res[is.na(res)] <- 0; return(res) })
-    #stop()
     times <-  ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
   }else if(anc_maps == "ace"){
@@ -34,10 +33,9 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace, simmap){
     times <-  ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
   }else if(anc_maps == "simmap"){
-    #stop("simmap not implemented")
     ## Simmap splits up each edge into sub-edges, depending on the split. So, we use edges instead of nodes, and introduce sub-edges
     edge_is <- which(phy$edge[,2] %in% nodes)
-    subedges <- unlist(lapply(edge_is, function(i) simmap$maps[[i]]))
+    subedges <- unlist(lapply(edge_is, function(i) phy$maps[[i]]))
     simmap_regimes <- rev(names(subedges))
     
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(simmap_regimes, x); res[is.na(res)] <- 0; return(res)})
@@ -45,20 +43,11 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace, simmap){
     root <- lapply(which.regimes, function(e) tail(e, n= 1))
     which.regimes <- lapply(1:3, function(x) c(which.regimes[[x]], root[[x]]))
   
-    #subedge_times <- cumsum(c(min_age, unname(subedges)))
-    
-    #timeflip <- c(min_age, unname(subedges))
     timeflip <- cumsum(c(min_age, unname(subedges)))
     times <- rev(timeflip)
-    #stop()
   }
-  #tip_regimes <- length(regimes[(length(phy$tip.label)+1):length(regimes)])
-  
-  #stop()
   
   names(which.regimes) <- levels(regimes)
-  
-  
   
   t_end <- tail(timeflip, n = -1) ## Time from tip to end of segment(s)
   t_beginning <- head(timeflip, n = -1) ## Time from tip to beginning of segment(s)
