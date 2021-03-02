@@ -25,7 +25,7 @@ phy$node.label <- regimes_internal
 #plot(phy); tiplabels(regimes_tip); nodelabels(regimes_internal)
 
 regimes <- concat.factor(regimes_tip, regimes_internal)
-lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes)) #; names(lineages) <- phy$tip.label
+lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes, anc_maps = "regimes")) #; names(lineages) <- phy$tip.label
 
 
 m1 <- slouch.fit(phy,

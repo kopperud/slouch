@@ -16,7 +16,7 @@ regimes_internal <- factor(colnames(ans$lik.anc))[apply(ans$lik.anc, 1, which.ma
 
 regimes <- concat.factor(regimes_tip, regimes_internal)
 
-lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes))
+lineages <- lapply(1:n, function(e) lineage.constructor(phy, e, regimes, anc_maps = "regimes"))
 
 
 alphas <- c(0, 1, 15, 30000000000)
@@ -31,7 +31,7 @@ naive_regweightshelper <- function(a, nt){
 
 
 for (a in alphas){
-  old <- lapply(lineages, function(lineage) naive_regweightshelper(a, lineage$nodes_time))
+  old <- lapply(lineages, function(lineage) naive_regweightshelper(a, lineage$times))
   new <- lapply(lineages, function(lineage) weights_segments(a, lineage))
   
   test_that(paste("Regimeweights for alpha =", a), {
