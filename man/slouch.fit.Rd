@@ -20,6 +20,8 @@ slouch.fit(
   random.cov = NULL,
   mv.random.cov = NULL,
   mcov.random.cov = NULL,
+  ace = NULL,
+  anc_maps = "regimes",
   estimate.Ya = FALSE,
   estimate.bXa = FALSE,
   interactions = FALSE,
@@ -63,6 +65,10 @@ slouch.fit(
 \item{mv.random.cov}{Estimation variances for the brownian covariates. Must be the same shape as random.cov}
 
 \item{mcov.random.cov}{Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov}
+
+\item{ace}{An ape::ace object, with estimated ancestral character states. Optional}
+
+\item{anc_maps}{One of "regimes", "ace" or "simmap". "regimes" tells slouch to use `phy$node.label` to assign internal regimes. "ace" tells slouch to use ancestral posterior probabilities for ancestral regimes. "simmap" tells slouch to use the simmap mappings associated with `phy`}
 
 \item{estimate.Ya}{a logical value indicathing whether "Ya" should be estimated. If true, the intercept K = 1 is expanded to Ya = exp(-a*t) and b0 = 1-exp(-a*t). If models with categorical covariates are used, this will instead estimate a separate primary optimum for the root niche, "Ya". This only makes sense for non-ultrametric trees. If the tree is ultrametric, the model matrix becomes singular.}
 

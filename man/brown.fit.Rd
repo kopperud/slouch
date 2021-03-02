@@ -17,6 +17,8 @@ brown.fit(
   random.cov = NULL,
   mv.random.cov = NULL,
   mcov.random.cov = NULL,
+  ace = NULL,
+  anc_maps = "regimes",
   estimate.Ya = FALSE,
   interactions = FALSE,
   hessian = FALSE,
@@ -53,6 +55,10 @@ brown.fit(
 \item{mv.random.cov}{Estimation variances for the brownian covariates. Must be the same shape as random.cov}
 
 \item{mcov.random.cov}{Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov}
+
+\item{ace}{An ape::ace object, with estimated ancestral character states. Optional}
+
+\item{anc_maps}{One of "regimes", "ace" or "simmap". "regimes" tells slouch to use `phy$node.label` to assign internal regimes. "ace" tells slouch to use ancestral posterior probabilities for ancestral regimes. "simmap" tells slouch to use the simmap mappings associated with `phy`}
 
 \item{estimate.Ya}{independently estimates the ancestral state under Brownian motion. Note that, for an intercept model, the intercept IS the ancestral state estimate (since there are no directional or stabilizing trends in a standard Brownian motion).}
 

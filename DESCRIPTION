@@ -13,7 +13,7 @@ Description: An implementation of a phylogenetic comparative method. It can fit 
 License: GPL-2
 LazyData: FALSE
 ByteCompile: FALSE
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 Depends:
   R (>= 3.0.0),
   base,

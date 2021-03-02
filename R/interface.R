@@ -19,6 +19,8 @@
 #' @param random.cov Independent variables each modeled as a brownian motion
 #' @param mv.random.cov Estimation variances for the brownian covariates. Must be the same shape as random.cov
 #' @param mcov.random.cov Estimation covariances between the response variable and random effect independent variables. Most be the same shape as random.cov
+#' @param ace An ape::ace object, with estimated ancestral character states. Optional
+#' @param anc_maps One of "regimes", "ace" or "simmap". "regimes" tells slouch to use `phy$node.label` to assign internal regimes. "ace" tells slouch to use ancestral posterior probabilities for ancestral regimes. "simmap" tells slouch to use the simmap mappings associated with `phy`
 #' @param hessian use the approximate hessian matrix at the likelihood peak as found by the hillclimber, to compute standard errors for the parameters that enter in parameter search.
 #' @param support a scalar indicating the size of the support set, defaults to 2 units of log-likelihood.
 #' @param convergence threshold of iterative GLS estimation for when beta is considered to be converged.
