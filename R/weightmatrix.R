@@ -41,12 +41,13 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(simmap_regimes, x); res[is.na(res)] <- 0; return(res)})
     # Problem. simmap does not provide root estimate. Assuming root estimate is equal to the oldest branch estimate
     root <- lapply(which.regimes, function(e) tail(e, n= 1))
-    which.regimes <- lapply(1:3, function(x) c(which.regimes[[x]], root[[x]]))
+    which.regimes <- lapply(seq_along(levels(regimes)), function(x) c(which.regimes[[x]], root[[x]]))
   
     timeflip <- cumsum(c(min_age, unname(subedges)))
     times <- rev(timeflip)
   }
   
+  #stop()
   names(which.regimes) <- levels(regimes)
   
   t_end <- tail(timeflip, n = -1) ## Time from tip to end of segment(s)
