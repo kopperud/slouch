@@ -57,6 +57,10 @@
     stopifnot("simmap" %in% class(phy))
   }
   
+  if("multiPhylo" %in% class(phy)){
+    stop("slouch does not support multiPhylo or multiSimmap")
+  }
+  
   # SPECIFY COMPONENTS THAT ARE COMMON TO ALL MODELS
   
   Y <- response
@@ -64,10 +68,19 @@
   
   if(!is.null(fixed.fact)){
     if(is.null(phy$node.label)){
-      stop("For categorical variables, the regimes corresponding to their primary optima need to be painted on all of the branches in the tree, and assigned to phy$node.label - use plot(phy) & nodelabels(phy$node.label) to see whether they are correct. See example.")
+      if(anc_maps == "regimes"){
+        stop("When using anc_maps=regimes the regimes corresponding to their primary optima need to be painted on all of the branches in the tree, and assigned to phy$node.label - use plot(phy) & nodelabels(phy$node.label) to see whether they are correct. See example.")
+      }
     }
     
-    regimes_internal <- phy$node.label
+    if(anc_maps == "regimes"){
+      regimes_internal <- phy$node.label
+    }else{
+      regimes_internal <- rep(NA, nrow(phy$edge) +1 - length(phy$tip.label))
+    }
+
+    
+    
     if(estimate.Ya & model == "ou"){
       tmp <- as.character(regimes_internal)
       tmp[1] <- "Ya"
