@@ -345,7 +345,7 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
     if(control$model == "bm" & !is.null(observations$fixed.fact)){
       which.trend <- seq_along(levels(tree$regimes))
       trend_names <- colnames(X)[which.trend]
-      trend_diff <- trend_diff_foo(beta1, beta1.var, trend_names, which.trend)
+      trend_diff <- trend_diff_foo(tree, beta1, beta1.var, trend_names, which.trend)
     }else{
       trend_diff <- NULL
     }
@@ -401,20 +401,35 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
 }
 
 
-trend_diff_foo <- function(beta1, beta1.var, trend_names, which.trend){
+trend_diff_foo <- function(tree, beta1, beta1.var, trend_names, which.trend){
   beta1 <- beta1[which.trend]
   beta1.var <- beta1.var[which.trend, which.trend]
-  upper_tri <- upper.tri(beta1.var)
+  offdiag <- upper.tri(beta1.var) | lower.tri(beta1.var)
+  
+  ## calculate which transitions are actually present on the tree
+  transitions <- c()
+  for (i in 1:nrow(tree$phy$edge)){
+    anc <- regimes[tree$phy$edge[i, 1]]
+    desc <- regimes[tree$phy$edge[i, 2]]
+    if (anc != desc){
+      trans <- paste(anc, "-", desc)
+      transitions <- c(transitions, trans)
+    }
+  }
+  transitions <- unique(transitions)
   
   se2 <- diag(beta1.var)
   contrast <- sapply(beta1, function(e) e - beta1)
   v <- sapply(se2, function(e) e + se2)
   names_matrix <- sapply(trend_names, function(e) paste(e, "-", trend_names))
   
-  se_contrast <- sqrt(v[upper_tri] -2*beta1.var[upper_tri])
-  res <- cbind("Contrast" = contrast[upper_tri],
+  se_contrast <- sqrt(v[offdiag] -2*beta1.var[offdiag])
+  res <- cbind("Contrast" = contrast[offdiag],
                "Std. error" = se_contrast)
-  rownames(res) <- names_matrix[upper_tri]
+  rownames(res) <- names_matrix[offdiag]
+  
+  ## Filter for only the transitions that are on the tree
+  res <- res[rownames(res) %in% transitions, ]
   
   return(res)
 }
