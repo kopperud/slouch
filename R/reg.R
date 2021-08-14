@@ -409,8 +409,8 @@ trend_diff_foo <- function(tree, beta1, beta1.var, trend_names, which.trend){
   ## calculate which transitions are actually present on the tree
   transitions <- c()
   for (i in 1:nrow(tree$phy$edge)){
-    anc <- regimes[tree$phy$edge[i, 1]]
-    desc <- regimes[tree$phy$edge[i, 2]]
+    anc <- tree$regimes[tree$phy$edge[i, 1]]
+    desc <- tree$regimes[tree$phy$edge[i, 2]]
     if (anc != desc){
       trans <- paste(anc, "-", desc)
       transitions <- c(transitions, trans)
