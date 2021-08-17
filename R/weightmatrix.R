@@ -15,9 +15,10 @@ lineage.nodes <- function(phy, x){
 
 lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
   nodes <- lineage.nodes(phy, e)
-  min_age <- min(node.depth.edgelength(phy)[nodes])
+  min_age <- min(ape::node.depth.edgelength(phy)[nodes])
   
   if(anc_maps == "regimes"){
+    lineage_regimes <- rev(regimes[nodes])
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(regimes[nodes], x); res[is.na(res)] <- 0; return(res) })
     times <-  ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
@@ -29,6 +30,7 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
     
     which.regimes <- rbind(which.tips, which.internal)[nodes,]
     which.regimes <- lapply(1:ncol(which.regimes), function(i) which.regimes[,i])
+    lineage_regimes <- NULL
     
     times <-  ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
@@ -45,6 +47,8 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
   
     timeflip <- cumsum(c(min_age, unname(subedges)))
     times <- rev(timeflip)
+    # save the regimes in this lineage
+    lineage_regimes <- names(subedges)
   }
   
   #stop()
@@ -59,7 +63,8 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
               t_end = t_end,
               t_beginning = t_beginning,
               regime_time = regime_time,
-              which.regimes = which.regimes))
+              which.regimes = which.regimes,
+              lineage_regimes = lineage_regimes))
 }
 
 weights_segments <- function(a, lineage){

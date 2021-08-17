@@ -404,32 +404,47 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
 trend_diff_foo <- function(tree, beta1, beta1.var, trend_names, which.trend){
   beta1 <- beta1[which.trend]
   beta1.var <- beta1.var[which.trend, which.trend]
-  offdiag <- upper.tri(beta1.var) | lower.tri(beta1.var)
   
-  ## calculate which transitions are actually present on the tree
-  transitions <- c()
-  for (i in 1:nrow(tree$phy$edge)){
-    anc <- tree$regimes[tree$phy$edge[i, 1]]
-    desc <- tree$regimes[tree$phy$edge[i, 2]]
-    if (anc != desc){
-      trans <- paste(anc, "-", desc)
-      transitions <- c(transitions, trans)
+  if(!is.null(tree$lineages[[1]]$lineage_regimes)){
+    relevant <- upper.tri(beta1.var) | lower.tri(beta1.var)
+    
+    ## calculate which transitions are actually present on the tree
+    transitions <- c()
+
+    for (lineage in tree$lineages){
+      anc <- tail(lineage$lineage_regimes, n = -1)
+      desc <- head(lineage$lineage_regimes, n = -1)
+      
+      for (i in seq_along(anc)){
+        if (anc[i] != desc[i]){
+          trans <- paste(anc[i], "-", desc[i])
+          transitions <- c(transitions, trans)
+        }
+      }
     }
+    transitions <- unique(transitions)
+  }else{
+    transitions <- NULL
+    relevant <- upper.tri(beta1.var)
   }
-  transitions <- unique(transitions)
+  
   
   se2 <- diag(beta1.var)
   contrast <- sapply(beta1, function(e) e - beta1)
   v <- sapply(se2, function(e) e + se2)
   names_matrix <- sapply(trend_names, function(e) paste(e, "-", trend_names))
   
-  se_contrast <- sqrt(v[offdiag] -2*beta1.var[offdiag])
-  res <- cbind("Contrast" = contrast[offdiag],
+  se_contrast <- sqrt(v[relevant] -2*beta1.var[relevant])
+  res <- cbind("Contrast" = contrast[relevant],
                "Std. error" = se_contrast)
-  rownames(res) <- names_matrix[offdiag]
+  rownames(res) <- names_matrix[relevant]
   
-  ## Filter for only the transitions that are on the tree
-  res <- res[rownames(res) %in% transitions, ]
+  if(!is.null(transitions)){
+    ## Filter for only the transitions that are on the tree
+    res <- res[rownames(res) %in% transitions, ]  
+  }
+
+  
   
   return(res)
 }
