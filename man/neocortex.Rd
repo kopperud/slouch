@@ -4,9 +4,7 @@
 \name{neocortex}
 \alias{neocortex}
 \title{Artiodactyl brain data}
-\format{
-An object of class \code{"data.frame"}.
-}
+\format{An object of class \code{"data.frame"}.}
 \usage{
 data(neocortex)
 }
