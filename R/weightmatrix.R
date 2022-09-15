@@ -97,6 +97,8 @@ weight.matrix <- function(phy, a, lineages){
 
 weight.matrix.brown <- function(lineages){
   res <- t(sapply(lineages, weights_regimes_brown))
+  dim(res) <- c(length(lineages), length(lineages[[1]]$which.regimes))
+  colnames(res) <- names(lineages[[1]]$which.regimes)
   return(res)
 }
 

@@ -47,8 +47,8 @@ slouch.modelmatrix <- function(a, hl, tree, observations, control, evolutionary=
       c_regimes <- weight.matrix.brown(tree$lineages)
     }
     if(control$model == "bm" & control$estimate.Ya){
-      X <- cbind(c_regimes,
-                 Ya = 1)
+      X <- cbind(Ya = 1,
+                 c_regimes)
     }else{
       X <- cbind(c_regimes, 
                  bXa)
@@ -402,6 +402,11 @@ reg <- function(par, tree, observations, control, seed, parameter_search = TRUE,
 
 
 trend_diff_foo <- function(tree, beta1, beta1.var, trend_names, which.trend){
+  if(length(which.trend) == 1){
+    res <- cbind("Contrast" = "NA",
+                 "Std. error" = "NA")
+    return(res)
+  }
   beta1 <- beta1[which.trend]
   beta1.var <- beta1.var[which.trend, which.trend]
   
