@@ -8,11 +8,15 @@ seed <- function(phy, ta, direct.cov, mv.direct.cov, random.cov, mv.random.cov){
   n <- length(phy$tip.label)
   
   if(!is.null(random.cov)){
-    brownian <- mapply(function(y, y_me) sigma.X.estimate(phy, ta, y, y_me),
-                       y = split(t(random.cov), colnames(random.cov)),
-                       y_me = split(t(mv.random.cov), colnames(random.cov)),
-                       SIMPLIFY = FALSE)
-    
+    brownian <- list()
+    for (i in 1:ncol(random.cov)){
+      y <- random.cov[,i]
+      y_me <- mv.random.cov[,i] 
+      
+      brownian[[i]] <-  sigma.X.estimate(phy, ta, y, y_me)
+    }
+    names(brownian) <- colnames(random.cov)
+
     sigma_squared <- sapply(brownian, function(x) x$sigma_squared)
     brownian_mean <- sapply(brownian, function(x) x$mean)
   }else{
