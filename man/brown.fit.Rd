@@ -4,13 +4,32 @@
 \alias{brown.fit}
 \title{Function to fit Brownian-motion models of trait evolution}
 \usage{
-brown.fit(phy, species = NULL, sigma2_y_values = NULL, response,
-  mv.response = NULL, fixed.fact = NULL, direct.cov = NULL,
-  mv.direct.cov = NULL, mcov.direct.cov = NULL, random.cov = NULL,
-  mv.random.cov = NULL, mcov.random.cov = NULL, ace = NULL,
-  anc_maps = "regimes", estimate.Ya = FALSE, interactions = FALSE,
-  hessian = FALSE, support = 2, convergence = 1e-06, nCores = 1,
-  hillclimb = TRUE, lower = 1e-08, upper = NULL, verbose = FALSE)
+brown.fit(
+  phy,
+  species = NULL,
+  sigma2_y_values = NULL,
+  response,
+  mv.response = NULL,
+  fixed.fact = NULL,
+  direct.cov = NULL,
+  mv.direct.cov = NULL,
+  mcov.direct.cov = NULL,
+  random.cov = NULL,
+  mv.random.cov = NULL,
+  mcov.random.cov = NULL,
+  ace = NULL,
+  anc_maps = "regimes",
+  estimate.Ya = FALSE,
+  interactions = FALSE,
+  hessian = FALSE,
+  support = 2,
+  convergence = 1e-06,
+  nCores = 1,
+  hillclimb = TRUE,
+  lower = 1e-08,
+  upper = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{phy}{an object of class 'phylo', must be rooted.}

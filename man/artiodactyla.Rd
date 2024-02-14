@@ -4,7 +4,9 @@
 \name{artiodactyla}
 \alias{artiodactyla}
 \title{Artiodactyla Phylogeny}
-\format{An object of class \code{"phylo"}, from package \code{"ape"}.}
+\format{
+An object of class \code{"phylo"}, from package \code{"ape"}.
+}
 \usage{
 data(artiodactyla)
 }

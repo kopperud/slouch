@@ -19,9 +19,9 @@ Plot the hillclimber trajectory
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{slouch}: Hillclimbplot for the 'slouch object'
-}}
+\item \code{hillclimbplot(slouch)}: Hillclimbplot for the 'slouch object'
 
+}}
 \examples{
 library(slouch)
 library(ape)

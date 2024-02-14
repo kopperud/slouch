@@ -22,9 +22,9 @@ Plot the internal regimes for a given fitted model
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{slouch}: Regimeplot for the 'slouch' object
-}}
+\item \code{regimeplot(slouch)}: Regimeplot for the 'slouch' object
 
+}}
 \examples{
 
 data(artiodactyla)
