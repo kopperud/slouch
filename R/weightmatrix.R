@@ -15,12 +15,14 @@ lineage.nodes <- function(phy, x){
 
 lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
   nodes <- lineage.nodes(phy, e)
-  min_age <- min(ape::node.depth.edgelength(phy)[nodes])
+  node_ages <- ape::node.depth.edgelength(phy)[nodes]
+  min_age <- min(node_ages)
+  max_age <- max(node_ages)
   
   if(anc_maps == "regimes"){
     lineage_regimes <- rev(regimes[nodes])
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(regimes[nodes], x); res[is.na(res)] <- 0; return(res) })
-    times <-  ape::node.depth.edgelength(phy)[nodes]
+    times <- ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
   }else if(anc_maps == "ace"){
     stopifnot(!is.null(ace))
@@ -32,7 +34,7 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
     which.regimes <- lapply(1:ncol(which.regimes), function(i) which.regimes[,i])
     lineage_regimes <- NULL
     
-    times <-  ape::node.depth.edgelength(phy)[nodes]
+    times <- ape::node.depth.edgelength(phy)[nodes]
     timeflip <- times[1] - times ## Time from tip to node(s)
   }else if(anc_maps == "simmap"){
     ## Simmap splits up each edge into sub-edges, depending on the split. So, we use edges instead of nodes, and introduce sub-edges
@@ -42,21 +44,21 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
     
     which.regimes <- lapply(levels(regimes), function(x) {res <- match(simmap_regimes, x); res[is.na(res)] <- 0; return(res)})
     # Problem. simmap does not provide root estimate. Assuming root estimate is equal to the oldest branch estimate
-    root <- lapply(which.regimes, function(e) tail(e, n= 1))
+    root <- lapply(which.regimes, function(e) tail(e, n = 1))
     which.regimes <- lapply(seq_along(levels(regimes)), function(x) c(which.regimes[[x]], root[[x]]))
   
-    timeflip <- cumsum(c(min_age, unname(subedges)))
-    times <- rev(timeflip)
+    times <- max_age - c(min_age, cumsum(unname(subedges))) ## time from the tip
+    timeflip <- rev(times)
     # save the regimes in this lineage
     lineage_regimes <- names(subedges)
   }
-  
-  #stop()
   names(which.regimes) <- levels(regimes)
   
-  t_end <- tail(timeflip, n = -1) ## Time from tip to end of segment(s)
-  t_beginning <- head(timeflip, n = -1) ## Time from tip to beginning of segment(s)
-  regime_time <- c(t_end - t_beginning, min_age)
+  ## time is t=0 at the tip, and increasing toward the past
+  t_end <- head(timeflip, n = -1) ## Time from tip to the youngest point of segment(s)
+  t_beginning <- tail(timeflip, n = -1) ## Time from tip to oldest point of segment(s)
+  ## the "time spent in the root regime" is 0 myr
+  regime_time <- c(t_beginning - t_end, 0.0) 
   
   return(list(nodes = nodes, 
               times = times,
@@ -68,7 +70,7 @@ lineage.constructor <- function(phy, e, anc_maps, regimes, ace){
 }
 
 weights_segments <- function(a, lineage){
-  res <- c(exp(-a * lineage$t_beginning) - exp(-a * lineage$t_end), 
+  res <- c(exp(-a * lineage$t_end) - exp(-a * lineage$t_beginning), 
            exp(-a * lineage$times[1]))
   return(res)
 }
