@@ -1,3 +1,7 @@
+# slouch 2.1.5
+
+* Fixed bug in calculating the weight matrix (and therefore also the likelihood) for multi-optima OU model with discrete predictors, in the case of SIMMAP style input.
+
 # slouch 2.1.4
 
 * Changed maintainer e-mail
