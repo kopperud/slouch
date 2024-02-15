@@ -1,6 +1,9 @@
 # slouch 2.1.5
 
-* Fixed bug in calculating the weight matrix (and therefore also the likelihood) for multi-optima OU model with discrete predictors, in the case of SIMMAP style input.
+* Include functionality for allowing SIMMAP style trees to dictate the regimes painted on the tree. In other words, also allowing the regimes to change character state along the branches, instead of just at the branching events. 
+* Fixed bug where if there were multiple predictor variables modeled as BM, then the predictors were re-ordered
+* Bugfix for allowing a Brownian-motion model with a single trend (i.e. estimating the ancestral state and a single trend parameter, but no regime map)
+* Don't print the trend contrasts in the summary unless those transitions were actually present on the tree
 
 # slouch 2.1.4
 
