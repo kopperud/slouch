@@ -28,7 +28,7 @@ Suggests:
   rmarkdown,
   bookdown,
   testthat
-URL: http://github.com/kopperud/slouch
-BugReports: http://github.com/kopperud/slouch/issues
+URL: https://github.com/kopperud/slouch
+BugReports: https://github.com/kopperud/slouch/issues
 VignetteBuilder: knitr
 Encoding: UTF-8
